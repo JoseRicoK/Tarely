@@ -1,4 +1,4 @@
-// Tipos principales del proyecto TareAI
+// Tipos principales del proyecto Tarely
 
 export interface Workspace {
   id: string;

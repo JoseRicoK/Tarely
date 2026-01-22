@@ -394,7 +394,7 @@ export function TaskCard({
           </TooltipProvider>
         )}
 
-        {/* Botón generar subtareas con IA - PRIMERO */}
+        {/* Botón generar subtareas con IA */}
         {!task.completed && onSubtasksChange && (
           <TooltipProvider>
             <Tooltip>
@@ -421,7 +421,7 @@ export function TaskCard({
           </TooltipProvider>
         )}
 
-        {/* Botón eliminar directo para vista de completadas - SEGUNDO */}
+        {/* Botón eliminar directo para vista de completadas */}
         {onQuickDelete && (
           <TooltipProvider>
             <Tooltip>
@@ -443,7 +443,7 @@ export function TaskCard({
           </TooltipProvider>
         )}
 
-        {/* Dropdown menu - TERCERO */}
+        {/* Dropdown menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button

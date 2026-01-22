@@ -189,22 +189,8 @@ export function SubtaskList({
   // Vista compacta - solo indicador de subtareas
   if (compact) {
     if (!hasSubtasks) {
-      return (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-6 px-2 gap-1 text-xs text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
-          onClick={handleGenerate}
-          disabled={isGenerating}
-        >
-          {isGenerating ? (
-            <Loader2 className="h-3 w-3 animate-spin" />
-          ) : (
-            <ListChecks className="h-3 w-3" />
-          )}
-          Desglosar
-        </Button>
-      );
+      // No mostrar nada si no hay subtareas (el botón de generar está en Actions)
+      return null;
     }
 
     return (
@@ -249,25 +235,6 @@ export function SubtaskList({
               Subtareas ({completedCount}/{subtasks.length})
             </span>
           </button>
-        )}
-
-        {!hasSubtasks && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-6 px-2 gap-1 text-xs text-muted-foreground"
-            onClick={handleGenerate}
-            disabled={isGenerating}
-          >
-            {isGenerating ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <>
-                <Sparkles className="h-3 w-3" />
-                Generar subtareas
-              </>
-            )}
-          </Button>
         )}
 
         {hasSubtasks && isExpanded && subtasks.length < 5 && (

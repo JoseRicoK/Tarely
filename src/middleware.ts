@@ -2,13 +2,33 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
+  // Validar que las variables de entorno existan
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  
+  if (!supabaseUrl || !supabaseKey) {
+    console.error('Missing Supabase environment variables');
+    // Permitir acceso a rutas públicas incluso sin Supabase configurado
+    const publicPaths = ['/login', '/registro'];
+    const isPublicPath = publicPaths.some(path => 
+      request.nextUrl.pathname.startsWith(path)
+    );
+    if (isPublicPath) {
+      return NextResponse.next();
+    }
+    // Redirigir a login si no está configurado
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   });
 
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+    supabaseUrl,
+    supabaseKey,
     {
       cookies: {
         getAll() {
