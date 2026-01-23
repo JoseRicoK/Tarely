@@ -1,30 +1,11 @@
-import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { createClientWithCookies } from "@/lib/supabase/server";
+import type { ProfileRow } from "@/lib/supabase/types";
 
 export async function GET() {
   const cookieStore = await cookies();
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // Ignored for Server Components
-          }
-        },
-      },
-    }
-  );
+  const supabase = createClientWithCookies(cookieStore);
 
   // Obtener usuario autenticado
   const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -39,9 +20,9 @@ export async function GET() {
   // Obtener perfil de la tabla profiles
   const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("*")
+    .select("id, name, email, avatar")
     .eq("id", user.id)
-    .single();
+    .single<ProfileRow>();
 
   if (profileError || !profile) {
     // Si no existe perfil, usar datos del user metadata
@@ -65,27 +46,7 @@ export async function PATCH(request: Request) {
   const { name, avatar } = await request.json();
 
   const cookieStore = await cookies();
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // Ignored for Server Components
-          }
-        },
-      },
-    }
-  );
+  const supabase = createClientWithCookies(cookieStore);
 
   // Obtener usuario autenticado
   const { data: { user }, error: userError } = await supabase.auth.getUser();
@@ -109,7 +70,7 @@ export async function PATCH(request: Request) {
       id: user.id,
       name,
       avatar,
-      email: user.email,
+      email: user.email ?? "",
       updated_at: new Date().toISOString(),
     });
 

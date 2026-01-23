@@ -1,6 +1,6 @@
-import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { createClientWithCookies } from "@/lib/supabase/server";
 
 // GET: Listar todos los usuarios (para invitaciones)
 export async function GET(request: Request) {
@@ -9,27 +9,7 @@ export async function GET(request: Request) {
   const excludeWorkspaceId = searchParams.get("excludeWorkspace");
 
   const cookieStore = await cookies();
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {
-            // Ignored
-          }
-        },
-      },
-    }
-  );
+  const supabase = createClientWithCookies(cookieStore);
 
   // Verificar autenticación
   const { data: { user }, error: userError } = await supabase.auth.getUser();

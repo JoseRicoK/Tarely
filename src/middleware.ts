@@ -2,9 +2,11 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
-  // Validar que las variables de entorno existan
+  // Validar que las variables de entorno existan (acepta ambos nombres)
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const supabaseKey = 
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   
   if (!supabaseUrl || !supabaseKey) {
     console.error('Missing Supabase environment variables');

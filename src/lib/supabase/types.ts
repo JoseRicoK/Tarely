@@ -53,6 +53,39 @@ export interface Database {
         };
         Relationships: [];
       };
+      workspace_members: {
+        Row: {
+          id: string;
+          workspace_id: string;
+          user_id: string;
+          role: string;
+          status: string;
+          invited_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          workspace_id: string;
+          user_id: string;
+          role?: string;
+          status?: string;
+          invited_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          workspace_id?: string;
+          user_id?: string;
+          role?: string;
+          status?: string;
+          invited_by?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
           id: string;
@@ -176,7 +209,52 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      get_workspaces_by_ids: {
+        Args: { p_workspace_ids: string[] };
+        Returns: { id: string; name: string; color: string }[];
+      };
+      get_workspace_members: {
+        Args: { p_workspace_id: string };
+        Returns: { id: string; user_id: string; role: string; status: string; created_at: string; invited_by: string }[];
+      };
+      get_workspace_members_for_assignment: {
+        Args: { p_workspace_id: string };
+        Returns: { id: string; name: string; email: string; avatar: string }[];
+      };
+      invite_user_to_workspace: {
+        Args: { p_workspace_id: string; p_user_id: string };
+        Returns: string;
+      };
+      remove_workspace_member_by_id: {
+        Args: { p_workspace_id: string; p_member_id: string };
+        Returns: boolean;
+      };
+      get_task_assignees: {
+        Args: { p_task_id: string };
+        Returns: { id: string; name: string; email: string; avatar: string }[];
+      };
+      assign_user_to_task: {
+        Args: { p_task_id: string; p_user_id: string };
+        Returns: string;
+      };
+      unassign_user_from_task: {
+        Args: { p_task_id: string; p_user_id: string };
+        Returns: boolean;
+      };
+      get_shared_workspaces: {
+        Args: Record<string, never>;
+        Returns: { id: string; name: string; description: string; instructions: string; icon: string; color: string; user_id: string; created_at: string; updated_at: string }[];
+      };
+      get_workspace_by_id: {
+        Args: { p_workspace_id: string };
+        Returns: { id: string; name: string; description: string; instructions: string; icon: string; color: string; user_id: string; created_at: string; updated_at: string; is_shared: boolean }[];
+      };
+      get_workspace_tasks: {
+        Args: { p_workspace_id: string };
+        Returns: { id: string; workspace_id: string; section_id: string | null; user_id: string | null; title: string; description: string | null; importance: number; completed: boolean; completed_at: string | null; due_date: string | null; source: string; created_at: string; updated_at: string }[];
+      };
+    };
     Enums: {
       task_source: TaskSource;
     };
@@ -196,6 +274,7 @@ export type UpdateTables<T extends keyof Database['public']['Tables']> =
 export type WorkspaceRow = Tables<'workspaces'>;
 export type TaskRow = Tables<'tasks'>;
 export type SubtaskRow = Tables<'subtasks'>;
+export type ProfileRow = Tables<'profiles'>;
 export type WorkspaceInsert = InsertTables<'workspaces'>;
 export type TaskInsert = InsertTables<'tasks'>;
 export type SubtaskInsert = InsertTables<'subtasks'>;
