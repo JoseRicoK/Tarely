@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
@@ -48,6 +49,7 @@ import {
   Box,
   ListChecks,
   Loader2,
+  ExternalLink,
   type LucideIcon,
 } from "lucide-react";
 import type { Task, TaskAssignee, WorkspaceSection, Subtask } from "@/lib/types";
@@ -121,6 +123,7 @@ export function TaskCard({
   onSubtasksChange,
   onQuickDelete,
 }: TaskCardProps) {
+  const router = useRouter();
   const [isGeneratingSubtasks, setIsGeneratingSubtasks] = useState(false);
   
   const timeAgo = formatDistanceToNow(new Date(task.createdAt), {
@@ -130,6 +133,11 @@ export function TaskCard({
 
   const importanceColor = getImportanceColor(task.importance);
   const importanceLabel = getImportanceLabel(task.importance);
+
+  // Navegar a la página de detalle de la tarea
+  const handleNavigateToTask = () => {
+    router.push(`/workspace/${workspaceId}/task/${task.id}`);
+  };
 
   const hasAssignees = task.assignees && task.assignees.length > 0;
   const hasDueDate = !!task.dueDate;
@@ -162,10 +170,13 @@ export function TaskCard({
   };
 
   return (
-    <div className={cn(
-      "group relative flex gap-4 p-4 rounded-lg border bg-card transition-all duration-200 hover:shadow-md hover:border-primary/20",
-      task.completed && "opacity-70 bg-muted/30"
-    )}>
+    <div 
+      className={cn(
+        "group relative flex gap-4 p-4 rounded-lg border bg-card transition-all duration-200 hover:shadow-md hover:border-primary/20 cursor-pointer",
+        task.completed && "opacity-70 bg-muted/30"
+      )}
+      onClick={handleNavigateToTask}
+    >
       {/* Importance indicator bar */}
       <div
         className={cn(
@@ -185,7 +196,7 @@ export function TaskCard({
       />
 
       {/* Botones de estado (completar y mover) */}
-      <div className="flex flex-col items-center gap-1">
+      <div className="flex flex-col items-center gap-1" onClick={(e) => e.stopPropagation()}>
         {/* Botón de completar */}
         <TooltipProvider>
           <Tooltip>
@@ -199,7 +210,10 @@ export function TaskCard({
                     ? "bg-green-500 hover:bg-green-600 text-white shadow-green-500/25" 
                     : "hover:bg-green-500/15 hover:text-green-600 hover:border-green-500 hover:shadow-md hover:shadow-green-500/20"
                 )}
-                onClick={() => onToggleComplete(task)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleComplete(task);
+                }}
               >
                 {task.completed ? (
                   <Check className="h-4 w-4" />
@@ -225,6 +239,7 @@ export function TaskCard({
                       variant="outline"
                       size="icon"
                       className="h-7 w-7 rounded-full transition-all hover:bg-primary/10 hover:text-primary hover:border-primary"
+                      onClick={(e) => e.stopPropagation()}
                     >
                       <MoveRight className="h-3.5 w-3.5" />
                     </Button>
@@ -235,7 +250,7 @@ export function TaskCard({
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <DropdownMenuContent align="start">
+            <DropdownMenuContent align="start" onClick={(e) => e.stopPropagation()}>
               {sections.map((section) => {
                 const IconComponent = iconMap[section.icon] || Circle;
                 const isCurrentSection = section.id === currentSectionId;
@@ -281,7 +296,7 @@ export function TaskCard({
         )}
 
         {/* Footer with badges and meta */}
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
           {/* Importancia - editable inline si no está completada */}
           {!task.completed && onImportanceChange ? (
             <ImportancePicker
@@ -313,6 +328,7 @@ export function TaskCard({
                 <Sparkles className="h-3 w-3" />
                 IA
               </>
+
             ) : (
               <>
                 <User className="h-3 w-3" />
@@ -353,12 +369,14 @@ export function TaskCard({
 
         {/* Subtareas */}
         {!task.completed && onSubtasksChange && (
-          <SubtaskList
-            taskId={task.id}
-            workspaceId={workspaceId}
-            subtasks={task.subtasks || []}
-            onSubtasksChange={(subtasks) => onSubtasksChange(task.id, subtasks)}
-          />
+          <div onClick={(e) => e.stopPropagation()}>
+            <SubtaskList
+              taskId={task.id}
+              workspaceId={workspaceId}
+              subtasks={task.subtasks || []}
+              onSubtasksChange={(subtasks) => onSubtasksChange(task.id, subtasks)}
+            />
+          </div>
         )}
 
         {/* Indicador de subtareas si está completada */}
@@ -371,7 +389,7 @@ export function TaskCard({
       </div>
 
       {/* Actions */}
-      <div className="flex items-start gap-1">
+      <div className="flex items-start gap-1" onClick={(e) => e.stopPropagation()}>
         {/* Botón restaurar si está completada */}
         {task.completed && (
           <TooltipProvider>
@@ -381,7 +399,10 @@ export function TaskCard({
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => onToggleComplete(task)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onToggleComplete(task);
+                  }}
                 >
                   <RotateCcw className="h-4 w-4" />
                   <span className="sr-only">Restaurar</span>
@@ -468,6 +489,10 @@ export function TaskCard({
                 </DropdownMenuItem>
               </>
             )}
+            <DropdownMenuItem onClick={handleNavigateToTask}>
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Ver detalles
+            </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => navigator.clipboard.writeText(task.title)}
             >

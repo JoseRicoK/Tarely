@@ -8,3 +8,7 @@ export { SubtaskList, SubtaskIndicator } from "./SubtaskList";
 export { KanbanBoard } from "./KanbanBoard";
 export { KanbanColumn } from "./KanbanColumn";
 export { KanbanCard, KanbanCardDraggable, KanbanCardStatic } from "./KanbanCard";
+export { CommentSection } from "./CommentSection";
+export { AttachmentSection } from "./AttachmentSection";
+export { ActivitySection } from "./ActivitySection";
+

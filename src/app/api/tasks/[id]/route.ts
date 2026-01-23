@@ -1,10 +1,31 @@
 // API Route: /api/tasks/[id]
 import { NextRequest, NextResponse } from "next/server";
-import { updateTask, deleteTask } from "@/lib/store";
+import { getTask, updateTask, deleteTask } from "@/lib/store";
 import { updateTaskSchema } from "@/lib/validations";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
+}
+
+// GET /api/tasks/[id] - Obtener una tarea por ID
+export async function GET(_request: NextRequest, { params }: RouteParams) {
+  try {
+    const { id } = await params;
+    const task = await getTask(id);
+    if (!task) {
+      return NextResponse.json(
+        { error: "Tarea no encontrada" },
+        { status: 404 }
+      );
+    }
+    return NextResponse.json(task);
+  } catch (error) {
+    console.error("Error getting task:", error);
+    return NextResponse.json(
+      { error: "Error al obtener la tarea" },
+      { status: 500 }
+    );
+  }
 }
 
 // PATCH /api/tasks/[id] - Actualizar una tarea

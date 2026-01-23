@@ -1,6 +1,7 @@
 "use client";
 
 import { useDraggable } from "@dnd-kit/core";
+import { useRouter } from "next/navigation";
 import { formatDistanceToNow, format, parseISO, isValid } from "date-fns";
 import { es } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
@@ -45,6 +46,7 @@ import {
   Archive,
   Inbox,
   Box,
+  ExternalLink,
   type LucideIcon,
 } from "lucide-react";
 import type { Task, TaskAssignee, WorkspaceSection, Subtask } from "@/lib/types";
@@ -255,6 +257,7 @@ export function KanbanCardDraggable({
   onSubtasksChange,
   onQuickDelete,
 }: KanbanCardDraggableProps) {
+  const router = useRouter();
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: task.id,
   });
@@ -270,6 +273,10 @@ export function KanbanCardDraggable({
 
   const handleCopyTitle = () => {
     navigator.clipboard.writeText(task.title);
+  };
+
+  const handleNavigateToTask = () => {
+    router.push(`/workspace/${workspaceId}/task/${task.id}`);
   };
 
   // Placeholder for assign action - will open assignees popover
@@ -323,6 +330,10 @@ export function KanbanCardDraggable({
                 <DropdownMenuItem onClick={() => onEdit(task)}>
                   <Pencil className="h-4 w-4 mr-2" />
                   Editar
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleNavigateToTask}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Ver detalles
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={handleCopyTitle}>
                   <Copy className="h-4 w-4 mr-2" />

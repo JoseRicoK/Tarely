@@ -131,3 +131,76 @@ export interface AIGeneratedTask {
 export interface AIGenerateResponse {
   tasks: AIGeneratedTask[];
 }
+
+// Tipos para comentarios de tareas
+export interface TaskComment {
+  id: string;
+  taskId: string;
+  userId: string;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  userName: string;
+  userAvatar: string;
+}
+
+// Tipos para archivos adjuntos
+export type AttachmentType = 'image' | 'document' | 'other';
+
+export interface TaskAttachment {
+  id: string;
+  taskId: string;
+  userId: string;
+  fileName: string;
+  fileType: AttachmentType;
+  fileSize: number;
+  mimeType: string;
+  storagePath: string;
+  thumbnailPath?: string;
+  createdAt: string;
+  userName: string;
+  userAvatar: string;
+  url?: string; // URL firmada para acceder al archivo
+}
+
+// Tipos para actividad de tareas
+export type TaskActivityAction = 
+  | 'created'
+  | 'updated'
+  | 'completed'
+  | 'uncompleted'
+  | 'assigned'
+  | 'unassigned'
+  | 'comment_added'
+  | 'comment_deleted'
+  | 'attachment_added'
+  | 'attachment_deleted'
+  | 'subtask_added'
+  | 'subtask_completed'
+  | 'subtask_deleted';
+
+export interface TaskActivity {
+  id: string;
+  taskId: string;
+  userId: string;
+  action: TaskActivityAction;
+  fieldChanged?: string;
+  oldValue?: string;
+  newValue?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+  userName: string;
+  userAvatar: string;
+}
+
+// Input para crear comentario
+export interface CreateCommentInput {
+  taskId: string;
+  content: string;
+}
+
+// Input para subir archivo
+export interface UploadAttachmentInput {
+  taskId: string;
+  file: File;
+}
