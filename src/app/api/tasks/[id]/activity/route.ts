@@ -17,7 +17,12 @@ interface ActivityRow {
   new_value: string | null;
   metadata: Record<string, unknown> | null;
   created_at: string;
-  profiles: { name: string; avatar: string } | null;
+}
+
+interface ProfileRow {
+  id: string;
+  name: string;
+  avatar: string;
 }
 
 // GET /api/tasks/[id]/activity - Obtener actividad de una tarea
@@ -32,7 +37,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    // Obtener actividad con información del usuario
+    // Obtener actividad
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: activities, error } = await (supabase as any)
       .from("task_activity")
@@ -45,11 +50,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         old_value,
         new_value,
         metadata,
-        created_at,
-        profiles:user_id (
-          name,
-          avatar
-        )
+        created_at
       `)
       .eq("task_id", taskId)
       .order("created_at", { ascending: false })
@@ -60,20 +61,42 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Error al obtener actividad" }, { status: 500 });
     }
 
+    if (!activities || activities.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    // Obtener IDs únicos de usuarios
+    const userIds = [...new Set((activities as ActivityRow[]).map(a => a.user_id))];
+
+    // Obtener perfiles de los usuarios
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, name, avatar")
+      .in("id", userIds);
+
+    // Crear mapa de perfiles para acceso rápido
+    const profileMap = new Map<string, ProfileRow>();
+    (profiles || []).forEach((p: ProfileRow) => {
+      profileMap.set(p.id, p);
+    });
+
     // Transformar datos
-    const formattedActivities = (activities as unknown as ActivityRow[])?.map((a) => ({
-      id: a.id,
-      taskId: a.task_id,
-      userId: a.user_id,
-      action: a.action,
-      fieldChanged: a.field_changed,
-      oldValue: a.old_value,
-      newValue: a.new_value,
-      metadata: a.metadata,
-      createdAt: a.created_at,
-      userName: a.profiles?.name || "Usuario",
-      userAvatar: a.profiles?.avatar || "",
-    })) || [];
+    const formattedActivities = (activities as ActivityRow[]).map((a) => {
+      const profile = profileMap.get(a.user_id);
+      return {
+        id: a.id,
+        taskId: a.task_id,
+        userId: a.user_id,
+        action: a.action,
+        fieldChanged: a.field_changed,
+        oldValue: a.old_value,
+        newValue: a.new_value,
+        metadata: a.metadata,
+        createdAt: a.created_at,
+        userName: profile?.name || "Usuario",
+        userAvatar: profile?.avatar || "",
+      };
+    });
 
     return NextResponse.json(formattedActivities);
   } catch (error) {

@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow, format, parseISO, isValid } from "date-fns";
@@ -262,6 +263,16 @@ export function KanbanCardDraggable({
     id: task.id,
   });
 
+  // Track if we're dragging to prevent click navigation
+  const wasDragging = React.useRef(false);
+
+  // Update ref when dragging state changes
+  React.useEffect(() => {
+    if (isDragging) {
+      wasDragging.current = true;
+    }
+  }, [isDragging]);
+
   const timeAgo = formatDistanceToNow(new Date(task.createdAt), {
     addSuffix: true,
     locale: es,
@@ -279,6 +290,15 @@ export function KanbanCardDraggable({
     router.push(`/workspace/${workspaceId}/task/${task.id}`);
   };
 
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Don't navigate if we just finished dragging
+    if (wasDragging.current) {
+      wasDragging.current = false;
+      return;
+    }
+    handleNavigateToTask();
+  };
+
   // Placeholder for assign action - will open assignees popover
   const handleAssign = () => {
     // This would typically open a popover or dialog to manage assignees
@@ -291,8 +311,9 @@ export function KanbanCardDraggable({
       ref={setNodeRef}
       {...attributes}
       {...listeners}
+      onClick={handleCardClick}
       className={cn(
-        "relative rounded-lg border bg-card p-3 shadow-sm cursor-grab active:cursor-grabbing touch-none",
+        "group relative rounded-lg border bg-card p-3 shadow-sm cursor-grab active:cursor-grabbing touch-none",
         "hover:shadow-md hover:border-primary/20 transition-shadow",
         isDragging && "opacity-50",
         task.completed && "opacity-70 bg-muted/30"

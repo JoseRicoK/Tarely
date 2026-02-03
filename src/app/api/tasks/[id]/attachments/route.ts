@@ -19,7 +19,12 @@ interface AttachmentRow {
   storage_path: string;
   thumbnail_path: string | null;
   created_at: string;
-  profiles: { name: string; avatar: string } | null;
+}
+
+interface ProfileRow {
+  id: string;
+  name: string;
+  avatar: string;
 }
 
 // Determinar tipo de archivo
@@ -46,7 +51,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    // Obtener attachments con información del usuario
+    // Obtener attachments
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: attachments, error } = await (supabase as any)
       .from("task_attachments")
@@ -60,11 +65,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         mime_type,
         storage_path,
         thumbnail_path,
-        created_at,
-        profiles:user_id (
-          name,
-          avatar
-        )
+        created_at
       `)
       .eq("task_id", taskId)
       .order("created_at", { ascending: false });
@@ -74,13 +75,34 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Error al obtener archivos" }, { status: 500 });
     }
 
+    if (!attachments || attachments.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    // Obtener IDs únicos de usuarios
+    const userIds = [...new Set((attachments as AttachmentRow[]).map(a => a.user_id))];
+
+    // Obtener perfiles de los usuarios
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, name, avatar")
+      .in("id", userIds);
+
+    // Crear mapa de perfiles para acceso rápido
+    const profileMap = new Map<string, ProfileRow>();
+    (profiles || []).forEach((p: ProfileRow) => {
+      profileMap.set(p.id, p);
+    });
+
     // Generar URLs firmadas para cada archivo
     const formattedAttachments = await Promise.all(
-      ((attachments || []) as unknown as AttachmentRow[]).map(async (a) => {
+      (attachments as AttachmentRow[]).map(async (a) => {
         // Generar URL firmada (válida por 1 hora)
         const { data: signedUrlData } = await supabase.storage
           .from("task-attachments")
           .createSignedUrl(a.storage_path, 3600);
+
+        const profile = profileMap.get(a.user_id);
 
         return {
           id: a.id,
@@ -93,8 +115,8 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
           storagePath: a.storage_path,
           thumbnailPath: a.thumbnail_path,
           createdAt: a.created_at,
-          userName: a.profiles?.name || "Usuario",
-          userAvatar: a.profiles?.avatar || "",
+          userName: profile?.name || "Usuario",
+          userAvatar: profile?.avatar || "",
           url: signedUrlData?.signedUrl || null,
         };
       })

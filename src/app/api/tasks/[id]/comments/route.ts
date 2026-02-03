@@ -14,7 +14,12 @@ interface CommentRow {
   content: string;
   created_at: string;
   updated_at: string;
-  profiles: { name: string; avatar: string } | null;
+}
+
+interface ProfileRow {
+  id: string;
+  name: string;
+  avatar: string;
 }
 
 // GET /api/tasks/[id]/comments - Obtener comentarios de una tarea
@@ -29,7 +34,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "No autorizado" }, { status: 401 });
     }
 
-    // Obtener comentarios con información del usuario
+    // Obtener comentarios
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: comments, error } = await (supabase as any)
       .from("task_comments")
@@ -39,11 +44,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
         user_id,
         content,
         created_at,
-        updated_at,
-        profiles:user_id (
-          name,
-          avatar
-        )
+        updated_at
       `)
       .eq("task_id", taskId)
       .order("created_at", { ascending: true });
@@ -53,17 +54,39 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: "Error al obtener comentarios" }, { status: 500 });
     }
 
+    if (!comments || comments.length === 0) {
+      return NextResponse.json([]);
+    }
+
+    // Obtener IDs únicos de usuarios
+    const userIds = [...new Set((comments as CommentRow[]).map(c => c.user_id))];
+
+    // Obtener perfiles de los usuarios
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, name, avatar")
+      .in("id", userIds);
+
+    // Crear mapa de perfiles para acceso rápido
+    const profileMap = new Map<string, ProfileRow>();
+    (profiles || []).forEach((p: ProfileRow) => {
+      profileMap.set(p.id, p);
+    });
+
     // Transformar datos
-    const formattedComments = (comments as CommentRow[])?.map((c) => ({
-      id: c.id,
-      taskId: c.task_id,
-      userId: c.user_id,
-      content: c.content,
-      createdAt: c.created_at,
-      updatedAt: c.updated_at,
-      userName: c.profiles?.name || "Usuario",
-      userAvatar: c.profiles?.avatar || "",
-    })) || [];
+    const formattedComments = (comments as CommentRow[]).map((c) => {
+      const profile = profileMap.get(c.user_id);
+      return {
+        id: c.id,
+        taskId: c.task_id,
+        userId: c.user_id,
+        content: c.content,
+        createdAt: c.created_at,
+        updatedAt: c.updated_at,
+        userName: profile?.name || "Usuario",
+        userAvatar: profile?.avatar || "",
+      };
+    });
 
     return NextResponse.json(formattedComments);
   } catch (error) {
