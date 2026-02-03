@@ -279,7 +279,11 @@ export function CommentSection({ taskId, currentUserId }: CommentSectionProps) {
                                   {...props}
                                   alt={props.alt || ""}
                                   className="max-w-full h-auto rounded-lg my-2 cursor-pointer hover:opacity-90 transition-opacity"
-                                  onClick={() => window.open(props.src, "_blank")}
+                                  onClick={() => {
+                                    if (typeof props.src === 'string') {
+                                      window.open(props.src, "_blank");
+                                    }
+                                  }}
                                 />
                               ),
                               ul: (props) => (
