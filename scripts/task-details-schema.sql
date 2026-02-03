@@ -61,6 +61,19 @@ ALTER TABLE task_comments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE task_attachments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE task_activity ENABLE ROW LEVEL SECURITY;
 
+-- Eliminar políticas existentes antes de crearlas
+DROP POLICY IF EXISTS "Users can view comments on accessible tasks" ON task_comments;
+DROP POLICY IF EXISTS "Users can create comments on accessible tasks" ON task_comments;
+DROP POLICY IF EXISTS "Users can update their own comments" ON task_comments;
+DROP POLICY IF EXISTS "Users can delete their own comments" ON task_comments;
+
+DROP POLICY IF EXISTS "Users can view attachments on accessible tasks" ON task_attachments;
+DROP POLICY IF EXISTS "Users can create attachments on accessible tasks" ON task_attachments;
+DROP POLICY IF EXISTS "Users can delete their own attachments" ON task_attachments;
+
+DROP POLICY IF EXISTS "Users can view activity on accessible tasks" ON task_activity;
+DROP POLICY IF EXISTS "Users can create activity on accessible tasks" ON task_activity;
+
 -- Política para comentarios: usuarios pueden ver/crear/editar/borrar comentarios de tareas en sus workspaces
 CREATE POLICY "Users can view comments on accessible tasks" ON task_comments
   FOR SELECT USING (
@@ -157,6 +170,11 @@ VALUES (
   ARRAY['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/plain']
 ) ON CONFLICT (id) DO NOTHING;
 
+-- Eliminar políticas de storage existentes
+DROP POLICY IF EXISTS "Users can upload attachments" ON storage.objects;
+DROP POLICY IF EXISTS "Users can view their attachments" ON storage.objects;
+DROP POLICY IF EXISTS "Users can delete their attachments" ON storage.objects;
+
 -- Políticas de storage
 CREATE POLICY "Users can upload attachments" ON storage.objects
   FOR INSERT WITH CHECK (
@@ -211,6 +229,8 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trigger_update_comment_updated_at ON task_comments;
 
 CREATE TRIGGER trigger_update_comment_updated_at
   BEFORE UPDATE ON task_comments
