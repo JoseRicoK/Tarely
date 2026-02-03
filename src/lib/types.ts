@@ -11,6 +11,7 @@ export interface Workspace {
   updatedAt: string;
   isShared?: boolean; // true si es un workspace compartido contigo
   ownerName?: string; // Nombre del dueño si es compartido
+  pendingTasksCount?: number; // Número de tareas pendientes (no completadas)
 }
 
 export interface WorkspaceSection {

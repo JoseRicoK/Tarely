@@ -19,7 +19,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { MoreVertical, Pencil, Trash2, Users, Clock } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, Users, Clock, CheckCircle2 } from "lucide-react";
 import { getIconComponent } from "@/components/ui/icon-color-picker";
 import type { Workspace } from "@/lib/types";
 
@@ -135,15 +135,25 @@ export function WorkspaceCard({
         )}
       </CardHeader>
       <CardContent className="flex-1 pb-3">
-        {workspace.instructions ? (
-          <p className="text-xs text-muted-foreground">
-            📋 Tiene instrucciones configuradas
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground/60 italic">
-            Sin instrucciones
-          </p>
-        )}
+        <div className="flex items-center gap-2">
+          <div 
+            className="flex-shrink-0 h-8 w-8 rounded-md flex items-center justify-center"
+            style={{ 
+              backgroundColor: `${workspaceColor}10`,
+              color: workspaceColor 
+            }}
+          >
+            <CheckCircle2 className="h-4 w-4" />
+          </div>
+          <div>
+            <div className="text-lg font-semibold" style={{ color: workspaceColor }}>
+              {workspace.pendingTasksCount ?? 0}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              {workspace.pendingTasksCount === 1 ? "tarea pendiente" : "tareas pendientes"}
+            </div>
+          </div>
+        </div>
       </CardContent>
       <CardFooter className="pt-3 border-t">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">

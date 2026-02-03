@@ -438,7 +438,8 @@ export function AttachmentSection({ taskId, currentUserId }: AttachmentSectionPr
               return (
                 <div
                   key={attachment.id}
-                  className="group flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                  className="group flex items-center gap-3 p-3 rounded-lg border bg-card hover:bg-muted/50 transition-colors cursor-pointer"
+                  onClick={() => window.open(attachment.url, "_blank")}
                 >
                   <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
                     {getFileIcon(attachment.fileType)}
@@ -474,7 +475,10 @@ export function AttachmentSection({ taskId, currentUserId }: AttachmentSectionPr
                             size="icon"
                             variant="ghost"
                             className="h-8 w-8"
-                            onClick={() => window.open(attachment.url, "_blank")}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              window.open(attachment.url, "_blank");
+                            }}
                           >
                             <ExternalLink className="h-4 w-4" />
                           </Button>
@@ -492,7 +496,11 @@ export function AttachmentSection({ taskId, currentUserId }: AttachmentSectionPr
                             className="h-8 w-8"
                             asChild
                           >
-                            <a href={attachment.url} download={attachment.fileName}>
+                            <a 
+                              href={attachment.url} 
+                              download={attachment.fileName}
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               <Download className="h-4 w-4" />
                             </a>
                           </Button>
@@ -509,7 +517,7 @@ export function AttachmentSection({ taskId, currentUserId }: AttachmentSectionPr
                               size="icon"
                               variant="ghost"
                               className="h-8 w-8 text-destructive hover:text-destructive"
-                              onClick={() => handleDelete(attachment.id)}
+                              onClick={(e) => handleDelete(attachment.id, e)}
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

@@ -47,8 +47,50 @@ export default function HomePage() {
       }
       const data = await res.json();
       const workspaceList = data || [];
-      setWorkspaces(workspaceList);
-      return workspaceList;
+      
+      // Cargar tareas pendientes para cada workspace
+      const workspacesWithCounts = await Promise.all(
+        workspaceList.map(async (ws: Workspace) => {
+          try {
+            // Obtener secciones del workspace
+            const sectionsRes = await fetch(`/api/sections?workspaceId=${ws.id}`);
+            let pendingSectionId = null;
+            
+            if (sectionsRes.ok) {
+              const sectionsData = await sectionsRes.json();
+              const sections = Array.isArray(sectionsData) ? sectionsData : (sectionsData.sections || []);
+              const pendingSection = sections.find((s: any) => s.name === 'Pendientes');
+              pendingSectionId = pendingSection?.id;
+            }
+            
+            // Obtener tareas del workspace
+            const tasksRes = await fetch(`/api/tasks?workspaceId=${ws.id}`);
+            if (tasksRes.ok) {
+              const tasksData = await tasksRes.json();
+              const tasksList = Array.isArray(tasksData) ? tasksData : (tasksData.tasks || []);
+              
+              // Contar tareas en la sección "Pendientes"
+              // Usa la misma lógica que KanbanBoard: si tiene sectionId, úsalo; 
+              // si no, las tareas no completadas van a Pendientes
+              const pendingCount = tasksList.filter((task: Task) => {
+                if (task.sectionId) {
+                  return task.sectionId === pendingSectionId;
+                }
+                // Fallback: tareas sin sectionId y no completadas van a Pendientes
+                return !task.completed;
+              }).length;
+              
+              return { ...ws, pendingTasksCount: pendingCount };
+            }
+          } catch {
+            // Ignorar errores individuales
+          }
+          return { ...ws, pendingTasksCount: 0 };
+        })
+      );
+      
+      setWorkspaces(workspacesWithCounts);
+      return workspacesWithCounts;
     } catch {
       // No mostrar toast si simplemente no hay workspaces
       setWorkspaces([]);
@@ -112,12 +154,25 @@ export default function HomePage() {
 
   const handleToggleComplete = async (task: OverdueTask) => {
     try {
+      // Obtener la sección "Completadas" del workspace
+      const sectionsRes = await fetch(`/api/sections?workspaceId=${task.workspaceId}`);
+      let completedSectionId = null;
+      
+      if (sectionsRes.ok) {
+        const sectionsData = await sectionsRes.json();
+        const sections = Array.isArray(sectionsData) ? sectionsData : (sectionsData.sections || []);
+        const completedSection = sections.find((s: any) => s.name === 'Completadas');
+        completedSectionId = completedSection?.id;
+      }
+      
+      // Actualizar tarea como completada y moverla a la sección correspondiente
       const res = await fetch(`/api/tasks/${task.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           completed: true,
           workspaceId: task.workspaceId,
+          ...(completedSectionId && { sectionId: completedSectionId }),
         }),
       });
       
@@ -125,6 +180,10 @@ export default function HomePage() {
       
       // Remover de la lista local
       setOverdueTasks(prev => prev.filter(t => t.id !== task.id));
+      
+      // Actualizar contador de tareas pendientes del workspace
+      await fetchWorkspaces();
+      
       toast.success("Tarea completada");
     } catch {
       toast.error("Error al completar la tarea");

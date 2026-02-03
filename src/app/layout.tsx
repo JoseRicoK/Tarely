@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import Image from "next/image";
 import { Toaster } from "@/components/ui/sonner";
 import { UserMenu, UserProvider } from "@/components/auth";
 import { Calendar } from "lucide-react";
@@ -17,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "TareAI - Gestión de Tareas con IA",
+  title: "Tarely - Gestión de Tareas con IA",
   description: "Genera y organiza tareas con ayuda de inteligencia artificial",
 };
 
@@ -44,8 +45,12 @@ export default function RootLayout({
           <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-background/80 backdrop-blur-xl">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex h-14 items-center justify-between">
               <a href="/" className="flex items-center gap-2 font-bold text-lg group">
-                <span className="text-xl group-hover:scale-110 transition-transform">🤖</span>
-                <span className="bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">TareAI</span>
+                <img
+                  src="/logo/logo_tarely_bg.png"
+                  alt="Tarely"
+                  className="h-7 w-7 sm:h-8 sm:w-8 object-contain group-hover:scale-105 transition-transform"
+                />
+                <span className="bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Tarely</span>
               </a>
               <div className="flex items-center gap-2">
                 <Link
@@ -62,7 +67,7 @@ export default function RootLayout({
           <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-6">{children}</main>
           <footer className="border-t border-white/5 py-4 bg-background/50">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-muted-foreground/60">
-              TareAI - Gestión inteligente de tareas ✨
+              Tarely - Gestión inteligente de tareas ✨
             </div>
           </footer>
         </div>

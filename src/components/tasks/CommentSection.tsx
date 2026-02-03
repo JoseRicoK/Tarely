@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { 
   Send, 
   MoreVertical, 
@@ -267,9 +269,38 @@ export function CommentSection({ taskId, currentUserId }: CommentSectionProps) {
                       </div>
                     ) : (
                       <div className="flex items-start gap-2">
-                        <p className="text-sm whitespace-pre-wrap break-words flex-1 bg-muted/50 rounded-lg px-3 py-2">
-                          {comment.content}
-                        </p>
+                        <div className="text-sm flex-1 bg-muted/50 rounded-lg px-3 py-2 prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              img: (props) => (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  {...props}
+                                  alt={props.alt || ""}
+                                  className="max-w-full h-auto rounded-lg my-2 cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={() => window.open(props.src, "_blank")}
+                                />
+                              ),
+                              ul: (props) => (
+                                <ul className="list-disc list-inside space-y-1" {...props} />
+                              ),
+                              ol: (props) => (
+                                <ol className="list-decimal list-inside space-y-1" {...props} />
+                              ),
+                              a: (props) => (
+                                <a
+                                  {...props}
+                                  className="text-primary hover:underline"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                />
+                              ),
+                            }}
+                          >
+                            {comment.content}
+                          </ReactMarkdown>
+                        </div>
                         {isOwner && (
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -317,7 +348,7 @@ export function CommentSection({ taskId, currentUserId }: CommentSectionProps) {
           <div className="flex-1 relative">
             <Textarea
               ref={textareaRef}
-              placeholder="Escribe un comentario..."
+              placeholder="Escribe un comentario... (Soporta Markdown: **negrita**, - listas, ![img](url))"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               onKeyDown={handleKeyDown}
@@ -347,7 +378,7 @@ export function CommentSection({ taskId, currentUserId }: CommentSectionProps) {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground mt-2">
-          Presiona <kbd className="px-1 py-0.5 text-xs bg-muted rounded">Enter</kbd> para enviar, <kbd className="px-1 py-0.5 text-xs bg-muted rounded">Shift+Enter</kbd> para nueva línea
+          Soporta Markdown: <code className="px-1 py-0.5 bg-muted rounded">**negrita**</code>, <code className="px-1 py-0.5 bg-muted rounded">- listas</code>, <code className="px-1 py-0.5 bg-muted rounded">![](url)</code> para imágenes
         </p>
       </div>
     </div>

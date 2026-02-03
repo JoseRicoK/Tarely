@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Link from "next/link";
+import Image from "next/image";
 import { Loader2, Mail, Lock, Sparkles, AlertCircle } from "lucide-react";
 
 interface FieldErrors {
@@ -123,14 +124,18 @@ export default function LoginPage() {
           <div className="relative bg-background/80 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
             {/* Header */}
             <div className="text-center mb-8">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-blue-600 mb-4 shadow-lg shadow-purple-500/25">
-                <span className="text-3xl">🤖</span>
+              <div className="inline-flex items-center justify-center mb-6">
+                <img
+                  src="/logo/logo_tarely_bg.png"
+                  alt="Tarely"
+                  className="h-20 w-20 object-contain drop-shadow-[0_0_25px_rgba(168,85,247,0.4)] hover:drop-shadow-[0_0_35px_rgba(168,85,247,0.6)] transition-all duration-300"
+                />
               </div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent mb-2">
                 Iniciar Sesión
               </h1>
-              <p className="text-muted-foreground mt-2 text-sm">
-                Accede a tu cuenta de TareAI
+              <p className="text-muted-foreground text-sm">
+                Accede a tu cuenta de Tarely
               </p>
             </div>
 

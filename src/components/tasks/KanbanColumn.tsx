@@ -180,7 +180,7 @@ export function KanbanColumn({
       </div>
 
       {/* Column Content with scroll */}
-      <ScrollArea className="flex-1 max-h-[60vh]">
+      <ScrollArea className="flex-1 max-h-[75vh]">
         <div className="p-2 space-y-2 min-h-[200px]">
           {children}
           {count === 0 && (
