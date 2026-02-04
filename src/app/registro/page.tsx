@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Loader2, Mail, Lock, User, Sparkles, Check, AlertCircle, Send } from "lucide-react";
+import { Loader2, Mail, Lock, User, Sparkles, Check, AlertCircle } from "lucide-react";
 import Image from "next/image";
 
 const AVATARS = [
@@ -36,8 +36,6 @@ export default function RegistroPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-  const [showVerificationMessage, setShowVerificationMessage] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState("");
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
@@ -133,9 +131,8 @@ export default function RegistroPage() {
         return;
       }
 
-      // Mostrar mensaje de verificación de email
-      setRegisteredEmail(email);
-      setShowVerificationMessage(true);
+      // Redirigir a la página de confirmación de email
+      router.push(`/auth/check-email?email=${encodeURIComponent(email)}`);
     } catch {
       toast.error("Error de conexión");
     } finally {
@@ -164,49 +161,7 @@ export default function RegistroPage() {
       </div>
 
       <div className="w-full max-w-md">
-        {/* Mensaje de verificación de email */}
-        {showVerificationMessage ? (
-          <div className="relative group">
-            <div className="absolute -inset-0.5 bg-gradient-to-r from-green-600 via-emerald-500 to-teal-600 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-1000" />
-            
-            <div className="relative bg-background/80 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl text-center">
-              <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 mb-6 shadow-lg shadow-green-500/25">
-                <Send className="w-10 h-10 text-white" />
-              </div>
-              
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent mb-3">
-                ¡Revisa tu correo!
-              </h2>
-              
-              <p className="text-muted-foreground mb-4">
-                Hemos enviado un enlace de verificación a:
-              </p>
-              
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 mb-6">
-                <Mail className="w-4 h-4 text-purple-400" />
-                <span className="font-medium text-white">{registeredEmail}</span>
-              </div>
-              
-              <p className="text-sm text-muted-foreground mb-6">
-                Haz clic en el enlace del correo para activar tu cuenta y poder iniciar sesión.
-              </p>
-              
-              <div className="space-y-3">
-                <Button
-                  onClick={() => router.push("/login")}
-                  className="w-full h-11 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500"
-                >
-                  Ir a Iniciar Sesión
-                </Button>
-                
-                <p className="text-xs text-muted-foreground">
-                  ¿No recibes el correo? Revisa tu carpeta de spam
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-        /* Card con glassmorphism */
+        {/* Card con glassmorphism */}
         <div className="relative group">
           {/* Borde gradiente animado */}
           <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 via-purple-500 to-indigo-600 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-gradient-xy" />
@@ -419,7 +374,6 @@ export default function RegistroPage() {
             </p>
           </div>
         </div>
-        )}
 
         {/* Footer text */}
         <p className="text-center text-xs text-muted-foreground/60 mt-6">

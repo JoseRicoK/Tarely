@@ -92,6 +92,9 @@ export interface Database {
           name: string;
           email: string;
           avatar: string;
+          email_confirmed: boolean;
+          confirmation_token: string | null;
+          confirmation_token_expires: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -99,7 +102,10 @@ export interface Database {
           id: string;
           name: string;
           email: string;
-          avatar?: string;
+          avatar: string;
+          email_confirmed?: boolean;
+          confirmation_token?: string | null;
+          confirmation_token_expires?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -108,6 +114,9 @@ export interface Database {
           name?: string;
           email?: string;
           avatar?: string;
+          email_confirmed?: boolean;
+          confirmation_token?: string | null;
+          confirmation_token_expires?: string | null;
           created_at?: string;
           updated_at?: string;
         };
