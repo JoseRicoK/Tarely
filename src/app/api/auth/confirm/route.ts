@@ -1,7 +1,6 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { createClientWithCookies } from "@/lib/supabase/server";
 import { sendWelcomeEmail } from "@/lib/email";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -13,69 +12,110 @@ export async function GET(request: Request) {
     );
   }
 
-  const cookieStore = await cookies();
-  const supabase = createClientWithCookies(cookieStore);
-
-  // Buscar el perfil con el token de confirmación
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
+  // Buscar el registro pendiente
+  const { data: pendingReg, error: findError } = await supabaseAdmin
+    .from("pending_registrations")
     .select("*")
     .eq("confirmation_token", token)
     .single();
 
-  if (profileError || !profile) {
+  if (findError || !pendingReg) {
     return NextResponse.redirect(
       new URL("/auth/confirm-error?error=invalid_token", request.url)
     );
   }
 
-  // Verificar si el token ha expirado
-  if (!profile.confirmation_token_expires) {
-    return NextResponse.redirect(
-      new URL("/auth/confirm-error?error=invalid_token", request.url)
-    );
-  }
-
-  const tokenExpiry = new Date(profile.confirmation_token_expires);
-  if (tokenExpiry < new Date()) {
+  // Verificar expiración
+  if (new Date(pendingReg.confirmation_token_expires) < new Date()) {
     return NextResponse.redirect(
       new URL("/auth/confirm-error?error=token_expired", request.url)
     );
   }
 
-  // Verificar si ya está confirmado
-  if (profile.email_confirmed) {
+  // Intentar crear usuario en Supabase Auth
+  const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    email: pendingReg.email,
+    password: pendingReg.password_hash,
+    email_confirm: true,
+    user_metadata: {
+      name: pendingReg.name,
+      avatar: pendingReg.avatar,
+    }
+  });
+
+  // Si hay error y NO es porque el usuario ya existe, fallar
+  if (authError && !authError.message?.includes('already')) {
+    console.error("Error creando usuario:", authError);
     return NextResponse.redirect(
-      new URL("/auth/confirm-success?already=true", request.url)
+      new URL("/auth/confirm-error?error=creation_failed", request.url)
     );
   }
 
-  // Actualizar el perfil como confirmado
-  const { error: updateError } = await supabase
+  // Obtener el ID del usuario (ya sea recién creado o existente)
+  const userId = authData?.user?.id;
+  
+  if (!userId) {
+    console.error("No se pudo obtener el ID del usuario");
+    return NextResponse.redirect(
+      new URL("/auth/confirm-error?error=creation_failed", request.url)
+    );
+  }
+
+  // Verificar si el perfil ya existe
+  const { data: existingProfile } = await supabaseAdmin
     .from("profiles")
-    .update({
-      email_confirmed: true,
-      confirmation_token: null,
-      confirmation_token_expires: null,
-    })
-    .eq("id", profile.id);
+    .select("id")
+    .eq("id", userId)
+    .single();
 
-  if (updateError) {
-    console.error("Error actualizando perfil:", updateError);
-    return NextResponse.redirect(
-      new URL("/auth/confirm-error?error=update_failed", request.url)
-    );
+  // Crear o actualizar perfil
+  if (!existingProfile) {
+    // Crear nuevo perfil
+    const { error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .insert({
+        id: userId,
+        email: pendingReg.email,
+        name: pendingReg.name,
+        avatar: pendingReg.avatar,
+        email_confirmed: true,
+      });
+
+    if (profileError) {
+      console.error("Error creando perfil:", profileError);
+      return NextResponse.redirect(
+        new URL("/auth/confirm-error?error=profile_failed", request.url)
+      );
+    }
+  } else {
+    // Actualizar perfil existente para marcar email como confirmado
+    const { error: updateError } = await supabaseAdmin
+      .from("profiles")
+      .update({ email_confirmed: true })
+      .eq("id", userId);
+
+    if (updateError) {
+      console.error("Error actualizando perfil:", updateError);
+      return NextResponse.redirect(
+        new URL("/auth/confirm-error?error=profile_failed", request.url)
+      );
+    }
   }
 
-  // Enviar correo de bienvenida
+  // Eliminar registro pendiente
+  await supabaseAdmin
+    .from("pending_registrations")
+    .delete()
+    .eq("id", pendingReg.id);
+
+  // Email de bienvenida
   try {
     await sendWelcomeEmail({
-      to: profile.email,
-      name: profile.name,
+      to: pendingReg.email,
+      name: pendingReg.name,
     });
-  } catch (emailError) {
-    console.error("Error enviando email de bienvenida:", emailError);
-    // No fallamos aunque falle el email de bienvenida
+  } catch (error) {
+    console.error("Error enviando bienvenida:", error);
   }
 
   // Redirigir a la página de éxito
