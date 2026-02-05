@@ -20,6 +20,26 @@ export async function POST(request: Request) {
     );
   }
 
+  // Verificar si el email está confirmado
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("email_confirmed")
+    .eq("id", data.user.id)
+    .single();
+
+  if (profile && !profile.email_confirmed) {
+    // Cerrar sesión si no está confirmado
+    await supabase.auth.signOut();
+    
+    return NextResponse.json(
+      { 
+        error: "Por favor, confirma tu correo electrónico antes de iniciar sesión. Revisa tu bandeja de entrada.",
+        needsConfirmation: true 
+      },
+      { status: 403 }
+    );
+  }
+
   return NextResponse.json({ 
     user: data.user,
     session: data.session 

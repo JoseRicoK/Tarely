@@ -7,13 +7,11 @@ import {
   ChevronDown,
   ChevronRight,
   Plus,
-  Sparkles,
   Check,
   Circle,
   X,
   Pencil,
   Trash2,
-  Loader2,
   ListChecks,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,7 +20,6 @@ import type { Subtask } from "@/lib/types";
 
 interface SubtaskListProps {
   taskId: string;
-  workspaceId: string;
   subtasks: Subtask[];
   onSubtasksChange: (subtasks: Subtask[]) => void;
   compact?: boolean;
@@ -30,13 +27,11 @@ interface SubtaskListProps {
 
 export function SubtaskList({
   taskId,
-  workspaceId,
   subtasks,
   onSubtasksChange,
   compact = false,
 }: SubtaskListProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -61,33 +56,6 @@ export function SubtaskList({
 
   const completedCount = subtasks.filter((s) => s.completed).length;
   const hasSubtasks = subtasks.length > 0;
-
-  // Generar subtareas con IA
-  const handleGenerate = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setIsGenerating(true);
-
-    try {
-      const res = await fetch(`/api/tasks/${taskId}/subtasks`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ generate: true, workspaceId }),
-      });
-
-      if (!res.ok) throw new Error("Error al generar subtareas");
-
-      const data = await res.json();
-      if (data.subtasks) {
-        onSubtasksChange([...subtasks, ...data.subtasks]);
-        setIsExpanded(true);
-        toast.success(`${data.subtasks.length} subtareas generadas`);
-      }
-    } catch {
-      toast.error("Error al generar subtareas");
-    } finally {
-      setIsGenerating(false);
-    }
-  };
 
   // Añadir subtarea manual
   const handleAdd = async () => {

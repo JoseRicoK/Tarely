@@ -8,14 +8,23 @@ export async function middleware(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? 
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   
+  const pathname = request.nextUrl.pathname;
+  
+  // Rutas públicas que no requieren autenticación
+  const publicAuthPaths = ['/login', '/registro', '/auth/check-email', '/auth/confirm', '/auth/confirm-success', '/auth/confirm-error'];
+  const isPublicAuthPath = publicAuthPaths.some(path => pathname.startsWith(path));
+  
+  // La landing page (/) es pública
+  const isLandingPage = pathname === '/';
+  
+  // Rutas protegidas que requieren autenticación (todo lo que está en /app, /workspace, /calendario, /perfil)
+  const protectedPaths = ['/app', '/workspace', '/calendario', '/perfil'];
+  const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
+
   if (!supabaseUrl || !supabaseKey) {
     console.error('Missing Supabase environment variables');
-    // Permitir acceso a rutas públicas incluso sin Supabase configurado
-    const publicPaths = ['/login', '/registro'];
-    const isPublicPath = publicPaths.some(path => 
-      request.nextUrl.pathname.startsWith(path)
-    );
-    if (isPublicPath) {
+    // Permitir acceso a rutas públicas y landing
+    if (isPublicAuthPath || isLandingPage) {
       return NextResponse.next();
     }
     // Redirigir a login si no está configurado
@@ -56,23 +65,17 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Rutas públicas (no requieren autenticación)
-  const publicPaths = ['/login', '/registro'];
-  const isPublicPath = publicPaths.some(path => 
-    request.nextUrl.pathname.startsWith(path)
-  );
-
-  // Si no hay usuario y no es una ruta pública, redirigir a login
-  if (!user && !isPublicPath) {
+  // Si el usuario está autenticado y visita la landing page o rutas de auth, redirigir a /app
+  if (user && (isLandingPage || isPublicAuthPath)) {
     const url = request.nextUrl.clone();
-    url.pathname = '/login';
+    url.pathname = '/app';
     return NextResponse.redirect(url);
   }
 
-  // Si hay usuario y está en una ruta pública, redirigir a home
-  if (user && isPublicPath) {
+  // Si no hay usuario y está en una ruta protegida, redirigir a login
+  if (!user && isProtectedPath) {
     const url = request.nextUrl.clone();
-    url.pathname = '/';
+    url.pathname = '/login';
     return NextResponse.redirect(url);
   }
 

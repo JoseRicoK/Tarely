@@ -57,6 +57,7 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   source: "ai" | "manual";
+  isNew?: boolean; // Marca visual para tareas recién creadas por IA
   assignees?: TaskAssignee[]; // Usuarios asignados
   subtasks?: Subtask[]; // Subtareas
 }

@@ -20,6 +20,8 @@ interface InstructionsSheetProps {
   onSave: (instructions: string) => Promise<void>;
 }
 
+const MAX_INSTRUCTIONS_LENGTH = 1000;
+
 export function InstructionsSheet({
   open,
   onOpenChange,
@@ -36,6 +38,13 @@ export function InstructionsSheet({
     }
   }, [open, workspace.instructions]);
 
+  const handleInstructionsChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    if (value.length <= MAX_INSTRUCTIONS_LENGTH) {
+      setInstructions(value);
+    }
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -47,6 +56,8 @@ export function InstructionsSheet({
   };
 
   const hasChanges = instructions !== workspace.instructions;
+  const charsRemaining = MAX_INSTRUCTIONS_LENGTH - instructions.length;
+  const isNearLimit = charsRemaining < 100;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -62,10 +73,17 @@ export function InstructionsSheet({
         <div className="mt-6 flex-1 flex flex-col min-h-0 overflow-hidden">
           <Textarea
             value={instructions}
-            onChange={(e) => setInstructions(e.target.value)}
+            onChange={handleInstructionsChange}
             placeholder="Escribe aquí las instrucciones detalladas para la IA..."
             className="flex-1 min-h-0 resize-none overflow-y-auto"
+            maxLength={MAX_INSTRUCTIONS_LENGTH}
           />
+          <div className="mt-2 text-xs text-muted-foreground text-right">
+            <span className={isNearLimit ? "text-orange-500 font-medium" : ""}>
+              {instructions.length}
+            </span>
+            <span className="text-muted-foreground/60"> / {MAX_INSTRUCTIONS_LENGTH} caracteres</span>
+          </div>
         </div>
         <div className="flex-shrink-0 pt-4 pb-4 flex justify-end gap-3 border-t mt-4">
           <Button

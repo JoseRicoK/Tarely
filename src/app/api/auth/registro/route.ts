@@ -1,56 +1,72 @@
-import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
-import { createClientWithCookies } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { sendConfirmationEmail } from "@/lib/email";
+import crypto from "crypto";
 
 export async function POST(request: Request) {
   const { name, email, password, avatar } = await request.json();
 
-  const cookieStore = await cookies();
-  const supabase = createClientWithCookies(cookieStore);
+  // Verificar si el email ya existe (en profiles o pendiente)
+  const [{ data: existingUser }, { data: pendingUser }] = await Promise.all([
+    supabaseAdmin.from("profiles").select("email").eq("email", email).single(),
+    supabaseAdmin.from("pending_registrations").select("email").eq("email", email).single()
+  ]);
 
-  // Crear usuario en Supabase Auth
-  const { data: authData, error: authError } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        name,
-        avatar,
-      },
-    },
-  });
-
-  if (authError) {
+  if (existingUser || pendingUser) {
     return NextResponse.json(
-      { error: authError.message },
+      { error: "Este correo ya está registrado. Revisa tu email o inicia sesión." },
       { status: 400 }
     );
   }
 
-  if (!authData.user) {
-    return NextResponse.json(
-      { error: "Error al crear usuario" },
-      { status: 400 }
-    );
-  }
+  // Generar token de confirmación (24h)
+  const confirmationToken = crypto.randomBytes(32).toString('hex');
+  const tokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-  // Crear perfil en la tabla profiles
-  const { error: profileError } = await supabase
-    .from("profiles")
+  // Guardar registro PENDIENTE (password en texto plano porque Supabase Auth lo hasheará)
+  const { error: pendingError } = await supabaseAdmin
+    .from("pending_registrations")
     .insert({
-      id: authData.user.id,
-      name,
       email,
+      name,
+      password_hash: password, // Guardamos el password original, no hasheado
       avatar,
+      confirmation_token: confirmationToken,
+      confirmation_token_expires: tokenExpiry.toISOString(),
     });
 
-  if (profileError) {
-    console.error("Error creando perfil:", profileError);
-    // No fallamos porque el usuario ya está creado
+  if (pendingError) {
+
+    return NextResponse.json(
+      { error: "Error al procesar el registro. Intenta de nuevo." },
+      { status: 500 }
+    );
+  }
+
+  // Enviar correo de confirmación
+  const confirmationUrl = `${process.env.NEXT_PUBLIC_APP_URL}/api/auth/confirm?token=${confirmationToken}`;
+  const emailResult = await sendConfirmationEmail({
+    to: email,
+    name,
+    confirmationUrl,
+  });
+
+  if (!emailResult.success) {
+    console.error("Error enviando email:", emailResult.error);
+    // Si falla el email, eliminar el registro pendiente
+    await supabaseAdmin
+      .from("pending_registrations")
+      .delete()
+      .eq("confirmation_token", confirmationToken);
+    
+    return NextResponse.json(
+      { error: "Error al enviar el correo. Intenta de nuevo." },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({
-    user: authData.user,
-    session: authData.session,
+    success: true,
+    message: "Revisa tu correo para confirmar tu cuenta.",
   });
 }
