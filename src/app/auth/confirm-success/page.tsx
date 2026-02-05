@@ -1,11 +1,12 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { CheckCircle2, Sparkles } from "lucide-react";
+import { CheckCircle2, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function ConfirmSuccessPage() {
+function ConfirmSuccessContent() {
   const searchParams = useSearchParams();
   const already = searchParams.get("already");
 
@@ -21,7 +22,7 @@ export default function ConfirmSuccessPage() {
 
       {/* Card principal */}
       <div className="max-w-lg w-full">
-        <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
+        <div className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl relative">
           {/* Borde superior verde */}
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-green-500 via-emerald-500 to-green-500 rounded-t-2xl" />
           
@@ -83,5 +84,21 @@ export default function ConfirmSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center">
+      <Loader2 className="h-8 w-8 animate-spin text-green-500" />
+    </div>
+  );
+}
+
+export default function ConfirmSuccessPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <ConfirmSuccessContent />
+    </Suspense>
   );
 }

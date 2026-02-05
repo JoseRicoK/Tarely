@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, FolderPlus, AlertTriangle, CheckCircle2, Circle, Calendar } from "lucide-react";
+import { Plus, FolderPlus, AlertTriangle, Circle, Calendar } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO, isValid, isPast, isToday } from "date-fns";
 import { es } from "date-fns/locale";
@@ -28,7 +28,7 @@ interface WorkspaceData {
   tasks: Task[];
 }
 
-export default function HomePage() {
+export default function AppHomePage() {
   const router = useRouter();
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [overdueTasks, setOverdueTasks] = useState<OverdueTask[]>([]);

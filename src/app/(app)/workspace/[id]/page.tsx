@@ -168,7 +168,7 @@ export default function WorkspacePage() {
       if (!res.ok) {
         if (res.status === 404) {
           toast.error("Workspace no encontrado");
-          router.push("/");
+          router.push("/app");
           return;
         }
         throw new Error("Error al cargar workspace");
@@ -743,7 +743,7 @@ export default function WorkspacePage() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link href="/">
+            <Link href="/app">
               <ArrowLeft className="h-5 w-5" />
               <span className="sr-only">Volver</span>
             </Link>

@@ -3,7 +3,7 @@
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { XCircle, ArrowLeft } from "lucide-react";
+import { XCircle, ArrowLeft, Mail, Clock, AlertCircle, ServerCrash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 function ConfirmErrorContent() {
