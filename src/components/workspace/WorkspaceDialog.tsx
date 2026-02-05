@@ -21,10 +21,12 @@ import { Loader2 } from "lucide-react";
 const workspaceSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio").max(24, "Máximo 24 caracteres"),
   description: z.string().max(500),
-  instructions: z.string().max(10000),
+  instructions: z.string().max(1000, "Máximo 1000 caracteres"),
   icon: z.string().max(50),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/),
 });
+
+const MAX_INSTRUCTIONS_LENGTH = 1000;
 
 type WorkspaceFormData = z.infer<typeof workspaceSchema>;
 
@@ -45,12 +47,14 @@ export function WorkspaceDialog({
 }: WorkspaceDialogProps) {
   const [icon, setIcon] = useState(initialData?.icon || "Folder");
   const [color, setColor] = useState(initialData?.color || "#6366f1");
+  const [instructionsLength, setInstructionsLength] = useState(0);
   
   const {
     register,
     handleSubmit,
     reset,
     setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<WorkspaceFormData>({
     resolver: zodResolver(workspaceSchema),
@@ -62,6 +66,12 @@ export function WorkspaceDialog({
       color: "#6366f1",
     },
   });
+
+  const instructionsValue = watch("instructions");
+
+  useEffect(() => {
+    setInstructionsLength(instructionsValue?.length || 0);
+  }, [instructionsValue]);
 
   // Actualizar valores cuando cambia initialData o se abre el diálogo
   useEffect(() => {
@@ -111,7 +121,7 @@ export function WorkspaceDialog({
           {/* Icono, Color y Nombre en línea */}
           <div className="flex gap-4 items-end">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Icono</label>
+              <label className="text-sm font-medium block mb-2">Icono</label>
               <IconColorPicker
                 icon={icon}
                 color={color}
@@ -161,12 +171,20 @@ export function WorkspaceDialog({
               {...register("instructions")}
               rows={6}
               className="resize-y"
+              maxLength={MAX_INSTRUCTIONS_LENGTH}
             />
-            <p className="text-xs text-muted-foreground">
-              Estas instrucciones se usarán como contexto al generar tareas con
-              IA. Incluye información sobre el stack, convenciones, prioridades,
-              etc.
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Estas instrucciones se usarán como contexto al generar tareas con
+                IA.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                <span className={instructionsLength > 900 ? "text-orange-500 font-medium" : ""}>
+                  {instructionsLength}
+                </span>
+                <span className="text-muted-foreground/60"> / {MAX_INSTRUCTIONS_LENGTH}</span>
+              </p>
+            </div>
             {errors.instructions && (
               <p className="text-sm text-destructive">
                 {errors.instructions.message}

@@ -44,14 +44,17 @@ export default function RootLayout({
         <div className="flex min-h-screen flex-col relative">
           <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-background/80 backdrop-blur-xl">
             <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex h-14 items-center justify-between">
-              <a href="/" className="flex items-center gap-2 font-bold text-lg group">
-                <img
+              <Link href="/" className="flex items-center gap-2 font-bold text-lg group">
+                <Image
                   src="/logo/logo_tarely_bg.png"
                   alt="Tarely"
+                  width={32}
+                  height={32}
                   className="h-7 w-7 sm:h-8 sm:w-8 object-contain group-hover:scale-105 transition-transform"
+                  priority
                 />
                 <span className="bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Tarely</span>
-              </a>
+              </Link>
               <div className="flex items-center gap-2">
                 <Link
                   href="/calendario"

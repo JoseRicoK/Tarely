@@ -58,12 +58,6 @@ export function TaskAssignees({
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-  useEffect(() => {
-    if (isOpen) {
-      fetchMembers();
-    }
-  }, [isOpen, workspaceId]);
-
   const fetchMembers = async () => {
     setIsLoading(true);
     try {
@@ -78,6 +72,13 @@ export function TaskAssignees({
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchMembers();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, workspaceId]);
 
   const handleAssign = async (userId: string) => {
     setAssigningUserId(userId);

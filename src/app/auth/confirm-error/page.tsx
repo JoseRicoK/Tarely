@@ -1,11 +1,12 @@
 "use client";
 
+import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { XCircle, Mail, Clock, AlertCircle } from "lucide-react";
+import { XCircle, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export default function ConfirmErrorPage() {
+function ConfirmErrorContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
 
@@ -107,5 +108,13 @@ export default function ConfirmErrorPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ConfirmErrorPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Cargando...</div>}>
+      <ConfirmErrorContent />
+    </Suspense>
   );
 }

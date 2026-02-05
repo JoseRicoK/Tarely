@@ -188,7 +188,29 @@ export default function WorkspacePage() {
       const res = await fetch(`/api/tasks?workspaceId=${workspaceId}`);
       if (!res.ok) throw new Error("Error al cargar tareas");
       const data = await res.json();
-      setTasks(data);
+      
+      // Verificar si las tareas "nuevas" aún son válidas (menos de 20 segundos)
+      const storedData = sessionStorage.getItem('newTasksData');
+      let newTaskIds: string[] = [];
+      
+      if (storedData) {
+        const { tasks, timestamp } = JSON.parse(storedData);
+        const elapsed = Date.now() - timestamp;
+        
+        // Si pasaron más de 20 segundos, limpiar
+        if (elapsed > 20000) {
+          sessionStorage.removeItem('newTasksData');
+        } else {
+          newTaskIds = tasks;
+        }
+      }
+      
+      const tasksWithNewFlag = data.map((task: Task) => ({
+        ...task,
+        isNew: newTaskIds.includes(task.id)
+      }));
+      
+      setTasks(tasksWithNewFlag);
     } catch {
       toast.error("Error al cargar las tareas");
     } finally {
@@ -455,6 +477,22 @@ export default function WorkspacePage() {
       }
 
       const data = await res.json();
+      
+      // Marcar las tareas nuevas en sessionStorage con timestamp
+      const newTaskIds = data.tasks.map((t: Task) => t.id);
+      const existingData = JSON.parse(sessionStorage.getItem('newTasksData') || '{"tasks": [], "timestamp": 0}');
+      const newData = {
+        tasks: [...existingData.tasks, ...newTaskIds],
+        timestamp: Date.now()
+      };
+      sessionStorage.setItem('newTasksData', JSON.stringify(newData));
+      
+      // Auto-limpiar después de 20 segundos
+      setTimeout(() => {
+        sessionStorage.removeItem('newTasksData');
+        fetchTasks(); // Refrescar para quitar el indicador visual
+      }, 20000);
+      
       toast.success(`${data.count} tareas generadas correctamente`);
       setAiText("");
       fetchTasks();
@@ -740,41 +778,56 @@ export default function WorkspacePage() {
       <Separator />
 
       {/* AI Generation Area */}
-      <div className="space-y-4 rounded-lg border bg-card p-4">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-primary" />
-          <h2 className="font-semibold">Generar tareas con IA</h2>
-        </div>
-        <Textarea
-          placeholder="Pega aquí lo que quieres hacer... Ej: 'Quiero implementar un sistema de autenticación con login social, recordar contraseña y verificación de email'"
-          value={aiText}
-          onChange={(e) => setAiText(e.target.value)}
-          onKeyDown={handleKeyDown}
-          rows={4}
-          className="resize-y"
-          disabled={isGenerating}
-        />
-        <div className="flex items-center justify-between">
-          <p className="text-xs text-muted-foreground">
-            Ctrl+Enter para generar • Las instrucciones del workspace se usan como contexto
+      <div className="relative overflow-hidden rounded-lg border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card p-4 shadow-sm hover:shadow-md transition-shadow">
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -z-10" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl -z-10" />
+        
+        <div className="space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="p-1.5 rounded-lg bg-primary/10 mt-0.5">
+              <Sparkles className="h-4 w-4 text-primary" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h2 className="font-semibold">Convierte el caos en tareas ordenadas</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Describe lo que necesitas hacer y déjanos organizar todo por ti
+              </p>
+            </div>
+            <Button
+              onClick={handleGenerateTasks}
+              disabled={isGenerating || !aiText.trim()}
+              className="gap-2 shadow-sm shrink-0"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span className="hidden sm:inline">Organizando...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-4 w-4" />
+                  <span className="hidden sm:inline">Organizar</span>
+                </>
+              )}
+            </Button>
+          </div>
+          
+          <Textarea
+            placeholder="Escribe o pega lo que tienes en mente... Por ejemplo: Tengo varios correos pendientes, un bug urgente y no sé por dónde empezar…"
+            value={aiText}
+            onChange={(e) => setAiText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={5}
+            className="resize-y bg-background/50 border-primary/20 focus:border-primary/40 transition-colors min-h-[120px]"
+            disabled={isGenerating}
+          />
+          
+          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+            <span className="hidden sm:inline">💡 Presiona</span>
+            <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded border">Ctrl+Enter</kbd>
+            <span>para organizar rápido</span>
           </p>
-          <Button
-            onClick={handleGenerateTasks}
-            disabled={isGenerating || !aiText.trim()}
-            className="gap-2"
-          >
-            {isGenerating ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Generando...
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-4 w-4" />
-                Generar tareas
-              </>
-            )}
-          </Button>
         </div>
       </div>
 

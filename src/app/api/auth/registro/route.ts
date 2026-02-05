@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     });
 
   if (pendingError) {
-    console.error("Error creando registro pendiente:", pendingError);
+
     return NextResponse.json(
       { error: "Error al procesar el registro. Intenta de nuevo." },
       { status: 500 }

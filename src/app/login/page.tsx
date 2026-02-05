@@ -125,10 +125,13 @@ export default function LoginPage() {
             {/* Header */}
             <div className="text-center mb-8">
               <div className="inline-flex items-center justify-center mb-6">
-                <img
+                <Image
                   src="/logo/logo_tarely_bg.png"
                   alt="Tarely"
+                  width={80}
+                  height={80}
                   className="h-20 w-20 object-contain drop-shadow-[0_0_25px_rgba(168,85,247,0.4)] hover:drop-shadow-[0_0_35px_rgba(168,85,247,0.6)] transition-all duration-300"
+                  priority
                 />
               </div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-purple-200 to-blue-200 bg-clip-text text-transparent mb-2">

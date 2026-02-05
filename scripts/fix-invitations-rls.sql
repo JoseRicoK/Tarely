@@ -330,7 +330,7 @@ RETURNS TABLE (
     completed_at TIMESTAMPTZ,
     in_review BOOLEAN,
     reviewed_at TIMESTAMPTZ,
-    source TEXT,
+    source task_source,
     user_id UUID,
     created_at TIMESTAMPTZ,
     updated_at TIMESTAMPTZ

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Popover,
   PopoverContent,
@@ -106,7 +106,13 @@ export function IconColorPicker({
   onColorChange,
 }: IconColorPickerProps) {
   const [open, setOpen] = useState(false);
-  const CurrentIcon = getIconComponent(icon);
+
+  // Obtener el icono directamente del array
+  const currentIconData = useMemo(() => {
+    return ICONS.find(i => i.name === icon) || ICONS[0];
+  }, [icon]);
+  
+  const IconComponent = currentIconData.Icon;
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -114,10 +120,10 @@ export function IconColorPicker({
         <Button
           type="button"
           variant="outline"
-          className="h-14 w-14 p-0 rounded-xl transition-all hover:scale-105"
+          className="h-12 w-12 p-0 rounded-lg transition-all hover:scale-105"
           style={{ backgroundColor: `${color}20`, borderColor: color }}
         >
-          <CurrentIcon className="h-7 w-7" style={{ color }} />
+          <IconComponent className="h-6 w-6" style={{ color }} />
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-80 p-4" align="start">

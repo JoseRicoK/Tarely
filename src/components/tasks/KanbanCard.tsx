@@ -194,9 +194,15 @@ export function KanbanCardStatic({
       <div className="flex items-start gap-2">
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-sm leading-tight line-clamp-2 mb-2">
-            {task.title}
-          </h3>
+          <div className="flex items-start gap-1.5 mb-2">
+            {/* Indicador de tarea nueva */}
+            {task.isNew && (
+              <div className="h-2 w-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0 animate-pulse" />
+            )}
+            <h3 className="font-medium text-sm leading-tight line-clamp-2">
+              {task.title}
+            </h3>
+          </div>
 
           {task.description && (
             <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
@@ -254,7 +260,6 @@ export function KanbanCardDraggable({
   onAssigneesChange,
   onDueDateChange,
   onImportanceChange,
-  onSubtasksChange,
   onQuickDelete,
 }: KanbanCardDraggableProps) {
   const router = useRouter();
@@ -311,9 +316,24 @@ export function KanbanCardDraggable({
         <div className="flex-1 min-w-0">
           {/* Header with title and menu */}
           <div className="flex items-start justify-between gap-2 mb-1">
-            <h3 className="font-medium text-sm leading-tight line-clamp-2">
-              {task.title}
-            </h3>
+            <div className="flex items-start gap-1.5 flex-1 min-w-0">
+              {/* Indicador de tarea nueva */}
+              {task.isNew && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="h-2 w-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0 animate-pulse" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">Tarea recién creada</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              <h3 className="font-medium text-sm leading-tight line-clamp-2">
+                {task.title}
+              </h3>
+            </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button 

@@ -170,10 +170,13 @@ export default function RegistroPage() {
             {/* Header */}
             <div className="text-center mb-6">
               <div className="inline-flex items-center justify-center mb-6">
-                <img
+                <Image
                   src="/logo/logo_tarely_bg.png"
                   alt="Tarely"
+                  width={80}
+                  height={80}
                   className="h-20 w-20 object-contain drop-shadow-[0_0_25px_rgba(59,130,246,0.4)] hover:drop-shadow-[0_0_35px_rgba(59,130,246,0.6)] transition-all duration-300"
+                  priority
                 />
               </div>
               <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent mb-2">

@@ -280,6 +280,19 @@ export function TaskCard({
       <div className="flex-1 min-w-0">
         {/* Header with title and badges */}
         <div className="flex items-start gap-2 mb-2">
+          {/* Indicador de tarea nueva */}
+          {task.isNew && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div className="h-2 w-2 rounded-full bg-blue-500 mt-2 flex-shrink-0 animate-pulse" />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p className="text-xs">Tarea recién creada</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           <h3 className={cn(
             "font-medium leading-snug flex-1 break-words",
             task.completed && "line-through text-muted-foreground"
@@ -372,7 +385,6 @@ export function TaskCard({
           <div onClick={(e) => e.stopPropagation()}>
             <SubtaskList
               taskId={task.id}
-              workspaceId={workspaceId}
               subtasks={task.subtasks || []}
               onSubtasksChange={(subtasks) => onSubtasksChange(task.id, subtasks)}
             />

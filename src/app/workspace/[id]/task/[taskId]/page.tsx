@@ -575,7 +575,6 @@ export default function TaskDetailPage() {
               </div>
               <SubtaskList
                 taskId={task.id}
-                workspaceId={workspaceId}
                 subtasks={task.subtasks || []}
                 onSubtasksChange={handleSubtasksChange}
               />
