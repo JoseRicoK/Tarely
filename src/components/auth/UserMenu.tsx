@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Settings, LogOut, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useUser } from "./UserContext";
+import { getAvatarUrl } from "@/lib/utils";
 
 export function UserMenu() {
   const router = useRouter();
@@ -63,7 +64,7 @@ export function UserMenu() {
         <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
           <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-purple-500/50 hover:border-purple-400 transition-colors">
             <Image
-              src={`${supabaseUrl}/storage/v1/object/public/avatars/${profile.avatar}`}
+              src={getAvatarUrl(profile.avatar, profile.avatar_version)}
               alt={profile.name}
               fill
               sizes="40px"

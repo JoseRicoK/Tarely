@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -59,16 +59,20 @@ import {
 import { toast } from "sonner";
 import {
   TaskCard,
-  TaskDialog,
   TaskListSkeleton,
-  PromptDialog,
   TaskFilters,
-  KanbanBoard,
   type SortField,
   type SortOrder,
 } from "@/components/tasks";
-import { InstructionsSheet, ShareDialog, SectionDialog } from "@/components/workspace";
 import { DeleteDialog } from "@/components/ui/delete-dialog";
+
+// Lazy load de componentes pesados que no se usan en el render inicial
+const TaskDialog = lazy(() => import("@/components/tasks").then(m => ({ default: m.TaskDialog })));
+const PromptDialog = lazy(() => import("@/components/tasks").then(m => ({ default: m.PromptDialog })));
+const KanbanBoard = lazy(() => import("@/components/tasks").then(m => ({ default: m.KanbanBoard })));
+const InstructionsSheet = lazy(() => import("@/components/workspace").then(m => ({ default: m.InstructionsSheet })));
+const ShareDialog = lazy(() => import("@/components/workspace").then(m => ({ default: m.ShareDialog })));
+const SectionDialog = lazy(() => import("@/components/workspace").then(m => ({ default: m.SectionDialog })));
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -161,86 +165,78 @@ export default function WorkspacePage() {
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
 
-  // Fetch workspace
-  const fetchWorkspace = useCallback(async () => {
+  // Fetch all data in parallel - Mucho más rápido
+  const fetchAllData = useCallback(async () => {
     try {
-      const res = await fetch(`/api/workspaces/${workspaceId}`);
-      if (!res.ok) {
-        if (res.status === 404) {
+      // Ejecutar las 3 llamadas en paralelo en lugar de secuencialmente
+      const [workspaceRes, tasksRes, sectionsRes] = await Promise.all([
+        fetch(`/api/workspaces/${workspaceId}`),
+        fetch(`/api/tasks?workspaceId=${workspaceId}`),
+        fetch(`/api/sections?workspaceId=${workspaceId}`),
+      ]);
+
+      // Workspace
+      if (!workspaceRes.ok) {
+        if (workspaceRes.status === 404) {
           toast.error("Workspace no encontrado");
           router.push("/app");
           return;
         }
         throw new Error("Error al cargar workspace");
       }
-      const data = await res.json();
-      setWorkspace(data);
-    } catch {
-      toast.error("Error al cargar el workspace");
-    } finally {
+      const workspaceData = await workspaceRes.json();
+      setWorkspace(workspaceData);
       setIsLoadingWorkspace(false);
-    }
-  }, [workspaceId, router]);
 
-  // Fetch tasks
-  const fetchTasks = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/tasks?workspaceId=${workspaceId}`);
-      if (!res.ok) throw new Error("Error al cargar tareas");
-      const data = await res.json();
-      
-      // Verificar si las tareas "nuevas" aún son válidas (menos de 20 segundos)
-      const storedData = sessionStorage.getItem('newTasksData');
-      let newTaskIds: string[] = [];
-      
-      if (storedData) {
-        const { tasks, timestamp } = JSON.parse(storedData);
-        const elapsed = Date.now() - timestamp;
+      // Tasks
+      if (tasksRes.ok) {
+        const tasksData = await tasksRes.json();
         
-        // Si pasaron más de 20 segundos, limpiar
-        if (elapsed > 20000) {
-          sessionStorage.removeItem('newTasksData');
-        } else {
-          newTaskIds = tasks;
+        // Verificar si las tareas "nuevas" aún son válidas
+        const storedData = sessionStorage.getItem('newTasksData');
+        let newTaskIds: string[] = [];
+        
+        if (storedData) {
+          const { tasks, timestamp } = JSON.parse(storedData);
+          const elapsed = Date.now() - timestamp;
+          
+          if (elapsed > 20000) {
+            sessionStorage.removeItem('newTasksData');
+          } else {
+            newTaskIds = tasks;
+          }
+        }
+        
+        const tasksWithNewFlag = tasksData.map((task: Task) => ({
+          ...task,
+          isNew: newTaskIds.includes(task.id)
+        }));
+        
+        setTasks(tasksWithNewFlag);
+      }
+      setIsLoadingTasks(false);
+
+      // Sections
+      if (sectionsRes.ok) {
+        const sectionsData = await sectionsRes.json();
+        setSections(sectionsData);
+        // Set first section as active if none selected
+        if (sectionsData.length > 0 && !activeSectionId) {
+          setActiveSectionId(sectionsData[0].id);
         }
       }
-      
-      const tasksWithNewFlag = data.map((task: Task) => ({
-        ...task,
-        isNew: newTaskIds.includes(task.id)
-      }));
-      
-      setTasks(tasksWithNewFlag);
-    } catch {
-      toast.error("Error al cargar las tareas");
-    } finally {
+      setIsLoadingSections(false);
+    } catch (error) {
+      toast.error("Error al cargar los datos");
+      setIsLoadingWorkspace(false);
       setIsLoadingTasks(false);
-    }
-  }, [workspaceId]);
-
-  // Fetch sections
-  const fetchSections = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/sections?workspaceId=${workspaceId}`);
-      if (!res.ok) throw new Error("Error al cargar secciones");
-      const data = await res.json();
-      setSections(data);
-      // Set first section as active if none selected
-      if (data.length > 0 && !activeSectionId) {
-        setActiveSectionId(data[0].id);
-      }
-    } catch {
-      toast.error("Error al cargar las secciones");
-    } finally {
       setIsLoadingSections(false);
     }
-  }, [workspaceId, activeSectionId]);
+  }, [workspaceId, router, activeSectionId]);
 
   useEffect(() => {
-    fetchWorkspace();
-    fetchTasks();
-    fetchSections();
-  }, [fetchWorkspace, fetchTasks, fetchSections]);
+    fetchAllData();
+  }, [fetchAllData]);
 
   // Helper to determine which section a task belongs to
   // Uses sectionId if available, otherwise falls back to legacy completed flag
@@ -301,7 +297,31 @@ export default function WorkspacePage() {
   }, [tasks, sections, getTaskSection]);
 
   // Handler for changing task section (drag and drop or menu)
-  const handleTaskSectionChange = async (taskId: string, sectionId: string) => {
+  // Función optimizada para re-fetch de tasks
+  const refetchTasks = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/tasks?workspaceId=${workspaceId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setTasks(data);
+    } catch {
+      // Silently fail on refetch
+    }
+  }, [workspaceId]);
+
+  // Función optimizada para re-fetch de sections
+  const refetchSections = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/sections?workspaceId=${workspaceId}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setSections(data);
+    } catch {
+      // Silently fail on refetch
+    }
+  }, [workspaceId]);
+
+  const handleTaskSectionChange = useCallback(async (taskId: string, sectionId: string) => {
     try {
       // Encontrar la sección de destino para determinar flag de completed
       const targetSection = sections.find(s => s.id === sectionId);
@@ -324,18 +344,18 @@ export default function WorkspacePage() {
       if (!res.ok) throw new Error("Error al mover tarea");
     } catch {
       // Revert on error
-      fetchTasks();
+      refetchTasks();
       toast.error("Error al mover la tarea");
     }
-  };
+  }, [sections, refetchTasks]);
 
   // Handler for moving task to section (from menu)
-  const handleMoveToSection = async (task: Task, sectionId: string) => {
+  const handleMoveToSection = useCallback(async (task: Task, sectionId: string) => {
     await handleTaskSectionChange(task.id, sectionId);
-  };
+  }, [handleTaskSectionChange]);
 
   // Create section handler
-  const handleCreateSection = async (data: { name: string; icon: string; color: string }) => {
+  const handleCreateSection = useCallback(async (data: { name: string; icon: string; color: string }) => {
     try {
       const res = await fetch("/api/sections", {
         method: "POST",
@@ -354,16 +374,16 @@ export default function WorkspacePage() {
     } catch {
       toast.error("Error al crear la sección");
     }
-  };
+  }, [workspaceId]);
 
   // Edit section handler
-  const handleEditSection = (section: WorkspaceSection) => {
+  const handleEditSection = useCallback((section: WorkspaceSection) => {
     setEditingSection(section);
     setSectionDialogOpen(true);
-  };
+  }, []);
 
   // Update section handler
-  const handleUpdateSection = async (data: { name: string; icon: string; color: string }) => {
+  const handleUpdateSection = useCallback(async (data: { name: string; icon: string; color: string }) => {
     if (!editingSection) return;
     
     try {
@@ -384,10 +404,10 @@ export default function WorkspacePage() {
     } catch {
       toast.error("Error al actualizar la sección");
     }
-  };
+  }, [editingSection]);
 
   // Delete section handler
-  const handleDeleteSection = async (sectionId: string) => {
+  const handleDeleteSection = useCallback(async (sectionId: string) => {
     try {
       const res = await fetch(`/api/sections/${sectionId}`, {
         method: "DELETE",
@@ -406,10 +426,10 @@ export default function WorkspacePage() {
     } catch {
       toast.error("Error al eliminar la sección");
     }
-  };
+  }, [sections, activeSectionId]);
 
   // Reorder sections handler (for Kanban drag & drop)
-  const handleSectionsReorder = async (reorderedSections: WorkspaceSection[]) => {
+  const handleSectionsReorder = useCallback(async (reorderedSections: WorkspaceSection[]) => {
     // Optimistically update UI
     setSections(reorderedSections);
 
@@ -427,13 +447,13 @@ export default function WorkspacePage() {
       });
     } catch {
       // Revert on error
-      fetchSections();
+      refetchSections();
       toast.error("Error al reordenar secciones");
     }
-  };
+  }, [refetchSections]);
 
   // Handlers
-  const handleSaveInstructions = async (instructions: string) => {
+  const handleSaveInstructions = useCallback(async (instructions: string) => {
     if (!workspace) return;
     try {
       const res = await fetch(`/api/workspaces/${workspaceId}`, {
@@ -448,9 +468,9 @@ export default function WorkspacePage() {
     } catch {
       toast.error("Error al guardar las instrucciones");
     }
-  };
+  }, [workspace, workspaceId]);
 
-  const handleGenerateTasks = async () => {
+  const handleGenerateTasks = useCallback(async () => {
     if (!aiText.trim()) {
       toast.error("Escribe algo para generar tareas");
       return;
@@ -490,12 +510,12 @@ export default function WorkspacePage() {
       // Auto-limpiar después de 20 segundos
       setTimeout(() => {
         sessionStorage.removeItem('newTasksData');
-        fetchTasks(); // Refrescar para quitar el indicador visual
+        refetchTasks(); // Refrescar para quitar el indicador visual
       }, 20000);
       
       toast.success(`${data.count} tareas generadas correctamente`);
       setAiText("");
-      fetchTasks();
+      refetchTasks();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Error al generar tareas";
@@ -503,26 +523,26 @@ export default function WorkspacePage() {
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [aiText, workspaceId, refetchTasks]);
 
-  const handleCreateTask = () => {
+  const handleCreateTask = useCallback(() => {
     setTaskDialogMode("create");
     setEditingTask(null);
     setTaskDialogOpen(true);
-  };
+  }, []);
 
-  const handleEditTask = (task: Task) => {
+  const handleEditTask = useCallback((task: Task) => {
     setTaskDialogMode("edit");
     setEditingTask(task);
     setTaskDialogOpen(true);
-  };
+  }, []);
 
-  const handleDeleteTask = (task: Task) => {
+  const handleDeleteTask = useCallback((task: Task) => {
     setDeletingTask(task);
     setDeleteDialogOpen(true);
-  };
+  }, []);
 
-  const handleToggleComplete = async (task: Task) => {
+  const handleToggleComplete = useCallback(async (task: Task) => {
     try {
       // Encontrar las secciones de Completadas y Pendientes
       const completedSection = sections.find(s => s.name === "Completadas");
@@ -547,13 +567,13 @@ export default function WorkspacePage() {
       }
 
       toast.success(task.completed ? "Tarea restaurada" : "Tarea completada");
-      fetchTasks();
+      refetchTasks();
     } catch {
       toast.error("Error al actualizar la tarea");
     }
-  };
+  }, [sections, refetchTasks]);
 
-  const handleQuickDelete = async (task: Task) => {
+  const handleQuickDelete = useCallback(async (task: Task) => {
     try {
       const res = await fetch(`/api/tasks/${task.id}`, {
         method: "DELETE",
@@ -564,13 +584,13 @@ export default function WorkspacePage() {
       }
 
       toast.success("Tarea eliminada");
-      fetchTasks();
+      refetchTasks();
     } catch {
       toast.error("Error al eliminar la tarea");
     }
-  };
+  }, [refetchTasks]);
 
-  const handleGeneratePrompt = async (task: Task) => {
+  const handleGeneratePrompt = useCallback(async (task: Task) => {
     if (!workspace) return;
     setPromptTaskTitle(task.title);
     setGeneratedPrompt("");
@@ -598,9 +618,9 @@ export default function WorkspacePage() {
     } finally {
       setIsGeneratingPrompt(false);
     }
-  };
+  }, [workspace]);
 
-  const handleTaskSubmit = async (data: {
+  const handleTaskSubmit = useCallback(async (data: {
     title: string;
     description?: string;
     importance: number;
@@ -629,7 +649,7 @@ export default function WorkspacePage() {
         toast.success("Tarea actualizada correctamente");
       }
       setTaskDialogOpen(false);
-      fetchTasks();
+      refetchTasks();
     } catch {
       toast.error(
         taskDialogMode === "create"
@@ -637,9 +657,9 @@ export default function WorkspacePage() {
           : "Error al actualizar la tarea"
       );
     }
-  };
+  }, [taskDialogMode, editingTask, workspaceId, refetchTasks]);
 
-  const handleConfirmDelete = async () => {
+  const handleConfirmDelete = useCallback(async () => {
     if (!deletingTask) return;
     setIsDeleting(true);
     try {
@@ -649,28 +669,28 @@ export default function WorkspacePage() {
       if (!res.ok) throw new Error("Error al eliminar tarea");
       toast.success("Tarea eliminada correctamente");
       setDeleteDialogOpen(false);
-      fetchTasks();
+      refetchTasks();
     } catch {
       toast.error("Error al eliminar la tarea");
     } finally {
       setIsDeleting(false);
     }
-  };
+  }, [deletingTask, refetchTasks]);
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
       handleGenerateTasks();
     }
-  };
+  }, [handleGenerateTasks]);
 
-  const handleAssigneesChange = (taskId: string, assignees: TaskAssignee[]) => {
+  const handleAssigneesChange = useCallback((taskId: string, assignees: TaskAssignee[]) => {
     setTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, assignees } : t))
     );
-  };
+  }, []);
 
-  const handleDueDateChange = async (taskId: string, dueDate: string | null) => {
+  const handleDueDateChange = useCallback(async (taskId: string, dueDate: string | null) => {
     // Optimistic update
     setTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, dueDate: dueDate || undefined } : t))
@@ -690,11 +710,11 @@ export default function WorkspacePage() {
       console.error("Error updating due date:", error);
       toast.error("Error al actualizar la fecha");
       // Revert on error
-      fetchTasks();
+      refetchTasks();
     }
-  };
+  }, [refetchTasks]);
 
-  const handleImportanceChange = async (taskId: string, importance: number) => {
+  const handleImportanceChange = useCallback(async (taskId: string, importance: number) => {
     // Optimistic update
     setTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, importance } : t))
@@ -715,15 +735,15 @@ export default function WorkspacePage() {
       console.error("Error updating importance:", error);
       toast.error("Error al actualizar la importancia");
       // Revert on error
-      fetchTasks();
+      refetchTasks();
     }
-  };
+  }, [refetchTasks]);
 
-  const handleSubtasksChange = (taskId: string, subtasks: Subtask[]) => {
+  const handleSubtasksChange = useCallback((taskId: string, subtasks: Subtask[]) => {
     setTasks((prev) =>
       prev.map((t) => (t.id === taskId ? { ...t, subtasks } : t))
     );
-  };
+  }, []);
 
   if (isLoadingWorkspace) {
     return (
@@ -958,31 +978,33 @@ export default function WorkspacePage() {
           <TaskListSkeleton />
         ) : viewMode === "kanban" ? (
           /* Kanban View */
-          <KanbanBoard
-            tasks={tasks}
-            sections={sections}
-            workspaceId={workspaceId}
-            onTaskSectionChange={handleTaskSectionChange}
-            onMoveToSection={handleMoveToSection}
-            onSectionsReorder={handleSectionsReorder}
-            onEditSection={handleEditSection}
-            onDeleteSection={(section) => handleDeleteSection(section.id)}
-            onEdit={handleEditTask}
-            onDelete={handleDeleteTask}
-            onGeneratePrompt={handleGeneratePrompt}
-            onToggleComplete={handleToggleComplete}
-            onAssigneesChange={handleAssigneesChange}
-            onDueDateChange={handleDueDateChange}
-            onImportanceChange={handleImportanceChange}
-            onQuickDelete={handleQuickDelete}
-            onAddSection={() => {
-              setEditingSection(null);
-              setSectionDialogOpen(true);
-            }}
-            searchQuery={searchQuery}
-            sortField={sortField}
-            sortOrder={sortOrder}
-          />
+          <Suspense fallback={<TaskListSkeleton />}>
+            <KanbanBoard
+              tasks={tasks}
+              sections={sections}
+              workspaceId={workspaceId}
+              onTaskSectionChange={handleTaskSectionChange}
+              onMoveToSection={handleMoveToSection}
+              onSectionsReorder={handleSectionsReorder}
+              onEditSection={handleEditSection}
+              onDeleteSection={(section) => handleDeleteSection(section.id)}
+              onEdit={handleEditTask}
+              onDelete={handleDeleteTask}
+              onGeneratePrompt={handleGeneratePrompt}
+              onToggleComplete={handleToggleComplete}
+              onAssigneesChange={handleAssigneesChange}
+              onDueDateChange={handleDueDateChange}
+              onImportanceChange={handleImportanceChange}
+              onQuickDelete={handleQuickDelete}
+              onAddSection={() => {
+                setEditingSection(null);
+                setSectionDialogOpen(true);
+              }}
+              searchQuery={searchQuery}
+              sortField={sortField}
+              sortOrder={sortOrder}
+            />
+          </Suspense>
         ) : filteredTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-center border rounded-lg bg-muted/20">
             {!searchQuery && activeSectionId ? (
@@ -1030,30 +1052,38 @@ export default function WorkspacePage() {
         )}
       </div>
 
-      {/* Dialogs */}
-      <InstructionsSheet
-        open={instructionsOpen}
-        onOpenChange={setInstructionsOpen}
-        workspace={workspace}
-        onSave={handleSaveInstructions}
-      />
+      {/* Dialogs - Lazy loaded */}
+      {instructionsOpen && (
+        <Suspense fallback={null}>
+          <InstructionsSheet
+            open={instructionsOpen}
+            onOpenChange={setInstructionsOpen}
+            workspace={workspace}
+            onSave={handleSaveInstructions}
+          />
+        </Suspense>
+      )}
 
-      <TaskDialog
-        open={taskDialogOpen}
-        onOpenChange={setTaskDialogOpen}
-        onSubmit={handleTaskSubmit}
-        mode={taskDialogMode}
-        initialData={
-          editingTask
-            ? {
-                title: editingTask.title,
-                description: editingTask.description,
-                importance: editingTask.importance,
-                dueDate: editingTask.dueDate,
-              }
-            : undefined
-        }
-      />
+      {taskDialogOpen && (
+        <Suspense fallback={null}>
+          <TaskDialog
+            open={taskDialogOpen}
+            onOpenChange={setTaskDialogOpen}
+            onSubmit={handleTaskSubmit}
+            mode={taskDialogMode}
+            initialData={
+              editingTask
+                ? {
+                    title: editingTask.title,
+                    description: editingTask.description,
+                    importance: editingTask.importance,
+                    dueDate: editingTask.dueDate,
+                  }
+                : undefined
+            }
+          />
+        </Suspense>
+      )}
 
       <DeleteDialog
         open={deleteDialogOpen}
@@ -1064,31 +1094,43 @@ export default function WorkspacePage() {
         description={`Esta acción eliminará la tarea "${deletingTask?.title?.substring(0, 50)}${(deletingTask?.title?.length || 0) > 50 ? '...' : ''}". Esta acción no se puede deshacer.`}
       />
 
-      <PromptDialog
-        open={promptDialogOpen}
-        onOpenChange={setPromptDialogOpen}
-        prompt={generatedPrompt}
-        taskTitle={promptTaskTitle}
-        isLoading={isGeneratingPrompt}
-      />
+      {promptDialogOpen && (
+        <Suspense fallback={null}>
+          <PromptDialog
+            open={promptDialogOpen}
+            onOpenChange={setPromptDialogOpen}
+            prompt={generatedPrompt}
+            taskTitle={promptTaskTitle}
+            isLoading={isGeneratingPrompt}
+          />
+        </Suspense>
+      )}
 
-      <ShareDialog
-        open={shareDialogOpen}
-        onOpenChange={setShareDialogOpen}
-        workspaceId={workspaceId}
-        workspaceName={workspace.name}
-      />
+      {shareDialogOpen && (
+        <Suspense fallback={null}>
+          <ShareDialog
+            open={shareDialogOpen}
+            onOpenChange={setShareDialogOpen}
+            workspaceId={workspaceId}
+            workspaceName={workspace.name}
+          />
+        </Suspense>
+      )}
 
-      <SectionDialog
-        open={sectionDialogOpen}
-        onOpenChange={(open) => {
-          setSectionDialogOpen(open);
-          if (!open) setEditingSection(null);
-        }}
-        onSubmit={editingSection ? handleUpdateSection : handleCreateSection}
-        section={editingSection ?? undefined}
-        onDelete={handleDeleteSection}
-      />
+      {sectionDialogOpen && (
+        <Suspense fallback={null}>
+          <SectionDialog
+            open={sectionDialogOpen}
+            onOpenChange={(open) => {
+              setSectionDialogOpen(open);
+              if (!open) setEditingSection(null);
+            }}
+            onSubmit={editingSection ? handleUpdateSection : handleCreateSection}
+            section={editingSection ?? undefined}
+            onDelete={handleDeleteSection}
+          />
+        </Suspense>
+      )}
     </div>
   );
 }

@@ -7,17 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Loader2, Mail, Lock, User, Sparkles, Check, AlertCircle } from "lucide-react";
+import { Loader2, Mail, Lock, User, Sparkles, AlertCircle, Shuffle } from "lucide-react";
 import Image from "next/image";
 
-const AVATARS = [
-  "avatar1.png",
-  "avatar2.png",
-  "avatar3.png",
-  "avatar4.png",
-  "avatar5.png",
-  "avatar6.png",
-];
+// Generar array de 20 avatares: avatar1.png, avatar2.png, ..., avatar20.png
+const AVATARS = Array.from({ length: 20 }, (_, i) => `avatar${i + 1}.png`);
+
+// Función para obtener un avatar aleatorio
+const getRandomAvatar = () => AVATARS[Math.floor(Math.random() * AVATARS.length)];
 
 interface FieldErrors {
   name?: string;
@@ -32,12 +29,19 @@ export default function RegistroPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [selectedAvatar, setSelectedAvatar] = useState(AVATARS[0]);
+  const [selectedAvatar, setSelectedAvatar] = useState(getRandomAvatar());
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+  // Handler para generar avatar aleatorio
+  const handleGenerateAvatar = () => {
+    const randomAvatar = getRandomAvatar();
+    setSelectedAvatar(randomAvatar);
+    toast.success("Avatar generado aleatoriamente");
+  };
 
   // Validaciones
   const validateName = (value: string) => {
@@ -166,66 +170,69 @@ export default function RegistroPage() {
           {/* Borde gradiente animado */}
           <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 via-purple-500 to-indigo-600 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-1000 group-hover:duration-200 animate-gradient-xy" />
           
-          <div className="relative bg-background/80 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
+          <div className="relative bg-background/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-2xl">
             {/* Header */}
             <div className="text-center mb-6">
-              <div className="inline-flex items-center justify-center mb-6">
+              <div className="flex justify-center mb-3">
                 <Image
                   src="/logo/logo_tarely_bg.png"
                   alt="Tarely"
-                  width={80}
-                  height={80}
-                  className="h-20 w-20 object-contain drop-shadow-[0_0_25px_rgba(59,130,246,0.4)] hover:drop-shadow-[0_0_35px_rgba(59,130,246,0.6)] transition-all duration-300"
+                  width={60}
+                  height={60}
+                  className="h-16 w-16 object-contain drop-shadow-[0_0_25px_rgba(59,130,246,0.4)] hover:drop-shadow-[0_0_35px_rgba(59,130,246,0.6)] transition-all duration-300"
                   priority
                 />
               </div>
-              <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent mb-2">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-white via-blue-200 to-purple-200 bg-clip-text text-transparent mb-1">
                 Crear Cuenta
               </h1>
-              <p className="text-muted-foreground text-sm">
+              <p className="text-muted-foreground text-xs">
                 Únete a Tarely y gestiona tus tareas con IA
               </p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Selector de Avatar */}
-              <div className="space-y-3">
-                <Label className="text-sm font-medium">Elige tu avatar</Label>
-                <div className="flex flex-wrap gap-3 justify-center p-3 rounded-xl bg-white/5 border border-white/10">
-                  {AVATARS.map((avatar) => (
-                    <button
-                      key={avatar}
-                      type="button"
-                      title={`Seleccionar ${avatar}`}
-                      onClick={() => setSelectedAvatar(avatar)}
-                      className={`relative w-12 h-12 rounded-full overflow-hidden border-2 transition-all duration-300 ${
-                        selectedAvatar === avatar
-                          ? "border-purple-500 ring-2 ring-purple-500/50 ring-offset-2 ring-offset-background scale-110"
-                          : "border-white/20 hover:border-white/40 hover:scale-105"
-                      }`}
-                    >
+              {/* Avatar y botón en la misma fila */}
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Avatar</Label>
+                <div className="flex items-center gap-4">
+                  {/* Avatar preview */}
+                  <div className="relative flex-shrink-0">
+                    <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full blur-sm opacity-50" />
+                    <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-white/20">
                       <Image
-                        src={`${supabaseUrl}/storage/v1/object/public/avatars/${avatar}`}
-                        alt={`Avatar ${avatar}`}
+                        src={`${supabaseUrl}/storage/v1/object/public/avatars/${selectedAvatar}`}
+                        alt="Avatar seleccionado"
                         fill
-                        sizes="48px"
+                        sizes="80px"
                         className="object-cover object-center"
                         style={{ objectFit: 'cover' }}
                       />
-                      {selectedAvatar === avatar && (
-                        <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
-                          <Check className="w-5 h-5 text-white drop-shadow-lg" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
+                    </div>
+                  </div>
+                  
+                  {/* Botón generar */}
+                  <div className="flex-1 space-y-1">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleGenerateAvatar}
+                      className="w-full bg-white/5 border-white/10 hover:bg-white/10 hover:border-purple-500/50"
+                    >
+                      <Shuffle className="mr-2 h-4 w-4" />
+                      Generar aleatorio
+                    </Button>
+                    <p className="text-xs text-muted-foreground text-center">
+                      Podrás subir tu imagen desde tu perfil
+                    </p>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium">Nombre</Label>
+              <div className="space-y-1">
+                <Label htmlFor="name" className="text-xs font-medium">Nombre</Label>
                 <div className="relative group/input">
-                  <User className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors ${
+                  <User className={`absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 transition-colors ${
                     touched.name && errors.name ? "text-red-400" : "text-muted-foreground group-focus-within/input:text-purple-400"
                   }`} />
                   <Input
@@ -243,17 +250,17 @@ export default function RegistroPage() {
                   />
                 </div>
                 {touched.name && errors.name && (
-                  <p className="text-xs text-red-400 flex items-center gap-1">
+                  <p className="text-[10px] text-red-400 flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
                     {errors.name}
                   </p>
                 )}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium">Correo electrónico</Label>
+              <div className="space-y-1">
+                <Label htmlFor="email" className="text-xs font-medium">Correo electrónico</Label>
                 <div className="relative group/input">
-                  <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors ${
+                  <Mail className={`absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 transition-colors ${
                     touched.email && errors.email ? "text-red-400" : "text-muted-foreground group-focus-within/input:text-purple-400"
                   }`} />
                   <Input
@@ -271,18 +278,18 @@ export default function RegistroPage() {
                   />
                 </div>
                 {touched.email && errors.email && (
-                  <p className="text-xs text-red-400 flex items-center gap-1">
+                  <p className="text-[10px] text-red-400 flex items-center gap-1">
                     <AlertCircle className="h-3 w-3" />
                     {errors.email}
                   </p>
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-sm font-medium">Contraseña</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label htmlFor="password" className="text-xs font-medium">Contraseña</Label>
                   <div className="relative group/input">
-                    <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors ${
+                    <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 transition-colors ${
                       touched.password && errors.password ? "text-red-400" : "text-muted-foreground group-focus-within/input:text-purple-400"
                     }`} />
                     <Input
@@ -300,17 +307,17 @@ export default function RegistroPage() {
                     />
                   </div>
                   {touched.password && errors.password && (
-                    <p className="text-xs text-red-400 flex items-center gap-1">
+                    <p className="text-[10px] text-red-400 flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" />
                       {errors.password}
                     </p>
                   )}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirmar</Label>
+                <div className="space-y-1">
+                  <Label htmlFor="confirmPassword" className="text-xs font-medium">Confirmar</Label>
                   <div className="relative group/input">
-                    <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors ${
+                    <Lock className={`absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 transition-colors ${
                       touched.confirmPassword && errors.confirmPassword ? "text-red-400" : "text-muted-foreground group-focus-within/input:text-purple-400"
                     }`} />
                     <Input
@@ -328,7 +335,7 @@ export default function RegistroPage() {
                     />
                   </div>
                   {touched.confirmPassword && errors.confirmPassword && (
-                    <p className="text-xs text-red-400 flex items-center gap-1">
+                    <p className="text-[10px] text-red-400 flex items-center gap-1">
                       <AlertCircle className="h-3 w-3" />
                       {errors.confirmPassword}
                     </p>
@@ -339,7 +346,7 @@ export default function RegistroPage() {
               <Button
                 type="submit"
                 disabled={isLoading}
-                className="w-full h-11 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-medium shadow-lg shadow-blue-500/25 transition-all duration-300 hover:shadow-blue-500/40 hover:scale-[1.02] mt-2"
+                className="w-full h-11 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white font-medium shadow-lg shadow-blue-500/25 transition-all duration-300 hover:shadow-blue-500/40 hover:scale-[1.02]"
               >
                 {isLoading ? (
                   <>
@@ -356,18 +363,18 @@ export default function RegistroPage() {
             </form>
 
             {/* Divider */}
-            <div className="relative my-5">
+            <div className="relative my-6">
               <div className="absolute inset-0 flex items-center">
                 <div className="w-full border-t border-white/10" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background/80 px-2 text-muted-foreground">
+                <span className="px-2 text-muted-foreground">
                   ¿Ya tienes cuenta?
                 </span>
               </div>
             </div>
 
-            <p className="text-center text-sm text-muted-foreground">
+            <p className="text-center text-sm">
               <Link 
                 href="/login" 
                 className="text-purple-400 hover:text-purple-300 font-medium transition-colors hover:underline underline-offset-4"

@@ -79,14 +79,14 @@ FECHAS:
 - Si NO hay fecha mencionada, NO incluyas el campo dueDate.
 - Ejemplos: "mañana" → fecha de mañana, "el viernes" → próximo viernes, "15 de enero" → 2026-01-15
 
-IMPORTANCIA (sé MUY ESTRICTO):
-- 1-2: Mejoras cosméticas, nice-to-have, baja prioridad
-- 3-4: Tareas normales sin urgencia específica
-- 5-6: Tareas importantes que deben hacerse pronto
+IMPORTANCIA (usa TODO el rango 1-10 según corresponda):
+- 1-2: Tareas de baja prioridad, mejoras opcionales, ideas futuras, nice-to-have
+- 3-4: Tareas normales, trabajo regular sin urgencia específica
+- 5-6: Tareas importantes que conviene hacer pronto
 - 7-8: Tareas urgentes o que bloquean otras cosas
-- 9-10: SOLO para emergencias críticas, bugs que rompen producción, o deadlines inmediatos
+- 9-10: SOLO para emergencias críticas, bugs graves, o deadlines inmediatos
 
-Por defecto, la mayoría de tareas deberían estar entre 3-6. Solo usa 7+ si hay urgencia real mencionada.
+SÉ REALISTA con la importancia. No todas las tareas son urgentes. Usa 1-2 sin miedo para cosas que son deseables pero no esenciales. Distribuye naturalmente las prioridades según lo que el usuario describe.
 
 TEXTO DEL USUARIO:
 ${userText}

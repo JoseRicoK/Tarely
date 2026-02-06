@@ -8,6 +8,7 @@ interface UserProfile {
   name: string;
   email: string;
   avatar: string;
+  avatar_version?: number;
 }
 
 interface UserContextType {

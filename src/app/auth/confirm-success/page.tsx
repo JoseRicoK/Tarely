@@ -59,7 +59,7 @@ function ConfirmSuccessContent() {
           )}
 
           {/* Botones */}
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             <Link href="/login">
               <Button className="w-full h-11 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white border-0">
                 Iniciar Sesión

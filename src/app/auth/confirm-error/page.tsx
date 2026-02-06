@@ -79,7 +79,7 @@ function ConfirmErrorContent() {
           </p>
 
           {/* Botones */}
-          <div className="space-y-3">
+          <div className="flex flex-col gap-3">
             <Link href="/registro">
               <Button className="w-full h-11 bg-gradient-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600 text-white border-0">
                 Registrarse de nuevo

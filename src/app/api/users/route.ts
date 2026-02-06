@@ -2,11 +2,12 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { createClientWithCookies } from "@/lib/supabase/server";
 
-// GET: Listar todos los usuarios (para invitaciones)
+// GET: Obtener perfil del usuario actual o listar todos los usuarios (para invitaciones)
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const search = searchParams.get("search") || "";
   const excludeWorkspaceId = searchParams.get("excludeWorkspace");
+  const profile = searchParams.get("profile"); // Nuevo: para obtener perfil propio
 
   const cookieStore = await cookies();
   const supabase = createClientWithCookies(cookieStore);
@@ -15,6 +16,21 @@ export async function GET(request: Request) {
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   if (userError || !user) {
     return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  }
+
+  // Si se solicita el perfil propio
+  if (profile === "me") {
+    const { data: userProfile, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(userProfile);
   }
 
   // Obtener todos los perfiles excepto el usuario actual
@@ -50,4 +66,32 @@ export async function GET(request: Request) {
   }
 
   return NextResponse.json(profiles || []);
+}
+
+// PATCH: Actualizar perfil del usuario actual
+export async function PATCH(request: Request) {
+  const cookieStore = await cookies();
+  const supabase = createClientWithCookies(cookieStore);
+
+  // Verificar autenticación
+  const { data: { user }, error: userError } = await supabase.auth.getUser();
+  if (userError || !user) {
+    return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+  }
+
+  const body = await request.json();
+
+  // Actualizar perfil
+  const { data, error } = await supabase
+    .from("profiles")
+    .update(body)
+    .eq("id", user.id)
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json(data);
 }

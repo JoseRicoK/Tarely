@@ -12,6 +12,7 @@ import {
   WorkspaceCard,
   WorkspaceDialog,
   WorkspaceGridSkeleton,
+  OnboardingCarousel,
 } from "@/components/workspace";
 import { DeleteDialog } from "@/components/ui/delete-dialog";
 import { cn } from "@/lib/utils";
@@ -39,9 +40,42 @@ export default function AppHomePage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingWorkspace, setDeletingWorkspace] = useState<Workspace | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // Cachear secciones para evitar múltiples llamadas
   const [sectionsCache, setSectionsCache] = useState<Map<string, any[]>>(new Map());
+
+  // Verificar si es primera vez (desde Supabase)
+  useEffect(() => {
+    const checkOnboarding = async () => {
+      try {
+        const res = await fetch('/api/users?profile=me');
+        if (res.ok) {
+          const profile = await res.json();
+          if (!profile.has_seen_onboarding) {
+            setShowOnboarding(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking onboarding status:', error);
+      }
+    };
+    checkOnboarding();
+  }, []);
+
+  const handleOnboardingComplete = useCallback(async () => {
+    try {
+      await fetch('/api/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ has_seen_onboarding: true }),
+      });
+      setShowOnboarding(false);
+    } catch (error) {
+      console.error('Error updating onboarding status:', error);
+      setShowOnboarding(false);
+    }
+  }, []);
 
   const fetchWorkspaces = useCallback(async () => {
     try {
@@ -266,6 +300,9 @@ export default function AppHomePage() {
 
   return (
     <div className="space-y-6">
+      {/* Onboarding carousel */}
+      {showOnboarding && <OnboardingCarousel onComplete={handleOnboardingComplete} />}
+      
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Workspaces</h1>

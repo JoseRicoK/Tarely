@@ -1,31 +1,34 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Loader2, User, LogOut, ArrowLeft, Check, Sparkles } from "lucide-react";
+import { Loader2, User, LogOut, ArrowLeft, Check, Sparkles, Upload, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { InvitationsPanel } from "@/components/workspace";
+import { Card, CardContent } from "@/components/ui/card";
+import { getAvatarUrl } from "@/lib/utils";
 
-const AVATARS = [
-  "avatar1.png",
-  "avatar2.png",
-  "avatar3.png",
-  "avatar4.png",
-  "avatar5.png",
-  "avatar6.png",
-];
+// Lazy load de componentes pesados para mejorar rendimiento
+const InvitationsPanel = lazy(() => import("@/components/workspace").then(m => ({ default: m.InvitationsPanel })));
+const FeedbackPanel = lazy(() => import("@/components/workspace").then(m => ({ default: m.FeedbackPanel })));
+
+// Generar array de 20 avatares: avatar1.png, avatar2.png, ..., avatar20.png
+const AVATARS = Array.from({ length: 20 }, (_, i) => `avatar${i + 1}.png`);
+
+// Función para obtener un avatar aleatorio
+const getRandomAvatar = () => AVATARS[Math.floor(Math.random() * AVATARS.length)];
 
 interface UserProfile {
   id: string;
   name: string;
   email: string;
   avatar: string;
+  avatar_version?: number;
 }
 
 export default function PerfilPage() {
@@ -36,14 +39,12 @@ export default function PerfilPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [customAvatarPreview, setCustomAvatarPreview] = useState<string | null>(null);
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const res = await fetch("/api/auth/perfil");
       if (!res.ok) throw new Error("Error al cargar perfil");
@@ -56,9 +57,13 @@ export default function PerfilPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const handleSave = async () => {
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
+
+  const handleSave = useCallback(async () => {
     if (!name.trim()) {
       toast.error("El nombre no puede estar vacío");
       return;
@@ -83,9 +88,9 @@ export default function PerfilPage() {
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [name, selectedAvatar]);
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
     setIsLoggingOut(true);
 
     try {
@@ -100,7 +105,84 @@ export default function PerfilPage() {
     } finally {
       setIsLoggingOut(false);
     }
-  };
+  }, [router]);
+
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tipo
+    if (!file.type.startsWith('image/')) {
+      toast.error("Por favor selecciona una imagen");
+      return;
+    }
+
+    // Validar tamaño (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("La imagen no puede superar 5MB");
+      return;
+    }
+
+    // Mostrar preview
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setCustomAvatarPreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+
+    // Subir imagen
+    setIsUploadingAvatar(true);
+    try {
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const res = await fetch('/api/auth/upload-avatar', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || 'Error al subir avatar');
+      }
+
+      const data = await res.json();
+      setSelectedAvatar(data.avatar);
+      toast.success('¡Avatar actualizado!');
+      
+      // Refrescar perfil para obtener nueva versión
+      fetchProfile();
+      window.dispatchEvent(new Event('profile-updated'));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Error al subir avatar');
+      setCustomAvatarPreview(null);
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  }, [fetchProfile]);
+
+  const clearCustomAvatar = useCallback(() => {
+    setCustomAvatarPreview(null);
+  }, []);
+
+  // Generar avatar aleatorio
+  const handleGenerateAvatar = useCallback(() => {
+    const randomAvatar = getRandomAvatar();
+    setSelectedAvatar(randomAvatar);
+    setCustomAvatarPreview(null);
+    toast.success("Avatar generado aleatoriamente");
+  }, []);
+
+  // Determinar si es un avatar personalizado
+  const isCustomAvatar = useCallback((avatar: string) => {
+    return avatar.includes('/') && !AVATARS.includes(avatar);
+  }, []);
+
+  // Memoizar si hay cambios sin guardar
+  const hasChanges = useMemo(() => {
+    if (!profile) return false;
+    return name !== profile.name || selectedAvatar !== profile.avatar;
+  }, [name, selectedAvatar, profile]);
 
   if (isLoading) {
     return (
@@ -153,7 +235,7 @@ export default function PerfilPage() {
                   <div className="absolute -inset-1 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full blur-sm opacity-50" />
                   <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-white/20">
                     <Image
-                      src={`${supabaseUrl}/storage/v1/object/public/avatars/${selectedAvatar}`}
+                      src={customAvatarPreview || getAvatarUrl(selectedAvatar, profile?.avatar_version)}
                       alt="Avatar actual"
                       fill
                       sizes="80px"
@@ -168,38 +250,54 @@ export default function PerfilPage() {
                 </div>
               </div>
 
-              {/* Selector de avatar */}
+              {/* Cambiar avatar */}
               <div className="space-y-3">
                 <Label className="text-sm font-medium">Cambiar avatar</Label>
-                <div className="flex flex-wrap gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
-                  {AVATARS.map((avatar) => (
-                    <button
-                      key={avatar}
-                      type="button"
-                      title={`Seleccionar ${avatar}`}
-                      onClick={() => setSelectedAvatar(avatar)}
-                      className={`relative w-12 h-12 rounded-full overflow-hidden border-2 transition-all duration-300 ${
-                        selectedAvatar === avatar
-                          ? "border-purple-500 ring-2 ring-purple-500/50 scale-110"
-                          : "border-white/20 hover:border-white/40 hover:scale-105"
-                      }`}
-                    >
-                      <Image
-                        src={`${supabaseUrl}/storage/v1/object/public/avatars/${avatar}`}
-                        alt={`Avatar ${avatar}`}
-                        fill
-                        sizes="48px"
-                        className="object-cover object-center"
-                        style={{ objectFit: 'cover' }}
-                      />
-                      {selectedAvatar === avatar && (
-                        <div className="absolute inset-0 bg-purple-500/20 flex items-center justify-center">
-                          <Check className="w-4 h-4 text-white drop-shadow-lg" />
-                        </div>
-                      )}
-                    </button>
-                  ))}
+                
+                {/* Botones: Generar o Subir (misma fila) */}
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleGenerateAvatar}
+                    className="flex-1 bg-white/5 border-white/10 hover:bg-white/10 hover:border-purple-500/50"
+                  >
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Generar avatar
+                  </Button>
+                  
+                  <input
+                    type="file"
+                    id="avatar-upload"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleFileChange}
+                    className="hidden"
+                    aria-label="Subir avatar personalizado"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => document.getElementById('avatar-upload')?.click()}
+                    disabled={isUploadingAvatar}
+                    className="flex-1 bg-white/5 border-white/10 hover:bg-white/10 hover:border-purple-500/50"
+                  >
+                    {isUploadingAvatar ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Subiendo...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="mr-2 h-4 w-4" />
+                        Subir imagen
+                      </>
+                    )}
+                  </Button>
                 </div>
+                
+                <p className="text-xs text-muted-foreground">
+                  Genera un avatar aleatorio o sube tu propia imagen (JPG, PNG, WebP, máx 5MB)
+                </p>
               </div>
 
               <Separator className="bg-white/10" />
@@ -218,8 +316,8 @@ export default function PerfilPage() {
 
               <Button 
                 onClick={handleSave} 
-                disabled={isSaving} 
-                className="w-full h-11 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 transition-all hover:scale-[1.02]"
+                disabled={isSaving || !hasChanges} 
+                className="w-full h-11 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-lg shadow-purple-500/20 hover:shadow-purple-500/30 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSaving ? (
                   <>
@@ -238,7 +336,26 @@ export default function PerfilPage() {
         </div>
 
         {/* Panel de invitaciones */}
-        <InvitationsPanel />
+        <Suspense fallback={
+          <Card className="bg-white/5 border-white/10">
+            <CardContent className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </CardContent>
+          </Card>
+        }>
+          <InvitationsPanel />
+        </Suspense>
+
+        {/* Panel de sugerencias y errores */}
+        <Suspense fallback={
+          <Card className="bg-white/5 border-white/10">
+            <CardContent className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </CardContent>
+          </Card>
+        }>
+          <FeedbackPanel />
+        </Suspense>
 
         {/* Card de cerrar sesión */}
         <div className="relative group">
