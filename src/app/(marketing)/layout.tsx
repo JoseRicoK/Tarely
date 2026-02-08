@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://tarely.com"),
+  alternates: {
+    canonical: "/",
+  },
   title: "Tarely - Convierte el caos en tareas claras y priorizadas | IA",
   description:
     "Pega un email, una idea o un texto desordenado. Tarely lo organiza por ti en segundos con IA. Priorización automática, workspaces, kanban y más. Gratis para siempre.",

@@ -8,6 +8,10 @@ import { Calendar } from "lucide-react";
 export const metadata: Metadata = {
   title: "Tarely - Gestión de Tareas con IA",
   description: "Genera y organiza tareas con ayuda de inteligencia artificial",
+  robots: {
+    index: false,
+    follow: false,
+  },
 };
 
 export default function AppLayout({

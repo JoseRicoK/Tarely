@@ -10,6 +10,10 @@ export async function middleware(request: NextRequest) {
   
   const pathname = request.nextUrl.pathname;
   
+  // Rutas que NO deben ser indexadas por buscadores
+  const noIndexPaths = ['/app', '/workspace', '/calendario', '/perfil', '/login', '/registro', '/auth'];
+  const isNoIndexPath = noIndexPaths.some(path => pathname.startsWith(path));
+
   // Rutas públicas que no requieren autenticación
   const publicAuthPaths = ['/login', '/registro', '/auth/check-email', '/auth/confirm', '/auth/confirm-success', '/auth/confirm-error'];
   const isPublicAuthPath = publicAuthPaths.some(path => pathname.startsWith(path));
@@ -69,14 +73,23 @@ export async function middleware(request: NextRequest) {
   if (user && (isLandingPage || isPublicAuthPath)) {
     const url = request.nextUrl.clone();
     url.pathname = '/app';
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    redirectResponse.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return redirectResponse;
   }
 
   // Si no hay usuario y está en una ruta protegida, redirigir a login
   if (!user && isProtectedPath) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    redirectResponse.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return redirectResponse;
+  }
+
+  // Añadir X-Robots-Tag para rutas que no deben indexarse
+  if (isNoIndexPath) {
+    supabaseResponse.headers.set('X-Robots-Tag', 'noindex, nofollow');
   }
 
   return supabaseResponse;
