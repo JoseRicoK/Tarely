@@ -28,6 +28,9 @@ interface DatePickerProps {
   showTime?: boolean;
   compact?: boolean; // Modo compacto para cards
   className?: string;
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
+  iconOnly?: boolean; // Solo icono cuando no hay fecha (para kanban mobile)
 }
 
 export function DatePicker({
@@ -38,9 +41,29 @@ export function DatePicker({
   showTime = false,
   compact = false,
   className,
+  externalOpen,
+  onExternalOpenChange,
+  iconOnly = false,
 }: DatePickerProps) {
-  const [open, setOpen] = React.useState(false);
+  const [internalOpen, setInternalOpen] = React.useState(false);
+  const openGuardRef = React.useRef(false);
+  const open = externalOpen !== undefined ? externalOpen : internalOpen;
+  const rawSetOpen = onExternalOpenChange || setInternalOpen;
   const [time, setTime] = React.useState("23:59");
+
+  // Guard: block premature close when opened externally (Radix dropdown focus conflict)
+  React.useEffect(() => {
+    if (externalOpen) {
+      openGuardRef.current = true;
+      const timer = setTimeout(() => { openGuardRef.current = false; }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [externalOpen]);
+
+  const setOpen = (val: boolean) => {
+    if (!val && openGuardRef.current) return;
+    rawSetOpen(val);
+  };
 
   // Parse existing date and time
   const parsedDate = React.useMemo(() => {
@@ -150,7 +173,7 @@ export function DatePicker({
                   )}
                 >
                   <CalendarIcon className="h-3 w-3" />
-                  {parsedDate ? getDisplayText() : "Fecha"}
+                  {parsedDate ? getDisplayText() : (iconOnly ? null : "Fecha")}
                   {parsedDate && (
                     <X
                       className="h-3 w-3 opacity-60 hover:opacity-100"

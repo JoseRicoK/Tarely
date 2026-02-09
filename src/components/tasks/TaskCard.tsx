@@ -30,8 +30,9 @@ import {
   Trash2,
   Sparkles,
   User,
-  Copy,
   Wand2,
+  UserPlus,
+  CalendarIcon,
   Check,
   RotateCcw,
   MoveRight,
@@ -125,6 +126,8 @@ export function TaskCard({
 }: TaskCardProps) {
   const router = useRouter();
   const [isGeneratingSubtasks, setIsGeneratingSubtasks] = useState(false);
+  const [assigneesOpen, setAssigneesOpen] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   
   const timeAgo = formatDistanceToNow(new Date(task.createdAt), {
     addSuffix: true,
@@ -294,7 +297,7 @@ export function TaskCard({
             </TooltipProvider>
           )}
           <h3 className={cn(
-            "font-medium leading-snug flex-1 break-words text-sm md:text-base",
+            "font-medium leading-snug flex-1 break-words text-[15px] md:text-base",
             task.completed && "line-through text-muted-foreground"
           )}>
             {task.title}
@@ -350,10 +353,10 @@ export function TaskCard({
             )}
           </Badge>
 
-          {/* Asignados - en móvil visible siempre si hay asignados, en desktop hover si vacío */}
+          {/* Asignados - en móvil solo si hay asignados, en desktop hover si vacío */}
           {!task.completed && onAssigneesChange && (
             <div className={cn(
-              hasAssignees ? "opacity-100" : "hidden md:block opacity-0 group-hover:opacity-100 transition-opacity"
+              hasAssignees ? "opacity-100" : "hidden md:block md:opacity-0 md:group-hover:opacity-100 transition-opacity"
             )}>
               <TaskAssignees
                 taskId={task.id}
@@ -361,20 +364,25 @@ export function TaskCard({
                 assignees={task.assignees || []}
                 onAssigneesChange={(assignees) => onAssigneesChange(task.id, assignees)}
                 compact
+                externalOpen={assigneesOpen}
+                onExternalOpenChange={setAssigneesOpen}
               />
             </div>
           )}
 
-          {/* Fecha límite - en móvil visible siempre si hay fecha, en desktop hover si vacío */}
+          {/* Fecha límite - en móvil siempre visible (solo icono), en desktop hover si vacío */}
           {!task.completed && onDueDateChange && (
             <div className={cn(
-              hasDueDate ? "opacity-100" : "hidden md:block opacity-0 group-hover:opacity-100 transition-opacity"
+              hasDueDate ? "opacity-100" : "md:opacity-0 md:group-hover:opacity-100 transition-opacity"
             )}>
               <DatePicker
                 value={task.dueDate}
                 onChange={(date) => onDueDateChange(task.id, date)}
                 compact
                 showTime
+                iconOnly
+                externalOpen={datePickerOpen}
+                onExternalOpenChange={setDatePickerOpen}
               />
             </div>
           )}
@@ -501,7 +509,7 @@ export function TaskCard({
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onGeneratePrompt(task)}>
                   <Wand2 className="mr-2 h-4 w-4" />
-                  Generar prompt
+                  Generar prompt IDE
                 </DropdownMenuItem>
               </>
             )}
@@ -509,12 +517,26 @@ export function TaskCard({
               <ExternalLink className="mr-2 h-4 w-4" />
               Ver detalles
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() => navigator.clipboard.writeText(task.title)}
-            >
-              <Copy className="mr-2 h-4 w-4" />
-              Copiar título
-            </DropdownMenuItem>
+            {/* Asignar - visible solo en móvil */}
+            {!task.completed && onAssigneesChange && (
+              <DropdownMenuItem
+                onClick={() => setTimeout(() => setAssigneesOpen(true), 100)}
+                className="md:hidden"
+              >
+                <UserPlus className="mr-2 h-4 w-4" />
+                Asignar
+              </DropdownMenuItem>
+            )}
+            {/* Fecha - visible solo en móvil */}
+            {!task.completed && onDueDateChange && (
+              <DropdownMenuItem
+                onClick={() => setTimeout(() => setDatePickerOpen(true), 100)}
+                className="md:hidden"
+              >
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                Fecha límite
+              </DropdownMenuItem>
+            )}
             {/* Generar subtareas - visible en dropdown en móvil */}
             {!task.completed && onSubtasksChange && (
               <DropdownMenuItem

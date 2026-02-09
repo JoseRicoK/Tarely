@@ -100,7 +100,7 @@ export function OnboardingCarousel({ onComplete }: OnboardingCarouselProps) {
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent showCloseButton={false} className="!max-w-[90vw] !w-[1300px] p-0 gap-0 bg-slate-900 border border-white/20 overflow-hidden">
+      <DialogContent showCloseButton={false} className="!max-w-[90vw] !w-[90vw] sm:!w-[800px] lg:!w-[1300px] p-0 gap-0 bg-slate-900 border border-white/20 overflow-hidden">
         <div className="relative">
           {/* Botón cerrar */}
           <button

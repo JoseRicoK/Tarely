@@ -30,10 +30,10 @@ import {
   Pencil,
   Trash2,
   Sparkles,
-  Copy,
   Wand2,
   Check,
   UserPlus,
+  CalendarIcon,
   MoveRight,
   Circle,
   CheckCircle2,
@@ -54,6 +54,7 @@ import type { Task, TaskAssignee, WorkspaceSection, Subtask } from "@/lib/types"
 import { cn } from "@/lib/utils";
 import Image from "next/image";
 import { SubtaskIndicator } from "./SubtaskList";
+import { TaskAssignees } from "./TaskAssignees";
 
 // Icon map for dynamic section icons
 const iconMap: Record<string, LucideIcon> = {
@@ -179,7 +180,7 @@ export function KanbanCardStatic({
   return (
     <div
       className={cn(
-        "relative rounded-lg border bg-card p-3 shadow-sm w-72",
+        "relative rounded-lg border bg-card p-3 shadow-sm w-64 sm:w-72",
         isDragging && "shadow-lg ring-2 ring-primary/50 opacity-90",
         task.completed && "opacity-70 bg-muted/30"
       )}
@@ -287,9 +288,8 @@ export function KanbanCardDraggable({
   const hasAssignees = task.assignees && task.assignees.length > 0;
   const hasDueDate = !!task.dueDate;
 
-  const handleCopyTitle = () => {
-    navigator.clipboard.writeText(task.title);
-  };
+  const [assigneesOpen, setAssigneesOpen] = React.useState(false);
+  const [datePickerOpen, setDatePickerOpen] = React.useState(false);
 
   const handleNavigateToTask = () => {
     router.push(`/workspace/${workspaceId}/task/${task.id}`);
@@ -302,13 +302,6 @@ export function KanbanCardDraggable({
       return;
     }
     handleNavigateToTask();
-  };
-
-  // Placeholder for assign action - will open assignees popover
-  const handleAssign = () => {
-    // This would typically open a popover or dialog to manage assignees
-    // For now, we'll just log it - the actual functionality is in TaskAssignees
-    console.log("Assign user to task:", task.id, workspaceId);
   };
 
   return (
@@ -351,7 +344,7 @@ export function KanbanCardDraggable({
                   </Tooltip>
                 </TooltipProvider>
               )}
-              <h3 className="font-medium text-sm leading-tight line-clamp-2">
+              <h3 className="font-medium text-[15px] sm:text-sm leading-tight line-clamp-2">
                 {task.title}
               </h3>
             </div>
@@ -376,18 +369,20 @@ export function KanbanCardDraggable({
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Ver detalles
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleCopyTitle}>
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copiar título
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onGeneratePrompt(task)}>
                   <Wand2 className="h-4 w-4 mr-2" />
-                  Generar prompt
+                  Generar prompt IDE
                 </DropdownMenuItem>
                 {onAssigneesChange && (
-                  <DropdownMenuItem onClick={handleAssign}>
+                  <DropdownMenuItem onClick={() => setTimeout(() => setAssigneesOpen(true), 100)}>
                     <UserPlus className="h-4 w-4 mr-2" />
-                    Asignar usuario
+                    Asignar
+                  </DropdownMenuItem>
+                )}
+                {!task.completed && onDueDateChange && (
+                  <DropdownMenuItem onClick={() => setTimeout(() => setDatePickerOpen(true), 100)}>
+                    <CalendarIcon className="h-4 w-4 mr-2" />
+                    Fecha límite
                   </DropdownMenuItem>
                 )}
                 {/* Submenú Mover a sección */}
@@ -444,14 +439,13 @@ export function KanbanCardDraggable({
 
           {/* Description preview */}
           {task.description && (
-            <p className="text-xs text-muted-foreground line-clamp-1 mb-2">
+            <p className="text-xs text-muted-foreground line-clamp-1 mb-1.5 sm:mb-2">
               {task.description}
             </p>
           )}
 
           {/* Footer with badges, assignees, date and time */}
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap">
               {/* Importance badge/picker */}
               {!task.completed && onImportanceChange ? (
                 <div 
@@ -478,20 +472,36 @@ export function KanbanCardDraggable({
                 <Sparkles className="h-3 w-3 text-primary" />
               )}
 
-              {/* Assignees avatars */}
-              <div className={cn(
-                "transition-opacity duration-200",
-                !hasAssignees && "opacity-0 group-hover:opacity-100"
-              )}>
+              {/* Assignees - en móvil solo si hay asignados, en desktop hover si vacío */}
+              {onAssigneesChange ? (
+                <div 
+                  className={cn(
+                    "transition-opacity duration-200",
+                    !hasAssignees && "hidden sm:block sm:opacity-0 sm:group-hover:opacity-100"
+                  )}
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <TaskAssignees
+                    taskId={task.id}
+                    workspaceId={workspaceId}
+                    assignees={task.assignees || []}
+                    onAssigneesChange={(assignees) => onAssigneesChange(task.id, assignees)}
+                    compact
+                    externalOpen={assigneesOpen}
+                    onExternalOpenChange={setAssigneesOpen}
+                  />
+                </div>
+              ) : hasAssignees ? (
                 <AssigneesAvatars assignees={task.assignees || []} />
-              </div>
+              ) : null}
 
-              {/* Date picker inline */}
+              {/* Date picker inline - en móvil solo icono, en desktop hover si vacío */}
               {!task.completed && onDueDateChange && (
                 <div 
                   className={cn(
                     "transition-opacity duration-200",
-                    !hasDueDate && "opacity-0 group-hover:opacity-100"
+                    !hasDueDate && "sm:opacity-0 sm:group-hover:opacity-100"
                   )}
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
@@ -501,20 +511,22 @@ export function KanbanCardDraggable({
                     onChange={(date) => onDueDateChange(task.id, date)}
                     compact
                     showTime
+                    iconOnly
+                    externalOpen={datePickerOpen}
+                    onExternalOpenChange={setDatePickerOpen}
                   />
                 </div>
               )}
-            </div>
 
-            {/* Time and subtasks indicator */}
-            <div className="flex items-center gap-2">
+              {/* Subtasks indicator */}
               {task.subtasks && task.subtasks.length > 0 && (
                 <SubtaskIndicator subtasks={task.subtasks} />
               )}
-              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+
+              {/* Time ago - pushed to end */}
+              <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-auto">
                 {timeAgo}
               </span>
-            </div>
           </div>
         </div>
       </div>

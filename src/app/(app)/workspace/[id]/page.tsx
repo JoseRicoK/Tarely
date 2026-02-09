@@ -814,8 +814,8 @@ export default function WorkspacePage() {
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="font-semibold text-sm md:text-base">Convierte el caos en tareas ordenadas</h2>
-              <p className="text-xs text-muted-foreground mt-0.5 hidden sm:block">
-                Describe lo que necesitas hacer y déjanos organizar todo por ti
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Pega aquí tus notas, ideas o textos desordenados y los convertiremos en tareas organizadas
               </p>
             </div>
             <Button

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -41,6 +41,8 @@ interface TaskAssigneesProps {
   assignees: Assignee[];
   onAssigneesChange: (assignees: Assignee[]) => void;
   compact?: boolean;
+  externalOpen?: boolean;
+  onExternalOpenChange?: (open: boolean) => void;
 }
 
 export function TaskAssignees({
@@ -49,8 +51,27 @@ export function TaskAssignees({
   assignees,
   onAssigneesChange,
   compact = false,
+  externalOpen,
+  onExternalOpenChange,
 }: TaskAssigneesProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
+  const openGuardRef = useRef(false);
+  const isOpen = externalOpen !== undefined ? externalOpen : internalOpen;
+  const rawSetIsOpen = onExternalOpenChange || setInternalOpen;
+
+  // Guard: block premature close when opened externally (Radix dropdown focus conflict)
+  useEffect(() => {
+    if (externalOpen) {
+      openGuardRef.current = true;
+      const timer = setTimeout(() => { openGuardRef.current = false; }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [externalOpen]);
+
+  const setIsOpen = (val: boolean) => {
+    if (!val && openGuardRef.current) return;
+    rawSetIsOpen(val);
+  };
   const [members, setMembers] = useState<Member[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [assigningUserId, setAssigningUserId] = useState<string | null>(null);
