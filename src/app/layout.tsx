@@ -13,10 +13,16 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tarely - Convierte el caos en tareas claras y priorizadas",
-  description: "Pega un email, una idea o un texto desordenado. Tarely lo organiza por ti en segundos con IA. Priorización automática, workspaces, kanban y más.",
+  metadataBase: new URL("https://tarely.com"),
+  title: {
+    default: "Tarely — Gestor de tareas inteligente con IA",
+    template: "%s | Tarely",
+  },
+  description:
+    "Pega un email, una idea o un texto desordenado y Tarely lo organiza por ti en segundos con inteligencia artificial. Priorización automática, workspaces, kanban y más.",
   keywords: [
     "gestor de tareas",
+    "gestor de tareas con IA",
     "productividad",
     "inteligencia artificial",
     "organizar tareas",
@@ -34,7 +40,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="dark">
+    <html lang="es" className="dark" data-scroll-behavior="smooth">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen relative`}
       >

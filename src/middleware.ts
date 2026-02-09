@@ -15,7 +15,7 @@ export async function middleware(request: NextRequest) {
   const isNoIndexPath = noIndexPaths.some(path => pathname.startsWith(path));
 
   // Rutas públicas que no requieren autenticación
-  const publicAuthPaths = ['/login', '/registro', '/auth/check-email', '/auth/confirm', '/auth/confirm-success', '/auth/confirm-error'];
+  const publicAuthPaths = ['/login', '/registro', '/auth/check-email', '/auth/confirm', '/auth/confirm-success', '/auth/confirm-error', '/auth/forgot-password', '/auth/reset-password'];
   const isPublicAuthPath = publicAuthPaths.some(path => pathname.startsWith(path));
   
   // La landing page (/) es pública

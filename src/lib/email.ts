@@ -1,5 +1,5 @@
 import { Resend } from 'resend';
-import { getConfirmationEmailTemplate, getWelcomeEmailTemplate } from './email-templates';
+import { getConfirmationEmailTemplate, getResetPasswordEmailTemplate, getWelcomeEmailTemplate } from './email-templates';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -74,5 +74,40 @@ export async function sendWelcomeEmail({
   } catch (error) {
     console.error('Error al enviar email de bienvenida:', error);
     return { success: false, error: 'Error al enviar email' };
+  }
+}
+
+interface SendResetPasswordEmailParams {
+  to: string;
+  name: string;
+  resetUrl: string;
+}
+
+/**
+ * Envía un correo para restablecer la contraseña
+ */
+export async function sendResetPasswordEmail({
+  to,
+  name,
+  resetUrl,
+}: SendResetPasswordEmailParams) {
+  try {
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: [to],
+      subject: '🔑 Restablecer contraseña - Tarely',
+      html: getResetPasswordEmailTemplate({ name, resetUrl }),
+    });
+
+    if (error) {
+      console.error('Error enviando email de reset:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('Email de reset enviado exitosamente:', data);
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error al enviar email de reset:', error);
+    return { success: false, error: 'Error al enviar email de reset' };
   }
 }

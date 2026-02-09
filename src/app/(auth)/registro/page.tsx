@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Loader2, Mail, Lock, User, Sparkles, AlertCircle, Shuffle } from "lucide-react";
+import { Loader2, Mail, Lock, User, Sparkles, AlertCircle, Shuffle, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 
 // Generar array de 20 avatares: avatar1.png, avatar2.png, ..., avatar20.png
@@ -165,6 +165,17 @@ export default function RegistroPage() {
       </div>
 
       <div className="w-full max-w-md">
+        {/* Botón volver */}
+        <div className="mb-6">
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-white transition-colors group/back"
+          >
+            <ArrowLeft className="h-4 w-4 group-hover/back:-translate-x-1 transition-transform" />
+            Volver a Iniciar Sesión
+          </Link>
+        </div>
+
         {/* Card con glassmorphism */}
         <div className="relative group">
           {/* Borde gradiente animado */}
@@ -296,6 +307,7 @@ export default function RegistroPage() {
                       id="password"
                       type="password"
                       placeholder="••••••"
+                      autoComplete="new-password"
                       value={password}
                       onChange={(e) => {
                         setPassword(e.target.value);
@@ -324,6 +336,7 @@ export default function RegistroPage() {
                       id="confirmPassword"
                       type="password"
                       placeholder="••••••"
+                      autoComplete="new-password"
                       value={confirmPassword}
                       onChange={(e) => {
                         setConfirmPassword(e.target.value);

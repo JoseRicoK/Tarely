@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Link from "next/link";
 import Image from "next/image";
-import { Loader2, Mail, Lock, Sparkles, AlertCircle } from "lucide-react";
+import { Loader2, Mail, Lock, Sparkles, AlertCircle, ArrowLeft } from "lucide-react";
 
 interface FieldErrors {
   email?: string;
@@ -116,6 +116,17 @@ export default function LoginPage() {
       </div>
 
       <div className="w-full max-w-md">
+        {/* Botón volver */}
+        <div className="mb-6">
+          <a
+            href="https://www.tarely.com"
+            className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-white transition-colors group/back"
+          >
+            <ArrowLeft className="h-4 w-4 group-hover/back:-translate-x-1 transition-transform" />
+            Volver a Tarely
+          </a>
+        </div>
+
         {/* Card con glassmorphism */}
         <div className="relative group">
           {/* Borde gradiente animado */}
@@ -187,6 +198,7 @@ export default function LoginPage() {
                     id="password"
                     type="password"
                     placeholder="••••••••"
+                    autoComplete="current-password"
                     value={password}
                     onChange={(e) => {
                       setPassword(e.target.value);
@@ -205,6 +217,16 @@ export default function LoginPage() {
                     {errors.password}
                   </p>
                 )}
+              </div>
+
+              {/* Enlace olvidé contraseña */}
+              <div className="flex justify-end">
+                <Link
+                  href="/auth/forgot-password"
+                  className="text-xs text-muted-foreground hover:text-purple-400 transition-colors hover:underline underline-offset-4"
+                >
+                  ¿Olvidaste tu contraseña?
+                </Link>
               </div>
 
               <Button
