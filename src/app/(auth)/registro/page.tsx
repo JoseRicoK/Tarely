@@ -400,7 +400,14 @@ export default function RegistroPage() {
 
         {/* Footer text */}
         <p className="text-center text-xs text-muted-foreground/60 mt-6">
-          Gestiona tus tareas con el poder de la IA ✨
+          Al registrarte, aceptas nuestros{" "}
+          <Link href="/terminos-y-condiciones" className="text-purple-400/60 hover:text-purple-400 underline underline-offset-2 transition-colors">
+            Términos y Condiciones
+          </Link>{" "}
+          y{" "}
+          <Link href="/politica-de-privacidad" className="text-purple-400/60 hover:text-purple-400 underline underline-offset-2 transition-colors">
+            Política de Privacidad
+          </Link>
         </p>
       </div>
     </div>

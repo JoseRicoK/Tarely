@@ -276,6 +276,15 @@ export default function LoginPage() {
         <p className="text-center text-xs text-muted-foreground/60 mt-6">
           Gestiona tus tareas con el poder de la IA ✨
         </p>
+        <div className="flex items-center justify-center gap-3 mt-3">
+          <Link href="/politica-de-privacidad" className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground transition-colors">
+            Política de Privacidad
+          </Link>
+          <span className="text-muted-foreground/20">·</span>
+          <Link href="/terminos-y-condiciones" className="text-[10px] text-muted-foreground/40 hover:text-muted-foreground transition-colors">
+            Términos y Condiciones
+          </Link>
+        </div>
       </div>
     </div>
   );

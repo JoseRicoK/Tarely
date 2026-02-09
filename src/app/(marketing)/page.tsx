@@ -783,35 +783,50 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/5 py-8 sm:py-10 bg-background/50">
+      <footer className="border-t border-white/5 py-8 sm:py-12 bg-background/50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Image
-                src="/logo/logo_tarely_bg.png"
-                alt="Tarely"
-                width={28}
-                height={28}
-                className="h-6 w-6 object-contain"
-              />
-              <span className="font-semibold text-sm bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
-                Tarely
-              </span>
+          <div className="flex flex-col gap-6">
+            {/* Top row */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <Image
+                  src="/logo/logo_tarely_bg.png"
+                  alt="Tarely"
+                  width={28}
+                  height={28}
+                  className="h-6 w-6 object-contain"
+                />
+                <span className="font-semibold text-sm bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+                  Tarely
+                </span>
+              </div>
+              <nav className="flex items-center gap-5 text-xs sm:text-sm">
+                <a href="#como-funciona" className="text-muted-foreground hover:text-white transition-colors">
+                  Cómo funciona
+                </a>
+                <a href="#funcionalidades" className="text-muted-foreground hover:text-white transition-colors">
+                  Funcionalidades
+                </a>
+                <a href="#testimonios" className="text-muted-foreground hover:text-white transition-colors">
+                  Testimonios
+                </a>
+              </nav>
             </div>
-            <nav className="flex items-center gap-5 text-xs sm:text-sm">
-              <a href="#como-funciona" className="text-muted-foreground hover:text-white transition-colors">
-                Cómo funciona
-              </a>
-              <a href="#funcionalidades" className="text-muted-foreground hover:text-white transition-colors">
-                Funcionalidades
-              </a>
-              <a href="#testimonios" className="text-muted-foreground hover:text-white transition-colors">
-                Testimonios
-              </a>
-            </nav>
-            <p className="text-xs text-muted-foreground/60">
-              © 2026 Tarely. Todos los derechos reservados.
-            </p>
+            {/* Bottom row - Legal links */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-white/5">
+              <p className="text-xs text-muted-foreground/60">
+                © 2026 Tarely. Todos los derechos reservados.
+              </p>
+              <nav className="flex items-center gap-4 text-xs">
+                <Link href="/politica-de-privacidad" className="text-muted-foreground/60 hover:text-white transition-colors">
+                  Política de Privacidad
+                </Link>
+                <span className="text-muted-foreground/30">·</span>
+                <Link href="/terminos-y-condiciones" className="text-muted-foreground/60 hover:text-white transition-colors">
+                  Términos y Condiciones
+                </Link>
+              </nav>
+            </div>
           </div>
         </div>
       </footer>

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Loader2, User, LogOut, ArrowLeft, Check, Sparkles, Upload, X } from "lucide-react";
+import { Loader2, User, LogOut, ArrowLeft, Check, Sparkles, Upload, X, FileText, Shield } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
@@ -356,6 +356,31 @@ export default function PerfilPage() {
         }>
           <FeedbackPanel />
         </Suspense>
+
+        {/* Legal links */}
+        <div className="relative bg-background/60 backdrop-blur-xl border border-white/10 rounded-2xl p-6 shadow-xl">
+          <div className="flex items-center gap-2 mb-1">
+            <FileText className="h-5 w-5 text-violet-400" />
+            <h2 className="font-semibold">Legal</h2>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">Documentos legales y privacidad</p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Link
+              href="/politica-de-privacidad"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-muted-foreground rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:text-white transition-all"
+            >
+              <Shield className="h-4 w-4" />
+              Política de Privacidad
+            </Link>
+            <Link
+              href="/terminos-y-condiciones"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-muted-foreground rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:text-white transition-all"
+            >
+              <FileText className="h-4 w-4" />
+              Términos y Condiciones
+            </Link>
+          </div>
+        </div>
 
         {/* Card de cerrar sesión */}
         <div className="relative group">
