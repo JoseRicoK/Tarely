@@ -172,7 +172,7 @@ export function TaskCard({
   return (
     <div 
       className={cn(
-        "group relative flex gap-4 p-4 rounded-lg border bg-card transition-all duration-200 hover:shadow-md hover:border-primary/20 cursor-pointer",
+        "group relative flex gap-3 md:gap-4 p-3 md:p-4 rounded-lg border bg-card transition-all duration-200 hover:shadow-md hover:border-primary/20 cursor-pointer",
         task.completed && "opacity-70 bg-muted/30"
       )}
       onClick={handleNavigateToTask}
@@ -205,7 +205,7 @@ export function TaskCard({
                 variant={task.completed ? "default" : "outline"}
                 size="icon"
                 className={cn(
-                  "h-8 w-8 rounded-full transition-all shadow-sm",
+                  "h-7 w-7 md:h-8 md:w-8 rounded-full transition-all shadow-sm",
                   task.completed 
                     ? "bg-green-500 hover:bg-green-600 text-white shadow-green-500/25" 
                     : "hover:bg-green-500/15 hover:text-green-600 hover:border-green-500 hover:shadow-md hover:shadow-green-500/20"
@@ -216,9 +216,9 @@ export function TaskCard({
                 }}
               >
                 {task.completed ? (
-                  <Check className="h-4 w-4" />
+                  <Check className="h-3.5 w-3.5 md:h-4 md:w-4" />
                 ) : (
-                  <Check className="h-4 w-4 opacity-60" />
+                  <Check className="h-3.5 w-3.5 md:h-4 md:w-4 opacity-60" />
                 )}
               </Button>
             </TooltipTrigger>
@@ -228,7 +228,7 @@ export function TaskCard({
           </Tooltip>
         </TooltipProvider>
 
-        {/* Botón de mover a sección (solo si no está completada y hay secciones) */}
+        {/* Botón de mover a sección - solo desktop (en móvil va dentro del dropdown) */}
         {!task.completed && sections.length > 0 && onMoveToSection && (
           <DropdownMenu>
             <TooltipProvider>
@@ -238,7 +238,7 @@ export function TaskCard({
                     <Button
                       variant="outline"
                       size="icon"
-                      className="h-7 w-7 rounded-full transition-all hover:bg-primary/10 hover:text-primary hover:border-primary"
+                      className="hidden md:flex h-7 w-7 rounded-full transition-all hover:bg-primary/10 hover:text-primary hover:border-primary"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <MoveRight className="h-3.5 w-3.5" />
@@ -279,13 +279,13 @@ export function TaskCard({
 
       <div className="flex-1 min-w-0">
         {/* Header with title and badges */}
-        <div className="flex items-start gap-2 mb-2">
+        <div className="flex items-start gap-2 mb-1.5 md:mb-2">
           {/* Indicador de tarea nueva */}
           {task.isNew && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="h-2 w-2 rounded-full bg-blue-500 mt-2 flex-shrink-0 animate-pulse" />
+                  <div className="h-2 w-2 rounded-full bg-blue-500 mt-1.5 md:mt-2 flex-shrink-0 animate-pulse" />
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="text-xs">Tarea recién creada</p>
@@ -294,7 +294,7 @@ export function TaskCard({
             </TooltipProvider>
           )}
           <h3 className={cn(
-            "font-medium leading-snug flex-1 break-words",
+            "font-medium leading-snug flex-1 break-words text-sm md:text-base",
             task.completed && "line-through text-muted-foreground"
           )}>
             {task.title}
@@ -303,13 +303,13 @@ export function TaskCard({
 
         {/* Description if exists */}
         {task.description && (
-          <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
+          <p className="text-xs md:text-sm text-muted-foreground mb-2 md:mb-3 line-clamp-1 md:line-clamp-2">
             {task.description}
           </p>
         )}
 
         {/* Footer with badges and meta */}
-        <div className="flex flex-wrap items-center gap-2" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-wrap items-center gap-1.5 md:gap-2" onClick={(e) => e.stopPropagation()}>
           {/* Importancia - editable inline si no está completada */}
           {!task.completed && onImportanceChange ? (
             <ImportancePicker
@@ -321,7 +321,7 @@ export function TaskCard({
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge variant="outline" className={cn("text-xs", importanceColor)}>
+                  <Badge variant="outline" className={cn("text-[10px] md:text-xs", importanceColor)}>
                     {task.importance}/10 · {importanceLabel}
                   </Badge>
                 </TooltipTrigger>
@@ -334,7 +334,7 @@ export function TaskCard({
 
           <Badge
             variant="secondary"
-            className="text-xs gap-1"
+            className="text-[10px] md:text-xs gap-1"
           >
             {task.source === "ai" ? (
               <>
@@ -350,9 +350,11 @@ export function TaskCard({
             )}
           </Badge>
 
-          {/* Asignados - visible siempre si hay, hover si vacío */}
+          {/* Asignados - en móvil visible siempre si hay asignados, en desktop hover si vacío */}
           {!task.completed && onAssigneesChange && (
-            <div className={cn(!hasAssignees && "opacity-0 group-hover:opacity-100 transition-opacity")}>
+            <div className={cn(
+              hasAssignees ? "opacity-100" : "hidden md:block opacity-0 group-hover:opacity-100 transition-opacity"
+            )}>
               <TaskAssignees
                 taskId={task.id}
                 workspaceId={workspaceId}
@@ -363,9 +365,11 @@ export function TaskCard({
             </div>
           )}
 
-          {/* Fecha límite - visible siempre si hay, hover si vacío */}
+          {/* Fecha límite - en móvil visible siempre si hay fecha, en desktop hover si vacío */}
           {!task.completed && onDueDateChange && (
-            <div className={cn(!hasDueDate && "opacity-0 group-hover:opacity-100 transition-opacity")}>
+            <div className={cn(
+              hasDueDate ? "opacity-100" : "hidden md:block opacity-0 group-hover:opacity-100 transition-opacity"
+            )}>
               <DatePicker
                 value={task.dueDate}
                 onChange={(date) => onDueDateChange(task.id, date)}
@@ -375,7 +379,7 @@ export function TaskCard({
             </div>
           )}
 
-          <span className="text-xs text-muted-foreground ml-auto">
+          <span className="text-[10px] md:text-xs text-muted-foreground ml-auto">
             {timeAgo}
           </span>
         </div>
@@ -402,7 +406,7 @@ export function TaskCard({
 
       {/* Actions */}
       <div className="flex items-start gap-1" onClick={(e) => e.stopPropagation()}>
-        {/* Botón restaurar si está completada */}
+        {/* Botón restaurar si está completada - solo desktop */}
         {task.completed && (
           <TooltipProvider>
             <Tooltip>
@@ -410,7 +414,7 @@ export function TaskCard({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="hidden md:flex h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
                   onClick={(e) => {
                     e.stopPropagation();
                     onToggleComplete(task);
@@ -427,7 +431,7 @@ export function TaskCard({
           </TooltipProvider>
         )}
 
-        {/* Botón generar subtareas con IA */}
+        {/* Botón generar subtareas con IA - solo desktop */}
         {!task.completed && onSubtasksChange && (
           <TooltipProvider>
             <Tooltip>
@@ -435,7 +439,7 @@ export function TaskCard({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:text-primary hover:bg-primary/10"
+                  className="hidden md:flex h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:text-primary hover:bg-primary/10"
                   onClick={handleGenerateSubtasks}
                   disabled={isGeneratingSubtasks}
                 >
@@ -454,7 +458,7 @@ export function TaskCard({
           </TooltipProvider>
         )}
 
-        {/* Botón eliminar directo para vista de completadas */}
+        {/* Botón eliminar directo para vista de completadas - solo desktop */}
         {onQuickDelete && (
           <TooltipProvider>
             <Tooltip>
@@ -462,7 +466,7 @@ export function TaskCard({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                  className="hidden md:flex h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10 opacity-0 group-hover:opacity-100 transition-opacity"
                   onClick={() => onQuickDelete(task)}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -476,13 +480,13 @@ export function TaskCard({
           </TooltipProvider>
         )}
 
-        {/* Dropdown menu */}
+        {/* Dropdown menu - en móvil siempre visible, en desktop solo en hover */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="h-7 w-7 md:h-8 md:w-8 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
             >
               <MoreVertical className="h-4 w-4" />
               <span className="sr-only">Opciones</span>
@@ -510,6 +514,33 @@ export function TaskCard({
             >
               <Copy className="mr-2 h-4 w-4" />
               Copiar título
+            </DropdownMenuItem>
+            {/* Generar subtareas - visible en dropdown en móvil */}
+            {!task.completed && onSubtasksChange && (
+              <DropdownMenuItem
+                onClick={handleGenerateSubtasks}
+                disabled={isGeneratingSubtasks}
+                className="md:hidden"
+              >
+                {isGeneratingSubtasks ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <ListChecks className="mr-2 h-4 w-4" />
+                )}
+                Generar subtareas
+              </DropdownMenuItem>
+            )}
+            {/* Completar/Restaurar - visible en dropdown en móvil */}
+            <DropdownMenuItem
+              onClick={() => onToggleComplete(task)}
+              className="md:hidden"
+            >
+              {task.completed ? (
+                <RotateCcw className="mr-2 h-4 w-4" />
+              ) : (
+                <Check className="mr-2 h-4 w-4" />
+              )}
+              {task.completed ? "Restaurar" : "Completar"}
             </DropdownMenuItem>
             {/* Submenú Mover a sección */}
             {sections.length > 0 && onMoveToSection && (
@@ -548,7 +579,7 @@ export function TaskCard({
             )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
-              onClick={() => onDelete(task)}
+              onClick={() => (onQuickDelete ? onQuickDelete(task) : onDelete(task))}
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="mr-2 h-4 w-4" />

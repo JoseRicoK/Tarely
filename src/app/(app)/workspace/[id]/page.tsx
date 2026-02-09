@@ -758,75 +758,80 @@ export default function WorkspacePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
+      <div className="flex flex-col gap-3 md:gap-4">
+        <div className="flex items-center gap-2 md:gap-4">
+          <Button variant="ghost" size="icon" className="h-8 w-8 md:h-10 md:w-10" asChild>
             <Link href="/app">
-              <ArrowLeft className="h-5 w-5" />
+              <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
               <span className="sr-only">Volver</span>
             </Link>
           </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold tracking-tight">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg md:text-2xl font-bold tracking-tight truncate">
               {workspace.name}
             </h1>
             {workspace.description && (
-              <p className="text-muted-foreground">{workspace.description}</p>
+              <p className="text-xs md:text-sm text-muted-foreground line-clamp-1">{workspace.description}</p>
             )}
           </div>
-          <Button
-            variant="outline"
-            onClick={() => setShareDialogOpen(true)}
-            className="gap-2"
-          >
-            <Share2 className="h-4 w-4" />
-            <span className="hidden sm:inline">Compartir</span>
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => setInstructionsOpen(true)}
-            className="gap-2"
-          >
-            <FileText className="h-4 w-4" />
-            <span className="hidden sm:inline">Instrucciones</span>
-          </Button>
+          <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setShareDialogOpen(true)}
+              className="h-8 w-8 md:h-9 md:w-auto md:px-3"
+            >
+              <Share2 className="h-4 w-4" />
+              <span className="hidden md:inline ml-1.5">Compartir</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setInstructionsOpen(true)}
+              className="h-8 w-8 md:h-9 md:w-auto md:px-3"
+            >
+              <FileText className="h-4 w-4" />
+              <span className="hidden md:inline ml-1.5">Instrucciones</span>
+            </Button>
+          </div>
         </div>
       </div>
 
       <Separator />
 
       {/* AI Generation Area */}
-      <div className="relative overflow-hidden rounded-lg border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card p-4 shadow-sm hover:shadow-md transition-shadow">
+      <div className="relative overflow-hidden rounded-lg border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card p-3 md:p-4 shadow-sm hover:shadow-md transition-shadow">
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -z-10" />
         <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl -z-10" />
         
-        <div className="space-y-3">
-          <div className="flex items-start gap-3">
+        <div className="space-y-2 md:space-y-3">
+          <div className="flex items-start gap-2 md:gap-3">
             <div className="p-1.5 rounded-lg bg-primary/10 mt-0.5">
               <Sparkles className="h-4 w-4 text-primary" />
             </div>
             <div className="flex-1 min-w-0">
-              <h2 className="font-semibold">Convierte el caos en tareas ordenadas</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
+              <h2 className="font-semibold text-sm md:text-base">Convierte el caos en tareas ordenadas</h2>
+              <p className="text-xs text-muted-foreground mt-0.5 hidden sm:block">
                 Describe lo que necesitas hacer y déjanos organizar todo por ti
               </p>
             </div>
             <Button
               onClick={handleGenerateTasks}
               disabled={isGenerating || !aiText.trim()}
-              className="gap-2 shadow-sm shrink-0"
+              size="sm"
+              className="gap-1.5 md:gap-2 shadow-sm shrink-0 h-8 md:h-9 text-xs md:text-sm"
             >
               {isGenerating ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 md:h-4 md:w-4 animate-spin" />
                   <span className="hidden sm:inline">Organizando...</span>
                 </>
               ) : (
                 <>
-                  <Sparkles className="h-4 w-4" />
+                  <Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" />
                   <span className="hidden sm:inline">Organizar</span>
                 </>
               )}
@@ -834,17 +839,16 @@ export default function WorkspacePage() {
           </div>
           
           <Textarea
-            placeholder="Escribe o pega lo que tienes en mente... Por ejemplo: Tengo varios correos pendientes, un bug urgente y no sé por dónde empezar…"
+            placeholder="Describe lo que necesitas hacer..."
             value={aiText}
             onChange={(e) => setAiText(e.target.value)}
             onKeyDown={handleKeyDown}
-            rows={5}
-            className="resize-y bg-background/50 border-primary/20 focus:border-primary/40 transition-colors min-h-[120px]"
+            rows={3}
+            className="resize-y bg-background/50 border-primary/20 focus:border-primary/40 transition-colors min-h-[80px] md:min-h-[120px] text-sm"
             disabled={isGenerating}
           />
           
           <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <span className="hidden sm:inline">💡 Presiona</span>
             <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded border">Ctrl+Enter</kbd>
             <span>para organizar rápido</span>
           </p>
@@ -852,37 +856,38 @@ export default function WorkspacePage() {
       </div>
 
       {/* Tasks Section */}
-      <div className="space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="space-y-3 md:space-y-4">
+        <div className="flex items-center justify-between gap-2 md:gap-4">
           <div className="flex items-center gap-2">
-            <ListTodo className="h-5 w-5" />
-            <h2 className="font-semibold">Tareas</h2>
+            <ListTodo className="h-4 w-4 md:h-5 md:w-5" />
+            <h2 className="font-semibold text-sm md:text-base">Tareas</h2>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 md:gap-2">
             {/* View mode toggle */}
-            <div className="flex items-center border rounded-lg p-1">
+            <div className="flex items-center border rounded-lg p-0.5 md:p-1">
               <Button
                 variant={viewMode === "list" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setViewMode("list")}
-                className="gap-1.5 h-8"
+                className="gap-1 h-7 md:h-8 px-2 md:px-3"
               >
-                <List className="h-4 w-4" />
-                <span className="hidden sm:inline">Lista</span>
+                <List className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden sm:inline text-xs md:text-sm">Lista</span>
               </Button>
               <Button
                 variant={viewMode === "kanban" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setViewMode("kanban")}
-                className="gap-1.5 h-8"
+                className="gap-1 h-7 md:h-8 px-2 md:px-3"
               >
-                <LayoutGrid className="h-4 w-4" />
-                <span className="hidden sm:inline">Kanban</span>
+                <LayoutGrid className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <span className="hidden sm:inline text-xs md:text-sm">Kanban</span>
               </Button>
             </div>
-            <Button onClick={handleCreateTask} className="gap-2">
-              <Plus className="h-4 w-4" />
-              Nueva tarea
+            <Button onClick={handleCreateTask} size="sm" className="gap-1.5 h-7 md:h-9 px-2.5 md:px-4 text-xs md:text-sm">
+              <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Nueva tarea</span>
+              <span className="sm:hidden">Nueva</span>
             </Button>
           </div>
         </div>
@@ -1028,7 +1033,7 @@ export default function WorkspacePage() {
             )}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2 md:space-y-3">
             {filteredTasks.map((task) => (
               <TaskCard
                 key={task.id}
