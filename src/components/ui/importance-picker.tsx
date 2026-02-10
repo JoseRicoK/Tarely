@@ -115,9 +115,9 @@ export function ImportancePicker({
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
-        <PopoverContent className="w-56 p-0 bg-background/95 backdrop-blur-xl border-white/10" align="start">
+        <PopoverContent className="w-56 p-0 bg-background/95 backdrop-blur-xl border-border" align="start">
           <div className="py-1 max-h-64 overflow-y-auto">
-            <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground border-b border-white/10 mb-1">
+            <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground border-b border-border mb-1">
               Seleccionar importancia
             </div>
             {IMPORTANCE_OPTIONS.map((option) => (
@@ -127,8 +127,8 @@ export function ImportancePicker({
                 disabled={isUpdating}
                 className={cn(
                   "w-full flex items-center gap-2 px-3 py-2 text-left text-sm transition-colors",
-                  "hover:bg-white/5",
-                  value === option.value && "bg-white/10"
+                  "hover:bg-foreground/5",
+                  value === option.value && "bg-foreground/10"
                 )}
               >
                 <div className={cn("w-2.5 h-2.5 rounded-full", getImportanceDotColor(option.value))} />
@@ -165,9 +165,9 @@ export function ImportancePicker({
           {isUpdating && <Loader2 className="h-4 w-4 animate-spin ml-auto" />}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-0 bg-background/95 backdrop-blur-xl border-white/10" align="start">
+      <PopoverContent className="w-64 p-0 bg-background/95 backdrop-blur-xl border-border" align="start">
         <div className="py-1 max-h-80 overflow-y-auto">
-          <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground border-b border-white/10 mb-1">
+          <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground border-b border-border mb-1">
             Seleccionar importancia
           </div>
           {IMPORTANCE_OPTIONS.map((option) => (
@@ -177,8 +177,8 @@ export function ImportancePicker({
               disabled={isUpdating}
               className={cn(
                 "w-full flex items-center gap-3 px-3 py-2.5 text-left transition-colors",
-                "hover:bg-white/5",
-                value === option.value && "bg-white/10"
+                "hover:bg-foreground/5",
+                value === option.value && "bg-foreground/10"
               )}
             >
               <div className={cn("w-3 h-3 rounded-full shrink-0", getImportanceDotColor(option.value))} />

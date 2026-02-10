@@ -2,6 +2,9 @@
 
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
+import { useAccentColor } from "@/components/theme-provider";
+import type { AccentColor } from "@/components/theme-provider";
 
 interface UserProfile {
   id: string;
@@ -24,6 +27,28 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [preferencesLoaded, setPreferencesLoaded] = useState(false);
+  const { setTheme } = useTheme();
+  const { setAccentColor } = useAccentColor();
+
+  const fetchPreferences = useCallback(async () => {
+    if (preferencesLoaded) return;
+    try {
+      const res = await fetch("/api/auth/preferences");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.theme_mode) {
+          setTheme(data.theme_mode);
+        }
+        if (data.accent_color) {
+          setAccentColor(data.accent_color as AccentColor);
+        }
+        setPreferencesLoaded(true);
+      }
+    } catch {
+      // Usar defaults
+    }
+  }, [preferencesLoaded, setTheme, setAccentColor]);
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -31,6 +56,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         setProfile(data);
+        // Cargar preferencias de tema al obtener perfil
+        fetchPreferences();
       } else {
         setProfile(null);
       }
@@ -39,7 +66,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [fetchPreferences]);
 
   const refreshProfile = useCallback(async () => {
     setIsLoading(true);
@@ -48,6 +75,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const clearProfile = useCallback(() => {
     setProfile(null);
+    setPreferencesLoaded(false);
   }, []);
 
   // Refetch cuando cambia la ruta

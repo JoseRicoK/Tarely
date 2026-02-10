@@ -170,10 +170,10 @@ export function ShareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg bg-background/95 backdrop-blur-xl border-white/10">
+      <DialogContent className="max-w-lg bg-background/95 backdrop-blur-xl border-border">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-purple-400" />
+            <Users className="h-5 w-5 text-ta-light" />
             Compartir &quot;{workspaceName}&quot;
           </DialogTitle>
           <DialogDescription>
@@ -191,13 +191,13 @@ export function ShareDialog({
                 placeholder="Buscar por nombre o email..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-10 bg-white/5 border-white/10"
+                className="pl-10 bg-foreground/5 border-border"
               />
             </div>
 
             {/* Lista de usuarios encontrados */}
             {search.length >= 2 && (
-              <div className="rounded-lg border border-white/10 bg-white/5 overflow-hidden">
+              <div className="rounded-lg border border-border bg-foreground/5 overflow-hidden">
                 {isLoadingUsers ? (
                   <div className="flex items-center justify-center py-4">
                     <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -211,7 +211,7 @@ export function ShareDialog({
                     {users.map((user) => (
                       <div
                         key={user.id}
-                        className="flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+                        className="flex items-center justify-between p-3 hover:bg-foreground/5 transition-colors"
                       >
                         <div className="flex items-center gap-3">
                           <div className="relative w-8 h-8 rounded-full overflow-hidden">
@@ -235,7 +235,7 @@ export function ShareDialog({
                           size="sm"
                           onClick={() => handleInvite(user.id)}
                           disabled={invitingUserId === user.id}
-                          className="bg-purple-600 hover:bg-purple-500 text-white border-0"
+                          className="bg-ta hover:bg-ta-hover text-white border-0"
                         >
                           {invitingUserId === user.id ? (
                             <Loader2 className="h-4 w-4 animate-spin text-white" />
@@ -259,7 +259,7 @@ export function ShareDialog({
             <Label className="text-sm font-medium">
               Miembros ({members.length})
             </Label>
-            <div className="rounded-lg border border-white/10 bg-white/5 overflow-hidden">
+            <div className="rounded-lg border border-border bg-foreground/5 overflow-hidden">
               {isLoadingMembers ? (
                 <div className="flex items-center justify-center py-4">
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -269,7 +269,7 @@ export function ShareDialog({
                   {members.map((member) => (
                     <div
                       key={member.id}
-                      className="flex items-center justify-between p-3 hover:bg-white/5 transition-colors"
+                      className="flex items-center justify-between p-3 hover:bg-foreground/5 transition-colors"
                     >
                       <div className="flex items-center gap-3">
                         <div className="relative w-8 h-8 rounded-full overflow-hidden">

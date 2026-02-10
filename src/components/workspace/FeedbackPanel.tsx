@@ -63,7 +63,7 @@ export function FeedbackPanel() {
   const isOverLimit = charCount > charLimit;
 
   return (
-    <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+    <Card className="bg-foreground/5 border-border backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <MessageSquare className="h-5 w-5 text-blue-400" />
@@ -86,7 +86,7 @@ export function FeedbackPanel() {
                   "flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all",
                   type === "suggestion"
                     ? "border-blue-500 bg-blue-500/10 text-blue-400"
-                    : "border-white/10 bg-white/5 text-muted-foreground hover:border-white/20 hover:bg-white/10"
+                    : "border-border bg-foreground/5 text-muted-foreground hover:border-foreground/20 hover:bg-foreground/10"
                 )}
               >
                 <Lightbulb className="h-4 w-4" />
@@ -100,7 +100,7 @@ export function FeedbackPanel() {
                   "flex-1 flex items-center justify-center gap-2 p-3 rounded-lg border-2 transition-all",
                   type === "bug"
                     ? "border-orange-500 bg-orange-500/10 text-orange-400"
-                    : "border-white/10 bg-white/5 text-muted-foreground hover:border-white/20 hover:bg-white/10"
+                    : "border-border bg-foreground/5 text-muted-foreground hover:border-foreground/20 hover:bg-foreground/10"
                 )}
               >
                 <Bug className="h-4 w-4" />
@@ -124,7 +124,7 @@ export function FeedbackPanel() {
                   : "He encontrado un error cuando..."
               }
               className={cn(
-                "min-h-[120px] resize-none bg-white/5 border-white/10 focus:border-blue-500/50",
+                "min-h-[120px] resize-none bg-foreground/5 border-border focus:border-blue-500/50",
                 isOverLimit && "border-red-500/50 focus:border-red-500"
               )}
               maxLength={1050} // Permitir un poco más para no cortar abruptamente
@@ -172,7 +172,7 @@ export function FeedbackPanel() {
         </form>
 
         {/* Mensaje informativo */}
-        <div className="mt-4 p-3 rounded-lg bg-white/5 border border-white/10">
+        <div className="mt-4 p-3 rounded-lg bg-foreground/5 border border-border">
           <p className="text-xs text-muted-foreground">
             💡 Tu feedback nos ayuda a mejorar. Revisamos todos los mensajes y tu información 
             de usuario se guarda automáticamente para poder contactarte si es necesario.

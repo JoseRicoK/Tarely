@@ -53,7 +53,7 @@ export function WorkspaceCard({
 
   return (
     <Card 
-      className="group relative flex flex-col transition-all duration-200 hover:shadow-xl hover:shadow-primary/10 hover:border-primary/30 cursor-pointer overflow-hidden"
+      className="group relative flex flex-col transition-all duration-200 hover:shadow-xl hover:shadow-ta/10 hover:border-ta/30 cursor-pointer overflow-hidden"
       onClick={handleCardClick}
     >
       {/* Barra superior de color */}
@@ -65,7 +65,7 @@ export function WorkspaceCard({
       {/* Badge de compartido */}
       {workspace.isShared && (
         <div className="absolute -top-2 -right-2 z-10">
-          <Badge className="bg-purple-600 hover:bg-purple-700 text-white shadow-lg">
+          <Badge className="bg-ta hover:bg-ta-hover text-white shadow-lg">
             <Users className="h-3 w-3 mr-1" />
             Compartido
           </Badge>
@@ -90,7 +90,7 @@ export function WorkspaceCard({
               {workspace.name}
             </CardTitle>
             {workspace.isShared && workspace.ownerName && (
-              <p className="text-xs text-purple-400 mt-1">
+              <p className="text-xs text-ta-light mt-1">
                 por {workspace.ownerName}
               </p>
             )}

@@ -48,11 +48,11 @@ export function CookieBanner() {
           transition={{ type: "spring", damping: 25, stiffness: 200 }}
           className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 sm:max-w-md z-100"
         >
-          <div className="relative rounded-2xl border border-white/10 bg-slate-900/95 backdrop-blur-xl shadow-2xl shadow-black/40 p-5">
+          <div className="relative rounded-2xl border border-border bg-card/95 backdrop-blur-xl shadow-2xl shadow-black/20 dark:shadow-black/40 p-5">
             {/* Close button */}
             <button
               onClick={handleReject}
-              className="absolute top-3 right-3 p-1 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/5 transition-colors"
+              className="absolute top-3 right-3 p-1 rounded-lg text-foreground/30 hover:text-foreground/60 hover:bg-foreground/5 transition-colors"
               aria-label="Cerrar"
             >
               <X className="h-4 w-4" />
@@ -64,12 +64,12 @@ export function CookieBanner() {
                 <Cookie className="h-4.5 w-4.5 text-violet-400" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-white">Usamos cookies</h3>
+                <h3 className="text-sm font-semibold text-foreground">Usamos cookies</h3>
               </div>
             </div>
 
             {/* Description */}
-            <p className="text-xs text-white/50 leading-relaxed mb-4 pr-4">
+            <p className="text-xs text-muted-foreground leading-relaxed mb-4 pr-4">
               Utilizamos cookies de analítica para entender cómo usas Tarely y mejorar tu experiencia. 
               No compartimos tus datos con terceros.
             </p>
@@ -90,7 +90,7 @@ export function CookieBanner() {
               </button>
               <button
                 onClick={handleReject}
-                className="flex-1 px-4 py-2 text-xs font-medium text-white/60 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 hover:text-white/80 transition-all"
+                className="flex-1 px-4 py-2 text-xs font-medium text-muted-foreground rounded-xl border border-border bg-foreground/5 hover:bg-foreground/10 hover:text-foreground transition-all"
               >
                 Rechazar
               </button>

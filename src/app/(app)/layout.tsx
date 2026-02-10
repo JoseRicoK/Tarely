@@ -23,14 +23,14 @@ export default function AppLayout({
     <UserProvider>
       {/* Fondo global sutil */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-background to-slate-950" />
-        <div className="absolute top-0 left-1/4 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-purple-500/5 rounded-full blur-[150px]" />
-        <div className="absolute bottom-0 right-1/4 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] bg-blue-500/5 rounded-full blur-[150px]" />
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.008)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.008)_1px,transparent_1px)] bg-[size:64px_64px]" />
+        <div className="absolute inset-0 app-bg-gradient" />
+        <div className="absolute top-0 left-1/4 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] app-bg-glow-1 rounded-full blur-[150px]" />
+        <div className="absolute bottom-0 right-1/4 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] app-bg-glow-2 rounded-full blur-[150px]" />
+        <div className="absolute inset-0 app-grid-pattern" />
       </div>
 
       <div className="flex min-h-screen flex-col relative overflow-x-hidden">
-        <header className="sticky top-0 z-50 w-full border-b border-white/5 bg-background/80 backdrop-blur-xl">
+        <header className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/80 backdrop-blur-xl">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex h-14 items-center justify-between">
             <Link href="/app" className="flex items-center gap-2 font-bold text-lg group">
               <Image
@@ -38,10 +38,10 @@ export default function AppLayout({
                 alt="Tarely"
                 width={32}
                 height={32}
-                className="h-7 w-7 sm:h-8 sm:w-8 object-contain group-hover:scale-105 transition-transform"
+                className="h-7 w-7 sm:h-8 sm:w-8 object-contain group-hover:scale-105 transition-transform dark:drop-shadow-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
                 priority
               />
-              <span className="bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">Tarely</span>
+              <span className="text-accent-gradient">Tarely</span>
             </Link>
             <div className="flex items-center gap-2">
               <Link
@@ -56,7 +56,7 @@ export default function AppLayout({
           </div>
         </header>
         <main className="flex-1 container mx-auto px-4 sm:px-6 lg:px-8 py-6">{children}</main>
-        <footer className="border-t border-white/5 py-4 bg-background/50">
+        <footer className="border-t border-border/50 py-4 bg-background/50">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-muted-foreground/60">
             Tarely - Gestión inteligente de tareas ✨
           </div>

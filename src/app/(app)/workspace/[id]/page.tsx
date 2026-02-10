@@ -802,15 +802,15 @@ export default function WorkspacePage() {
       <Separator />
 
       {/* AI Generation Area */}
-      <div className="relative overflow-hidden rounded-lg border-2 border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card p-3 md:p-4 shadow-sm hover:shadow-md transition-shadow">
+      <div className="relative overflow-hidden rounded-lg border-2 border-ta/20 bg-gradient-to-br from-ta/5 via-card to-card p-3 md:p-4 shadow-sm hover:shadow-md transition-shadow">
         {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -z-10" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl -z-10" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-ta/5 rounded-full blur-3xl -z-10" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-ta/5 rounded-full blur-2xl -z-10" />
         
         <div className="space-y-2 md:space-y-3">
           <div className="flex items-start gap-2 md:gap-3">
-            <div className="p-1.5 rounded-lg bg-primary/10 mt-0.5">
-              <Sparkles className="h-4 w-4 text-primary" />
+            <div className="p-1.5 rounded-lg bg-ta/10 mt-0.5">
+              <Sparkles className="h-4 w-4 text-ta-light" />
             </div>
             <div className="flex-1 min-w-0">
               <h2 className="font-semibold text-sm md:text-base">Convierte el caos en tareas ordenadas</h2>
@@ -844,7 +844,7 @@ export default function WorkspacePage() {
             onChange={(e) => setAiText(e.target.value)}
             onKeyDown={handleKeyDown}
             rows={3}
-            className="resize-y bg-background/50 border-primary/20 focus:border-primary/40 transition-colors min-h-[80px] md:min-h-[120px] text-sm"
+            className="resize-y bg-background/50 border-ta/20 focus:border-ta/40 transition-colors min-h-[80px] md:min-h-[120px] text-sm"
             disabled={isGenerating}
           />
           
@@ -884,7 +884,7 @@ export default function WorkspacePage() {
                 <span className="hidden sm:inline text-xs md:text-sm">Kanban</span>
               </Button>
             </div>
-            <Button onClick={handleCreateTask} size="sm" className="gap-1.5 h-7 md:h-9 px-2.5 md:px-4 text-xs md:text-sm">
+            <Button onClick={handleCreateTask} size="sm" className="gap-1.5 h-7 md:h-9 px-2.5 md:px-4 text-xs md:text-sm btn-accent-gradient text-white">
               <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Nueva tarea</span>
               <span className="sm:hidden">Nueva</span>
@@ -904,8 +904,8 @@ export default function WorkspacePage() {
                     className={cn(
                       "flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors whitespace-nowrap group",
                       activeSectionId === section.id
-                        ? "border-primary bg-primary/10 text-primary"
-                        : "border-transparent bg-muted/50 hover:bg-muted"
+                        ? "border-ta bg-ta/10 text-ta shadow-sm"
+                        : "border-border bg-card hover:bg-accent/50"
                     )}
                   >
                     <button
@@ -958,7 +958,7 @@ export default function WorkspacePage() {
                   setEditingSection(null);
                   setSectionDialogOpen(true);
                 }}
-                className="gap-1.5 h-9 px-3 border border-dashed"
+                className="gap-1.5 h-9 px-3 border border-dashed hover:border-ta/50 hover:text-ta-light"
               >
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Añadir</span>

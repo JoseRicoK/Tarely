@@ -310,7 +310,7 @@ export default function AppHomePage() {
             Organiza tus proyectos y genera tareas con IA
           </p>
         </div>
-        <Button onClick={handleCreate} size="lg" className="gap-2">
+        <Button onClick={handleCreate} size="lg" className="gap-2 btn-accent-gradient text-white">
           <Plus className="h-5 w-5" />
           Nuevo Workspace
         </Button>
@@ -328,7 +328,7 @@ export default function AppHomePage() {
             Crea tu primer workspace para empezar a organizar tus tareas y
             generar nuevas ideas con ayuda de la IA.
           </p>
-          <Button onClick={handleCreate} size="lg" className="gap-2">
+          <Button onClick={handleCreate} size="lg" className="gap-2 btn-accent-gradient text-white">
             <Plus className="h-5 w-5" />
             Crear mi primer workspace
           </Button>

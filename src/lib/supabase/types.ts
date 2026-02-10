@@ -95,6 +95,8 @@ export interface Database {
           email_confirmed: boolean;
           confirmation_token: string | null;
           confirmation_token_expires: string | null;
+          theme_mode: string;
+          accent_color: string;
           created_at: string;
           updated_at: string;
         };
@@ -106,6 +108,8 @@ export interface Database {
           email_confirmed?: boolean;
           confirmation_token?: string | null;
           confirmation_token_expires?: string | null;
+          theme_mode?: string;
+          accent_color?: string;
           created_at?: string;
           updated_at?: string;
         };
@@ -117,6 +121,8 @@ export interface Database {
           email_confirmed?: boolean;
           confirmation_token?: string | null;
           confirmation_token_expires?: string | null;
+          theme_mode?: string;
+          accent_color?: string;
           created_at?: string;
           updated_at?: string;
         };

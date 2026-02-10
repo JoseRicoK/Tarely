@@ -44,6 +44,13 @@
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
+  /* Accent color system */
+  --color-ta: var(--ta);
+  --color-ta-hover: var(--ta-hover);
+  --color-ta-light: var(--ta-light);
+  --color-ta-secondary: var(--ta-secondary);
+  --color-ta-secondary-hover: var(--ta-secondary-hover);
+  --color-ta-fg: var(--ta-fg);
 }
 
 :root {
@@ -115,6 +122,151 @@
   --sidebar-ring: oklch(0.552 0.016 285.938);
 }
 
+/* ===== Accent Color System ===== */
+/* Default: neutral/white (sin color seleccionado) */
+:root {
+  --ta: #e4e4e7;
+  --ta-hover: #f4f4f5;
+  --ta-light: #a1a1aa;
+  --ta-secondary: #d4d4d8;
+  --ta-secondary-hover: #e4e4e7;
+  --ta-fg: #18181b;
+}
+
+/* Pink */
+[data-accent="pink"] {
+  --ta: #db2777;
+  --ta-hover: #ec4899;
+  --ta-light: #f472b6;
+  --ta-secondary: #be185d;
+  --ta-secondary-hover: #db2777;
+  --ta-fg: #ffffff;
+}
+
+/* Blue */
+[data-accent="blue"] {
+  --ta: #2563eb;
+  --ta-hover: #3b82f6;
+  --ta-light: #60a5fa;
+  --ta-secondary: #4f46e5;
+  --ta-secondary-hover: #6366f1;
+  --ta-fg: #ffffff;
+}
+
+/* Green */
+[data-accent="green"] {
+  --ta: #059669;
+  --ta-hover: #10b981;
+  --ta-light: #34d399;
+  --ta-secondary: #0d9488;
+  --ta-secondary-hover: #14b8a6;
+  --ta-fg: #ffffff;
+}
+
+/* Orange */
+[data-accent="orange"] {
+  --ta: #ea580c;
+  --ta-hover: #f97316;
+  --ta-light: #fb923c;
+  --ta-secondary: #d97706;
+  --ta-secondary-hover: #f59e0b;
+  --ta-fg: #ffffff;
+}
+
+/* Cyan */
+[data-accent="cyan"] {
+  --ta: #0891b2;
+  --ta-hover: #06b6d4;
+  --ta-light: #22d3ee;
+  --ta-secondary: #0284c7;
+  --ta-secondary-hover: #0ea5e9;
+  --ta-fg: #ffffff;
+}
+
+/* Red */
+[data-accent="red"] {
+  --ta: #dc2626;
+  --ta-hover: #ef4444;
+  --ta-light: #f87171;
+  --ta-secondary: #e11d48;
+  --ta-secondary-hover: #f43f5e;
+  --ta-fg: #ffffff;
+}
+
+/* Settings accent: purple fallback when no accent color is selected */
+/* Only applies when html has no data-accent (i.e. "none"/default) */
+:root:not([data-accent]) .settings-accent {
+  --ta: #7c3aed;
+  --ta-hover: #8b5cf6;
+  --ta-light: #a78bfa;
+  --ta-secondary: #2563eb;
+  --ta-secondary-hover: #3b82f6;
+  --ta-fg: #ffffff;
+}
+
+/* ===== Themed utility classes ===== */
+.bg-themed-surface {
+  background: rgb(0 0 0 / 0.04);
+}
+.dark .bg-themed-surface {
+  background: rgb(255 255 255 / 0.05);
+}
+.bg-themed-surface-hover:hover {
+  background: rgb(0 0 0 / 0.07);
+}
+.dark .bg-themed-surface-hover:hover {
+  background: rgb(255 255 255 / 0.1);
+}
+.border-themed {
+  border-color: rgb(0 0 0 / 0.1);
+}
+.dark .border-themed {
+  border-color: rgb(255 255 255 / 0.1);
+}
+.btn-accent-gradient {
+  background: linear-gradient(to right, var(--ta), var(--ta-secondary));
+  color: var(--ta-fg);
+}
+.btn-accent-gradient:hover {
+  background: linear-gradient(to right, var(--ta-hover), var(--ta-secondary-hover));
+}
+.text-accent-gradient {
+  background: linear-gradient(to right, var(--foreground), var(--muted-foreground));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.glow-accent {
+  box-shadow: 0 10px 25px -5px color-mix(in srgb, var(--ta) 20%, transparent);
+}
+.glow-accent:hover {
+  box-shadow: 0 10px 25px -5px color-mix(in srgb, var(--ta) 30%, transparent);
+}
+/* App background pattern */
+.app-grid-pattern {
+  background-image: linear-gradient(rgb(0 0 0 / 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(0 0 0 / 0.03) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+.dark .app-grid-pattern {
+  background-image: linear-gradient(rgb(255 255 255 / 0.008) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(255 255 255 / 0.008) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+/* App gradient background */
+.app-bg-gradient {
+  background: linear-gradient(to bottom right, rgb(241 245 249), var(--background), rgb(241 245 249));
+}
+.dark .app-bg-gradient {
+  background: linear-gradient(to bottom right, rgb(2 6 23), var(--background), rgb(2 6 23));
+}
+.app-bg-glow-1 {
+  background: color-mix(in srgb, var(--ta) 5%, transparent);
+}
+.app-bg-glow-2 {
+  background: color-mix(in srgb, var(--ta-secondary) 5%, transparent);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -124,6 +276,11 @@
   }
   body {
     @apply bg-background text-foreground overflow-x-hidden;
+  }
+  /* Force dark body background on non-app pages */
+  body:has([data-force-dark]) {
+    background-color: oklch(0.141 0.005 285.823) !important;
+    color: oklch(0.985 0 0) !important;
   }
   /* Prevent horizontal scroll on mobile */
   html, body {

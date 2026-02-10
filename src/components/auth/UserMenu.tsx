@@ -62,7 +62,7 @@ export function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
-          <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-purple-500/50 hover:border-purple-400 transition-colors">
+          <div className="relative w-10 h-10 rounded-full overflow-hidden border-2 border-ta/50 hover:border-ta-light transition-colors">
             <Image
               src={getAvatarUrl(profile.avatar, profile.avatar_version)}
               alt={profile.name}

@@ -78,7 +78,7 @@ export function InvitationsPanel() {
 
   if (isLoading) {
     return (
-      <Card className="bg-white/5 border-white/10">
+      <Card className="bg-foreground/5 border-border">
         <CardContent className="flex items-center justify-center py-8">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </CardContent>
@@ -87,13 +87,13 @@ export function InvitationsPanel() {
   }
 
   return (
-    <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
+    <Card className="bg-foreground/5 border-border backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
-          <Mail className="h-5 w-5 text-purple-400" />
+          <Mail className="h-5 w-5 text-ta-light" />
           Invitaciones pendientes
           {invitations.length > 0 && (
-            <Badge className="bg-purple-600 ml-2">{invitations.length}</Badge>
+            <Badge className="bg-ta ml-2">{invitations.length}</Badge>
           )}
         </CardTitle>
         <CardDescription>
@@ -113,7 +113,7 @@ export function InvitationsPanel() {
             {invitations.map((invitation) => (
               <div
                 key={invitation.id}
-                className="flex items-center justify-between p-4 rounded-lg bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                className="flex items-center justify-between p-4 rounded-lg bg-foreground/5 border border-border hover:bg-foreground/10 transition-colors"
               >
                 <div className="flex items-center gap-4">
                   {/* Workspace icon */}

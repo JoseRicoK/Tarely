@@ -175,7 +175,7 @@ export function TaskCard({
   return (
     <div 
       className={cn(
-        "group relative flex gap-3 md:gap-4 p-3 md:p-4 rounded-lg border bg-card transition-all duration-200 hover:shadow-md hover:border-primary/20 cursor-pointer",
+        "group relative flex gap-3 md:gap-4 p-3 md:p-4 rounded-lg border bg-card transition-all duration-200 hover:shadow-md hover:border-ta/20 cursor-pointer",
         task.completed && "opacity-70 bg-muted/30"
       )}
       onClick={handleNavigateToTask}
@@ -241,7 +241,7 @@ export function TaskCard({
                     <Button
                       variant="outline"
                       size="icon"
-                      className="hidden md:flex h-7 w-7 rounded-full transition-all hover:bg-primary/10 hover:text-primary hover:border-primary"
+                      className="hidden md:flex h-7 w-7 rounded-full transition-all hover:bg-ta/10 hover:text-ta-light hover:border-ta"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <MoveRight className="h-3.5 w-3.5" />
@@ -447,7 +447,7 @@ export function TaskCard({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="hidden md:flex h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:text-primary hover:bg-primary/10"
+                  className="hidden md:flex h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:text-ta-light hover:bg-ta/10"
                   onClick={handleGenerateSubtasks}
                   disabled={isGeneratingSubtasks}
                 >

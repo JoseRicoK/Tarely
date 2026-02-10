@@ -170,7 +170,7 @@ export function TaskAssignees({
             size="sm"
             className={cn(
               "h-7 px-2 gap-1 text-xs",
-              assignees.length > 0 && "text-purple-400"
+              assignees.length > 0 && "text-ta-light"
             )}
           >
             {assignees.length > 0 ? (
@@ -197,7 +197,7 @@ export function TaskAssignees({
                   ))}
                 </TooltipProvider>
                 {assignees.length > 3 && (
-                  <div className="w-5 h-5 rounded-full bg-purple-600 flex items-center justify-center text-[10px] text-white border-2 border-background">
+                  <div className="w-5 h-5 rounded-full bg-ta flex items-center justify-center text-[10px] text-white border-2 border-background">
                     +{assignees.length - 3}
                   </div>
                 )}
@@ -210,7 +210,7 @@ export function TaskAssignees({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-64 p-0 bg-background/95 backdrop-blur-xl border-white/10" align="start">
+          <PopoverContent className="w-64 p-0 bg-background/95 backdrop-blur-xl border-border" align="start">
           <AssigneePopoverContent
             assignees={assignees}
             availableMembers={availableMembers}
@@ -240,7 +240,7 @@ export function TaskAssignees({
               Añadir
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-64 p-0 bg-background/95 backdrop-blur-xl border-white/10" align="end">
+          <PopoverContent className="w-64 p-0 bg-background/95 backdrop-blur-xl border-border" align="end">
             <AssigneePopoverContent
               assignees={assignees}
               availableMembers={availableMembers}
@@ -261,7 +261,7 @@ export function TaskAssignees({
             <Badge
               key={assignee.id}
               variant="secondary"
-              className="pl-1 pr-2 py-1 gap-2 bg-white/5 hover:bg-white/10"
+              className="pl-1 pr-2 py-1 gap-2 bg-foreground/5 hover:bg-foreground/10"
             >
               <div className="relative w-5 h-5 rounded-full overflow-hidden">
                 <Image
@@ -326,7 +326,7 @@ function AssigneePopoverContent({
             {assignees.map((assignee) => (
               <div
                 key={assignee.id}
-                className="flex items-center justify-between px-3 py-2 hover:bg-white/5"
+                className="flex items-center justify-between px-3 py-2 hover:bg-foreground/5"
               >
                 <div className="flex items-center gap-2">
                   <div className="relative w-6 h-6 rounded-full overflow-hidden">
@@ -353,7 +353,7 @@ function AssigneePopoverContent({
               </div>
             ))}
           </ScrollArea>
-          <div className="border-t border-white/10 my-1" />
+          <div className="border-t border-foreground/10 my-1" />
         </>
       )}
 
@@ -379,7 +379,7 @@ function AssigneePopoverContent({
               key={member.user_id}
               onClick={() => onAssign(member.user_id)}
               disabled={assigningUserId === member.user_id}
-              className="w-full flex items-center justify-between px-3 py-2 hover:bg-white/5 transition-colors text-left"
+              className="w-full flex items-center justify-between px-3 py-2 hover:bg-foreground/5 transition-colors text-left"
             >
               <div className="flex items-center gap-2">
                 <div className="relative w-6 h-6 rounded-full overflow-hidden">
@@ -396,7 +396,7 @@ function AssigneePopoverContent({
                 )}
               </div>
               {assigningUserId === member.user_id ? (
-                <Loader2 className="h-4 w-4 animate-spin text-purple-400" />
+                <Loader2 className="h-4 w-4 animate-spin text-ta-light" />
               ) : (
                 <UserPlus className="h-4 w-4 text-muted-foreground" />
               )}

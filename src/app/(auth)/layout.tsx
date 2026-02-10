@@ -14,9 +14,9 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <div data-force-dark className="dark min-h-screen text-foreground">
       {children}
       <Toaster position="bottom-right" richColors closeButton />
-    </>
+    </div>
   );
 }

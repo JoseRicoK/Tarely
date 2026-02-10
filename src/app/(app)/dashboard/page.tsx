@@ -161,7 +161,7 @@ function FeedbackPanel() {
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
-          { label: "Total", value: counts.total, color: "from-purple-500/20 to-purple-500/5", textColor: "text-purple-400" },
+          { label: "Total", value: counts.total, color: "from-ta/20 to-ta/5", textColor: "text-ta-light" },
           { label: "Pendientes", value: counts.pending, color: "from-amber-500/20 to-amber-500/5", textColor: "text-amber-400" },
           { label: "Revisados", value: counts.reviewed, color: "from-blue-500/20 to-blue-500/5", textColor: "text-blue-400" },
           { label: "Resueltos", value: counts.resolved, color: "from-emerald-500/20 to-emerald-500/5", textColor: "text-emerald-400" },
@@ -170,7 +170,7 @@ function FeedbackPanel() {
         ].map((stat) => (
           <div
             key={stat.label}
-            className={`bg-gradient-to-b ${stat.color} rounded-xl border border-white/5 p-4 text-center`}
+            className={`bg-gradient-to-b ${stat.color} rounded-xl border border-border p-4 text-center`}
           >
             <p className={`text-2xl font-bold ${stat.textColor}`}>{stat.value}</p>
             <p className="text-xs text-muted-foreground mt-1">{stat.label}</p>
@@ -186,14 +186,14 @@ function FeedbackPanel() {
         </div>
 
         {/* Type filter */}
-        <div className="flex gap-1 bg-white/5 rounded-lg p-1">
+        <div className="flex gap-1 bg-foreground/5 rounded-lg p-1">
           {(["all", "suggestion", "bug"] as const).map((type) => (
             <button
               key={type}
               onClick={() => setFilter(type)}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                 filter === type
-                  ? "bg-white/10 text-foreground shadow-sm"
+                  ? "bg-foreground/10 text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -203,14 +203,14 @@ function FeedbackPanel() {
         </div>
 
         {/* Status filter */}
-        <div className="flex gap-1 bg-white/5 rounded-lg p-1">
+        <div className="flex gap-1 bg-foreground/5 rounded-lg p-1">
           {(["active", "resolved"] as const).map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
                 statusFilter === s
-                  ? "bg-white/10 text-foreground shadow-sm"
+                  ? "bg-foreground/10 text-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
@@ -238,7 +238,7 @@ function FeedbackPanel() {
             return (
               <div
                 key={item.id}
-                className="group bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 hover:border-white/10 rounded-xl p-4 transition-all"
+                className="group bg-foreground/[0.03] hover:bg-foreground/[0.06] border border-border hover:border-foreground/10 rounded-xl p-4 transition-all"
               >
                 <div className="flex items-start gap-4">
                   {/* Icon */}
@@ -396,7 +396,7 @@ function ImageUpload({
         Imagen (opcional)
       </label>
       {displayUrl ? (
-        <div className="relative group/img rounded-lg overflow-hidden border border-white/10 max-w-md">
+        <div className="relative group/img rounded-lg overflow-hidden border border-border max-w-md">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={displayUrl} alt="Preview" className="w-full h-auto max-h-48 object-cover" />
           <div className="absolute inset-0 bg-black/50 opacity-0 group-hover/img:opacity-100 transition-opacity flex items-center justify-center gap-2">
@@ -431,8 +431,8 @@ function ImageUpload({
           }}
           className={`flex flex-col items-center justify-center gap-2 p-6 border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
             dragOver
-              ? "border-purple-500/50 bg-purple-500/10"
-              : "border-white/10 hover:border-white/20 hover:bg-white/[0.02]"
+              ? "border-ta/50 bg-ta/10"
+              : "border-border hover:border-foreground/20 hover:bg-foreground/[0.02]"
           }`}
         >
           <Upload className="h-6 w-6 text-muted-foreground/50" />
@@ -599,7 +599,7 @@ function ChangelogForm({
   };
 
   return (
-    <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6 space-y-5">
+    <div className="bg-foreground/[0.03] border border-border rounded-xl p-6 space-y-5">
       <h3 className="text-lg font-semibold text-foreground">
         {isEdit ? "Editar entrada" : "Nueva entrada de changelog"}
       </h3>
@@ -615,7 +615,7 @@ function ChangelogForm({
             value={version}
             onChange={(e) => setVersion(e.target.value)}
             placeholder="1.0.0"
-            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50"
+            className="w-full px-3 py-2 bg-foreground/5 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ta/50 focus:border-ta/50"
           />
         </div>
         <div>
@@ -628,7 +628,7 @@ function ChangelogForm({
             value={date}
             onChange={(e) => setDate(e.target.value)}
             title="Fecha del changelog"
-            className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 [color-scheme:dark]"
+            className="w-full px-3 py-2 bg-foreground/5 border border-border rounded-lg text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ta/50 focus:border-ta/50 [color-scheme:dark]"
           />
         </div>
       </div>
@@ -637,14 +637,14 @@ function ChangelogForm({
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <label className="text-sm font-medium text-foreground">Secciones</label>
-          <button onClick={addSection} className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300 transition-colors">
+          <button onClick={addSection} className="flex items-center gap-1 text-xs text-ta-light hover:text-ta transition-colors">
             <Plus className="h-3 w-3" />
             Añadir sección
           </button>
         </div>
 
         {sections.map((section, sIdx) => (
-          <div key={sIdx} className="bg-white/[0.02] border border-white/5 rounded-lg p-4 space-y-3">
+          <div key={sIdx} className="bg-foreground/[0.02] border border-border rounded-lg p-4 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">Sección {sIdx + 1}</span>
               {sections.length > 1 && (
@@ -659,7 +659,7 @@ function ChangelogForm({
               value={section.title}
               onChange={(e) => updateSectionTitle(sIdx, e.target.value)}
               placeholder="Título de la sección (ej: Bug Fixes and Improvements)"
-              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+              className="w-full px-3 py-2 bg-foreground/5 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ta/50"
             />
 
             <ImageUpload
@@ -672,7 +672,7 @@ function ChangelogForm({
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <span className="text-xs text-muted-foreground">Items</span>
-                <button onClick={() => addItem(sIdx)} className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-300">
+                <button onClick={() => addItem(sIdx)} className="flex items-center gap-1 text-xs text-ta-light hover:text-ta">
                   <Plus className="h-3 w-3" />
                   Añadir item
                 </button>
@@ -685,7 +685,7 @@ function ChangelogForm({
                     value={item}
                     onChange={(e) => updateItem(sIdx, iIdx, e.target.value)}
                     placeholder="Descripción del cambio..."
-                    className="flex-1 px-3 py-1.5 bg-white/5 border border-white/10 rounded-md text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                    className="flex-1 px-3 py-1.5 bg-foreground/5 border border-border rounded-md text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ta/50"
                   />
                   {section.items.length > 1 && (
                     <button onClick={() => removeItem(sIdx, iIdx)} className="text-red-400/50 hover:text-red-400" title="Eliminar item">
@@ -707,7 +707,7 @@ function ChangelogForm({
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          className="flex items-center gap-2 px-6 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
+          className="flex items-center gap-2 px-6 py-2.5 bg-ta hover:bg-ta-hover disabled:opacity-50 text-white rounded-lg text-sm font-medium transition-colors"
         >
           {submitting ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -804,7 +804,7 @@ function ChangelogPanel() {
         {!editingEntry && (
           <button
             onClick={() => setShowForm(!showForm)}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-ta hover:bg-ta-hover text-white rounded-lg text-sm font-medium transition-colors"
           >
             {showForm ? <X className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
             {showForm ? "Cancelar" : "Nueva entrada"}
@@ -837,8 +837,8 @@ function ChangelogPanel() {
             return (
               <div
                 key={entry.id}
-                className={`bg-white/[0.03] border rounded-xl transition-all overflow-hidden ${
-                  isBeingEdited ? "border-purple-500/30 bg-purple-500/5" : "border-white/5 hover:border-white/10"
+                className={`bg-foreground/[0.03] border rounded-xl transition-all overflow-hidden ${
+                  isBeingEdited ? "border-ta/30 bg-ta/5" : "border-border hover:border-foreground/10"
                 }`}
               >
                 <div
@@ -846,7 +846,7 @@ function ChangelogPanel() {
                   onClick={() => toggleExpand(entry.id!)}
                 >
                   <div className="shrink-0">
-                    <Badge variant="outline" className="bg-purple-500/15 text-purple-400 border-purple-500/30 font-mono text-xs">
+                    <Badge variant="outline" className="bg-ta/15 text-ta-light border-ta/30 font-mono text-xs">
                       {entry.version}
                     </Badge>
                   </div>
@@ -864,7 +864,7 @@ function ChangelogPanel() {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={(e) => { e.stopPropagation(); startEdit(entry); }}
-                      className="p-2 rounded-lg text-muted-foreground hover:text-purple-400 hover:bg-purple-500/10 transition-colors"
+                      className="p-2 rounded-lg text-muted-foreground hover:text-ta-light hover:bg-ta/10 transition-colors"
                       title="Editar entrada"
                     >
                       <Pencil className="h-4 w-4" />
@@ -885,12 +885,12 @@ function ChangelogPanel() {
                 </div>
 
                 {isExpanded && (
-                  <div className="px-4 pb-4 border-t border-white/5 pt-4 space-y-4">
+                  <div className="px-4 pb-4 border-t border-border pt-4 space-y-4">
                     {entry.changelog_sections?.map((section, sIdx) => (
                       <div key={sIdx} className="space-y-2">
                         <h4 className="text-sm font-semibold text-foreground">{section.title}</h4>
                         {section.image_url && (
-                          <div className="rounded-lg overflow-hidden border border-white/10 max-w-2xl">
+                          <div className="rounded-lg overflow-hidden border border-border max-w-2xl">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img
                               src={getChangelogImageUrl(section.image_url)}
@@ -954,7 +954,7 @@ export default function DashboardPage() {
   if (isLoading || checking) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-        <Loader2 className="h-10 w-10 animate-spin text-purple-400" />
+        <Loader2 className="h-10 w-10 animate-spin text-ta-light" />
         <p className="text-sm text-muted-foreground">Verificando acceso...</p>
       </div>
     );
@@ -970,11 +970,11 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="space-y-2">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl btn-accent-gradient flex items-center justify-center">
             <Shield className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-400 bg-clip-text text-transparent">
+            <h1 className="text-2xl font-bold text-accent-gradient">
               Panel de Administración
             </h1>
             <p className="text-sm text-muted-foreground">
@@ -986,12 +986,12 @@ export default function DashboardPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="feedback" className="space-y-6">
-        <TabsList className="bg-white/5 border border-white/5">
-          <TabsTrigger value="feedback" className="flex items-center gap-2 data-[state=active]:bg-white/10">
+        <TabsList className="bg-foreground/5 border border-border">
+          <TabsTrigger value="feedback" className="flex items-center gap-2 data-[state=active]:bg-foreground/10">
             <MessageSquare className="h-4 w-4" />
             Feedback
           </TabsTrigger>
-          <TabsTrigger value="changelog" className="flex items-center gap-2 data-[state=active]:bg-white/10">
+          <TabsTrigger value="changelog" className="flex items-center gap-2 data-[state=active]:bg-foreground/10">
             <FileText className="h-4 w-4" />
             Changelog
           </TabsTrigger>

@@ -108,7 +108,7 @@ export function KanbanColumn({
       style={style}
       className={cn(
         "flex-shrink-0 w-64 sm:w-80 flex flex-col rounded-lg border bg-muted/30 overflow-hidden transition-colors",
-        isOver && "ring-2 ring-primary/50 bg-primary/5",
+        isOver && "ring-2 ring-ta/50 bg-ta/5",
         isDragging && "opacity-50"
       )}
     >

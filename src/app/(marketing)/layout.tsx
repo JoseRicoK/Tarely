@@ -104,7 +104,7 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <div data-force-dark className="dark min-h-screen text-foreground">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -114,6 +114,6 @@ export default function MarketingLayout({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
       />
       {children}
-    </>
+    </div>
   );
 }

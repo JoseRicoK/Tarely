@@ -267,7 +267,7 @@ export function KanbanBoard({
               <div className="flex-shrink-0 w-64 sm:w-80">
                 <Button
                   variant="outline"
-                  className="w-full h-full min-h-[400px] border-dashed flex flex-col gap-2 text-muted-foreground hover:text-foreground hover:border-primary/50"
+                  className="w-full h-full min-h-[400px] border-dashed flex flex-col gap-2 text-muted-foreground hover:text-foreground hover:border-ta/50"
                   onClick={onAddSection}
                 >
                   <Plus className="h-6 w-6" />
@@ -288,7 +288,7 @@ export function KanbanBoard({
           />
         ) : activeType === "section" && activeSection ? (
           <div 
-            className="w-64 sm:w-80 h-12 rounded-lg border-2 border-dashed border-primary/50 bg-primary/10 flex items-center justify-center"
+            className="w-64 sm:w-80 h-12 rounded-lg border-2 border-dashed border-ta/50 bg-ta/10 flex items-center justify-center"
             style={{ backgroundColor: `${activeSection.color}30` }}
           >
             <span className="font-medium text-sm">{activeSection.name}</span>

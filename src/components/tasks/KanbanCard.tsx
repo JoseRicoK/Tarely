@@ -181,7 +181,7 @@ export function KanbanCardStatic({
     <div
       className={cn(
         "relative rounded-lg border bg-card p-3 shadow-sm w-64 sm:w-72",
-        isDragging && "shadow-lg ring-2 ring-primary/50 opacity-90",
+        isDragging && "shadow-lg ring-2 ring-ta/50 opacity-90",
         task.completed && "opacity-70 bg-muted/30"
       )}
     >
@@ -312,7 +312,7 @@ export function KanbanCardDraggable({
       onClick={handleCardClick}
       className={cn(
         "group relative rounded-lg border bg-card p-3 shadow-sm cursor-grab active:cursor-grabbing touch-none",
-        "hover:shadow-md hover:border-primary/20 transition-shadow",
+        "hover:shadow-md hover:border-ta/20 transition-shadow",
         isDragging && "opacity-50",
         task.completed && "opacity-70 bg-muted/30"
       )}
@@ -469,7 +469,7 @@ export function KanbanCardDraggable({
 
               {/* Source badge */}
               {task.source === "ai" && (
-                <Sparkles className="h-3 w-3 text-primary" />
+                <Sparkles className="h-3 w-3 text-ta-light" />
               )}
 
               {/* Assignees - en móvil solo si hay asignados, en desktop hover si vacío */}
