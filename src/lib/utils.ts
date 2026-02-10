@@ -22,3 +22,13 @@ export function getAvatarUrl(avatar: string, version?: number): string {
   
   return baseUrl;
 }
+
+/**
+ * Genera la URL completa para una imagen del changelog
+ * @param imagePath - Path de la imagen en el bucket changelog (ej: "1707123456.webp")
+ * @returns URL completa de la imagen en Supabase Storage
+ */
+export function getChangelogImageUrl(imagePath: string): string {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  return `${supabaseUrl}/storage/v1/object/public/changelog/${imagePath}`;
+}
