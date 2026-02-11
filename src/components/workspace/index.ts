@@ -7,3 +7,4 @@ export { InvitationsPanel } from "./InvitationsPanel";
 export { SectionDialog } from "./SectionDialog";
 export { FeedbackPanel } from "./FeedbackPanel";
 export { OnboardingCarousel } from "./OnboardingCarousel";
+export { WorkspaceSettingsDialog } from "./WorkspaceSettingsDialog";

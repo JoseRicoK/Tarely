@@ -13,6 +13,7 @@ import type {
   UpdateWorkspaceInput,
   CreateTaskInput,
   UpdateTaskInput,
+  RecurrenceRule,
 } from './types';
 import type { WorkspaceRow, TaskRow } from './supabase/types';
 
@@ -40,6 +41,19 @@ function mapWorkspaceFromDB(row: WorkspaceRow, isShared = false, ownerName?: str
  * Convierte una task de la BD (snake_case) al formato de la app (camelCase)
  */
 function mapTaskFromDB(row: TaskRow): Task {
+  // Construir recurrence rule si existe
+  let recurrence: RecurrenceRule | undefined;
+  if (row.recurrence_frequency) {
+    recurrence = {
+      frequency: row.recurrence_frequency,
+      interval: row.recurrence_interval ?? 1,
+      daysOfWeek: row.recurrence_days_of_week ?? undefined,
+      dayOfMonth: row.recurrence_day_of_month ?? undefined,
+      monthOfYear: row.recurrence_month_of_year ?? undefined,
+      endsAt: row.recurrence_ends_at ?? undefined,
+    };
+  }
+
   return {
     id: row.id,
     workspaceId: row.workspace_id,
@@ -53,6 +67,8 @@ function mapTaskFromDB(row: TaskRow): Task {
     source: row.source,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    recurrence,
+    nextDueAt: row.next_due_at ?? undefined,
   };
 }
 
@@ -385,6 +401,13 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
       source: input.source,
       completed: false,
       user_id: user.id,
+      recurrence_frequency: input.recurrence?.frequency ?? null,
+      recurrence_interval: input.recurrence?.interval ?? null,
+      recurrence_days_of_week: input.recurrence?.daysOfWeek ?? null,
+      recurrence_day_of_month: input.recurrence?.dayOfMonth ?? null,
+      recurrence_month_of_year: input.recurrence?.monthOfYear ?? null,
+      recurrence_ends_at: input.recurrence?.endsAt ?? null,
+      next_due_at: input.nextDueAt ?? null,
     })
     .select()
     .single();
@@ -417,6 +440,13 @@ export async function createManyTasks(inputs: CreateTaskInput[]): Promise<Task[]
     source: input.source,
     completed: false,
     user_id: user.id,
+    recurrence_frequency: input.recurrence?.frequency ?? null,
+    recurrence_interval: input.recurrence?.interval ?? null,
+    recurrence_days_of_week: input.recurrence?.daysOfWeek ?? null,
+    recurrence_day_of_month: input.recurrence?.dayOfMonth ?? null,
+    recurrence_month_of_year: input.recurrence?.monthOfYear ?? null,
+    recurrence_ends_at: input.recurrence?.endsAt ?? null,
+    next_due_at: input.nextDueAt ?? null,
   }));
 
   const { data, error } = await supabase
@@ -451,6 +481,32 @@ export async function updateTask(
   if (input.importance !== undefined) updateData.importance = input.importance;
   if (input.sectionId !== undefined) updateData.section_id = input.sectionId;
   if (input.dueDate !== undefined) updateData.due_date = input.dueDate;
+
+  // Campos de recurrencia
+  if (input.recurrence !== undefined) {
+    if (input.recurrence === null) {
+      // Eliminar recurrencia
+      updateData.recurrence_frequency = null;
+      updateData.recurrence_interval = null;
+      updateData.recurrence_days_of_week = null;
+      updateData.recurrence_day_of_month = null;
+      updateData.recurrence_month_of_year = null;
+      updateData.recurrence_ends_at = null;
+      updateData.next_due_at = null;
+    } else {
+      updateData.recurrence_frequency = input.recurrence.frequency;
+      updateData.recurrence_interval = input.recurrence.interval;
+      updateData.recurrence_days_of_week = input.recurrence.daysOfWeek ?? null;
+      updateData.recurrence_day_of_month = input.recurrence.dayOfMonth ?? null;
+      updateData.recurrence_month_of_year = input.recurrence.monthOfYear ?? null;
+      updateData.recurrence_ends_at = input.recurrence.endsAt ?? null;
+    }
+  }
+
+  // next_due_at
+  if (input.nextDueAt !== undefined) {
+    updateData.next_due_at = input.nextDueAt;
+  }
 
   // Lógica de completed
   if (input.completed !== undefined) {

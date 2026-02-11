@@ -55,6 +55,7 @@ import { cn, getAvatarUrl } from "@/lib/utils";
 import Image from "next/image";
 import { SubtaskIndicator } from "./SubtaskList";
 import { TaskAssignees } from "./TaskAssignees";
+import { RecurrenceBadge } from "./RecurrenceSelector";
 
 // Icon map for dynamic section icons
 const iconMap: Record<string, LucideIcon> = {
@@ -469,6 +470,33 @@ export function KanbanCardDraggable({
                 <Sparkles className="h-3 w-3 text-ta-light" />
               )}
 
+              {/* Recurrence badge */}
+              {task.recurrence && (
+                <RecurrenceBadge recurrence={task.recurrence} compact />
+              )}
+
+              {/* Date picker inline - en móvil solo icono, en desktop hover si vacío */}
+              {!task.completed && onDueDateChange && (
+                <div 
+                  className={cn(
+                    "transition-opacity duration-200",
+                    !hasDueDate && "sm:opacity-0 sm:group-hover:opacity-100"
+                  )}
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <DatePicker
+                    value={task.dueDate}
+                    onChange={(date) => onDueDateChange(task.id, date)}
+                    compact
+                    showTime
+                    iconOnly
+                    externalOpen={datePickerOpen}
+                    onExternalOpenChange={setDatePickerOpen}
+                  />
+                </div>
+              )}
+
               {/* Assignees - en móvil solo si hay asignados, en desktop hover si vacío */}
               {onAssigneesChange ? (
                 <div 
@@ -492,28 +520,6 @@ export function KanbanCardDraggable({
               ) : hasAssignees ? (
                 <AssigneesAvatars assignees={task.assignees || []} />
               ) : null}
-
-              {/* Date picker inline - en móvil solo icono, en desktop hover si vacío */}
-              {!task.completed && onDueDateChange && (
-                <div 
-                  className={cn(
-                    "transition-opacity duration-200",
-                    !hasDueDate && "sm:opacity-0 sm:group-hover:opacity-100"
-                  )}
-                  onClick={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                >
-                  <DatePicker
-                    value={task.dueDate}
-                    onChange={(date) => onDueDateChange(task.id, date)}
-                    compact
-                    showTime
-                    iconOnly
-                    externalOpen={datePickerOpen}
-                    onExternalOpenChange={setDatePickerOpen}
-                  />
-                </div>
-              )}
 
               {/* Subtasks indicator */}
               {task.subtasks && task.subtasks.length > 0 && (

@@ -1,6 +1,16 @@
 // Schemas de validación con Zod
 import { z } from "zod";
 
+// Recurrencia
+export const recurrenceRuleSchema = z.object({
+  frequency: z.enum(["daily", "weekly", "monthly", "yearly"]),
+  interval: z.number().int().min(1).max(365).default(1),
+  daysOfWeek: z.array(z.number().int().min(0).max(6)).optional(),
+  dayOfMonth: z.number().int().min(1).max(31).optional(),
+  monthOfYear: z.number().int().min(1).max(12).optional(),
+  endsAt: z.string().datetime().optional().nullable(),
+});
+
 // Workspaces
 export const createWorkspaceSchema = z.object({
   name: z.string().min(1, "El nombre es obligatorio").max(100),
@@ -26,6 +36,8 @@ export const createTaskSchema = z.object({
   importance: z.number().int().min(1).max(10),
   dueDate: z.string().datetime().optional().nullable(),
   source: z.enum(["ai", "manual"]),
+  recurrence: recurrenceRuleSchema.optional().nullable(),
+  nextDueAt: z.string().datetime().optional().nullable(),
 });
 
 export const updateTaskSchema = z.object({
@@ -35,6 +47,8 @@ export const updateTaskSchema = z.object({
   completed: z.boolean().optional(),
   sectionId: z.string().uuid().optional().nullable(),
   dueDate: z.string().datetime().optional().nullable(),
+  recurrence: recurrenceRuleSchema.optional().nullable(),
+  nextDueAt: z.string().datetime().optional().nullable(),
 });
 
 // AI Generate Tasks

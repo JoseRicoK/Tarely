@@ -201,6 +201,9 @@ export default function LandingPage() {
             <a href="#testimonios" className="text-sm text-muted-foreground hover:text-white transition-colors">
               Testimonios
             </a>
+            <Link href="/changelog" className="text-sm text-muted-foreground hover:text-white transition-colors">
+              Changelog
+            </Link>
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-3">
@@ -246,6 +249,9 @@ export default function LandingPage() {
                 <a href="#testimonios" onClick={() => setMobileMenuOpen(false)} className="py-2.5 px-3 rounded-lg text-sm text-muted-foreground hover:text-white hover:bg-white/5 transition-colors">
                   Testimonios
                 </a>
+                <Link href="/changelog" onClick={() => setMobileMenuOpen(false)} className="py-2.5 px-3 rounded-lg text-sm text-muted-foreground hover:text-white hover:bg-white/5 transition-colors">
+                  Changelog
+                </Link>
                 <Link href="/login" onClick={() => setMobileMenuOpen(false)} className="py-2.5 px-3 rounded-lg text-sm text-muted-foreground hover:text-white hover:bg-white/5 transition-colors">
                   Iniciar sesión
                 </Link>

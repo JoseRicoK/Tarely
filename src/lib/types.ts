@@ -1,5 +1,17 @@
 // Tipos principales del proyecto Tarely
 
+// Tipos de recurrencia
+export type RecurrenceFrequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
+
+export interface RecurrenceRule {
+  frequency: RecurrenceFrequency;
+  interval: number; // cada cuántas unidades (ej: cada 2 semanas)
+  daysOfWeek?: number[]; // 0=Dom, 1=Lun, ..., 6=Sáb (para weekly)
+  dayOfMonth?: number; // 1-31 (para monthly y yearly)
+  monthOfYear?: number; // 1-12 (para yearly)
+  endsAt?: string | null; // ISO date, nullable = sin fin
+}
+
 export interface Workspace {
   id: string;
   name: string;
@@ -60,6 +72,8 @@ export interface Task {
   isNew?: boolean; // Marca visual para tareas recién creadas por IA
   assignees?: TaskAssignee[]; // Usuarios asignados
   subtasks?: Subtask[]; // Subtareas
+  recurrence?: RecurrenceRule; // Regla de recurrencia (null = tarea normal)
+  nextDueAt?: string; // Cuándo aparece como pendiente (solo recurrentes)
 }
 
 export interface TareAIData {
@@ -92,6 +106,8 @@ export interface CreateTaskInput {
   importance: number;
   dueDate?: string | null; // Fecha límite opcional
   source: "ai" | "manual";
+  recurrence?: RecurrenceRule | null;
+  nextDueAt?: string | null;
 }
 
 export interface UpdateTaskInput {
@@ -101,6 +117,8 @@ export interface UpdateTaskInput {
   completed?: boolean;
   sectionId?: string | null;
   dueDate?: string | null; // null para eliminar la fecha
+  recurrence?: RecurrenceRule | null; // null para eliminar la recurrencia
+  nextDueAt?: string | null;
 }
 
 export interface CreateSectionInput {
@@ -128,6 +146,7 @@ export interface AIGeneratedTask {
   description?: string;
   importance: number;
   dueDate?: string; // ISO 8601 date string opcional
+  recurrence?: RecurrenceRule; // Regla de recurrencia detectada por la IA
 }
 
 export interface AIGenerateResponse {

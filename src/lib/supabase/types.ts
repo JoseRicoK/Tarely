@@ -13,6 +13,7 @@ export type Json =
   | Json[];
 
 export type TaskSource = 'ai' | 'manual';
+export type RecurrenceFrequencyDB = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export interface Database {
   public: {
@@ -141,6 +142,13 @@ export interface Database {
           completed_at: string | null;
           due_date: string | null;
           source: TaskSource;
+          recurrence_frequency: RecurrenceFrequencyDB | null;
+          recurrence_interval: number | null;
+          recurrence_days_of_week: number[] | null;
+          recurrence_day_of_month: number | null;
+          recurrence_month_of_year: number | null;
+          recurrence_ends_at: string | null;
+          next_due_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -156,6 +164,13 @@ export interface Database {
           completed_at?: string | null;
           due_date?: string | null;
           source?: TaskSource;
+          recurrence_frequency?: RecurrenceFrequencyDB | null;
+          recurrence_interval?: number | null;
+          recurrence_days_of_week?: number[] | null;
+          recurrence_day_of_month?: number | null;
+          recurrence_month_of_year?: number | null;
+          recurrence_ends_at?: string | null;
+          next_due_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -171,6 +186,13 @@ export interface Database {
           completed_at?: string | null;
           due_date?: string | null;
           source?: TaskSource;
+          recurrence_frequency?: RecurrenceFrequencyDB | null;
+          recurrence_interval?: number | null;
+          recurrence_days_of_week?: number[] | null;
+          recurrence_day_of_month?: number | null;
+          recurrence_month_of_year?: number | null;
+          recurrence_ends_at?: string | null;
+          next_due_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

@@ -13,7 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Settings, LogOut, Loader2, User } from "lucide-react";
+import { Settings, LogOut, Loader2, User, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useUser } from "./UserContext";
 import { getAvatarUrl } from "@/lib/utils";
@@ -93,6 +93,13 @@ export function UserMenu() {
           <Link href="/ajustes" className="cursor-pointer">
             <Settings className="mr-2 h-4 w-4" />
             <span>Ajustes</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link href="/changelog" className="cursor-pointer">
+            <FileText className="mr-2 h-4 w-4" />
+            <span>Changelog</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />

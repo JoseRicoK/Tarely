@@ -20,6 +20,7 @@ import {
   MessageCircle,
   MoreVertical,
   Paperclip,
+  Repeat,
   Sparkles,
   Trash2,
   User,
@@ -59,10 +60,13 @@ import {
   ActivitySection,
   SubtaskList,
   TaskAssignees,
+  RecurrenceSelector,
+  RecurrenceBadge,
 } from "@/components/tasks";
 import { useUser } from "@/components/auth/UserContext";
-import type { Task, Workspace, WorkspaceSection, Subtask, TaskAssignee } from "@/lib/types";
+import type { Task, Workspace, WorkspaceSection, Subtask, TaskAssignee, RecurrenceRule } from "@/lib/types";
 import { cn, getAvatarUrl } from "@/lib/utils";
+import { getRecurrenceLabel, calculateNextOccurrence } from "@/lib/recurrence";
 
 // Colores de importancia
 const importanceConfig: Record<number, { bg: string; text: string; border: string; label: string }> = {
@@ -202,6 +206,42 @@ export default function TaskDetailPage() {
   const toggleComplete = async () => {
     if (!task) return;
 
+    // Si es una tarea recurrente y se está completando, avanzar next_due_at
+    if (task.recurrence && !task.completed) {
+      try {
+        const baseDate = task.nextDueAt || task.dueDate;
+        const nextDate = calculateNextOccurrence(baseDate, task.recurrence);
+        
+        if (nextDate) {
+          // Avanzar next_due_at al futuro, la tarea se ocultará automáticamente
+          const res = await fetch(`/api/tasks/${taskId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nextDueAt: nextDate, completed: false }),
+          });
+
+          if (!res.ok) throw new Error("Error actualizando tarea recurrente");
+
+          setTask((prev) => prev ? {
+            ...prev,
+            nextDueAt: nextDate,
+            completed: false,
+            completedAt: undefined,
+            updatedAt: new Date().toISOString(),
+          } : null);
+          toast.success("¡Ocurrencia completada! Desaparecerá hasta la próxima fecha.");
+          return;
+        } else {
+          // La recurrencia ha terminado, completar normalmente
+          toast.info("La recurrencia ha terminado.");
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        toast.error("Error actualizando tarea recurrente");
+        return;
+      }
+    }
+
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
         method: "PATCH",
@@ -263,6 +303,27 @@ export default function TaskDetailPage() {
     } catch (error) {
       console.error("Error:", error);
       toast.error("Error actualizando fecha");
+    }
+  };
+
+  // Actualizar recurrencia
+  const updateRecurrence = async (recurrence: RecurrenceRule | null) => {
+    if (!task) return;
+
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recurrence }),
+      });
+
+      if (!res.ok) throw new Error("Error actualizando recurrencia");
+
+      setTask((prev) => prev ? { ...prev, recurrence: recurrence || undefined, updatedAt: new Date().toISOString() } : null);
+      toast.success(recurrence ? "Recurrencia configurada" : "Recurrencia eliminada");
+    } catch (error) {
+      console.error("Error:", error);
+      toast.error("Error actualizando recurrencia");
     }
   };
 
@@ -675,6 +736,16 @@ export default function TaskDetailPage() {
                       <><User className="h-3 w-3" /> Manual</>
                     )}
                   </Badge>
+                </div>
+
+                {/* Recurrencia */}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Recurrencia</span>
+                  <RecurrenceSelector
+                    value={task.recurrence || null}
+                    onChange={updateRecurrence}
+                    compact
+                  />
                 </div>
               </div>
             </div>

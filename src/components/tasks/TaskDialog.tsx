@@ -16,7 +16,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
+import { RecurrenceSelector } from "./RecurrenceSelector";
 import { Loader2 } from "lucide-react";
+import type { RecurrenceRule } from "@/lib/types";
 
 const taskSchema = z.object({
   title: z.string().min(1, "El título es obligatorio").max(1000),
@@ -29,8 +31,8 @@ type TaskFormData = z.infer<typeof taskSchema>;
 interface TaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: TaskFormData & { dueDate?: string | null }) => Promise<void>;
-  initialData?: TaskFormData & { dueDate?: string | null };
+  onSubmit: (data: TaskFormData & { dueDate?: string | null; recurrence?: RecurrenceRule | null }) => Promise<void>;
+  initialData?: TaskFormData & { dueDate?: string | null; recurrence?: RecurrenceRule | null };
   mode: "create" | "edit";
 }
 
@@ -42,6 +44,7 @@ export function TaskDialog({
   mode,
 }: TaskDialogProps) {
   const [dueDate, setDueDate] = useState<string | null>(null);
+  const [recurrence, setRecurrence] = useState<RecurrenceRule | null>(null);
   
   const {
     register,
@@ -62,19 +65,22 @@ export function TaskDialog({
   useEffect(() => {
     if (open && initialData) {
       setDueDate(initialData.dueDate || null);
+      setRecurrence(initialData.recurrence || null);
       setValue("title", initialData.title);
       setValue("description", initialData.description || "");
       setValue("importance", initialData.importance);
     } else if (open && !initialData) {
       reset({ title: "", description: "", importance: 5 });
       setDueDate(null);
+      setRecurrence(null);
     }
   }, [open, initialData, setValue, reset]);
 
   const handleFormSubmit = async (data: TaskFormData) => {
-    await onSubmit({ ...data, dueDate });
+    await onSubmit({ ...data, dueDate, recurrence });
     reset();
     setDueDate(null);
+    setRecurrence(null);
   };
 
   return (
@@ -132,6 +138,16 @@ export function TaskDialog({
               onChange={(date) => setDueDate(date)}
               showTime
               placeholder="Sin fecha límite"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">
+              Recurrencia
+            </label>
+            <RecurrenceSelector
+              value={recurrence}
+              onChange={setRecurrence}
             />
           </div>
 

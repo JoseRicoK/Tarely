@@ -4,11 +4,19 @@ import { z } from "zod";
 import type { AIGeneratedTask, Workspace, Task } from "./types";
 
 // Schema de validación para la respuesta de la IA
+const AIRecurrenceSchema = z.object({
+  frequency: z.enum(['daily', 'weekly', 'monthly', 'yearly']),
+  interval: z.number().int().min(1).max(365).default(1),
+  daysOfWeek: z.array(z.number().int().min(0).max(6)).optional(),
+  dayOfMonth: z.number().int().min(1).max(31).optional(),
+});
+
 const AITaskSchema = z.object({
   title: z.string().min(1),
   description: z.string().optional(),
   importance: z.number().int().min(1).max(10),
   dueDate: z.string().optional(), // ISO 8601 date string
+  recurrence: AIRecurrenceSchema.optional(),
 });
 
 const AIResponseSchema = z.object({
@@ -79,14 +87,31 @@ FECHAS:
 - Si NO hay fecha mencionada, NO incluyas el campo dueDate.
 - Ejemplos: "mañana" → fecha de mañana, "el viernes" → próximo viernes, "15 de enero" → 2026-01-15
 
-IMPORTANCIA (usa TODO el rango 1-10 según corresponda):
-- 1-2: Tareas de baja prioridad, mejoras opcionales, ideas futuras, nice-to-have
-- 3-4: Tareas normales, trabajo regular sin urgencia específica
-- 5-6: Tareas importantes que conviene hacer pronto
-- 7-8: Tareas urgentes o que bloquean otras cosas
-- 9-10: SOLO para emergencias críticas, bugs graves, o deadlines inmediatos
+IMPORTANCIA (1-10) — debe funcionar para trabajo, estudios y vida personal:
+- 1-2: Opcional / “nice to have”. Si no se hace, no pasa nada relevante.
+- 3-4: Normal. Importa, pero puede esperar sin consecuencias.
+- 5-6: Importante. Conviene hacerlo pronto; si se retrasa, molesta o genera estrés/coste pequeño.
+- 7-8: Alta prioridad. Tiene fecha cercana (≤7 días) O impacto claro (dinero, salud, relación, examen) O desbloquea otras tareas. No hace falta “emergencia técnica”.
+- 9-10: Crítica. Fecha inminente (≤48h) O penalización fuerte (pérdida de dinero/nota, corte de servicio, riesgo, compromiso importante) O bloquea totalmente lo demás.
+
+REGLAS PRÁCTICAS:
+- Usa 7-8 sin miedo cuando haya deadline próximo, consecuencias reales o sea “imprescindible”.
+- Si hay dueDate y está a ≤7 días, rara vez será <6.
+- Si hay dueDate a ≤48h, normalmente 8-10 (según impacto).
+- “Pagar alquiler / impuestos / reservar viaje / trámites con fecha / estudiar para examen cercano” suelen ser 7-9.
+- “Sacar al perro” es 7-9 si es HOY; si es rutina sin urgencia, 4-6.
+
 
 SÉ REALISTA con la importancia. No todas las tareas son urgentes. Usa 1-2 sin miedo para cosas que son deseables pero no esenciales. Distribuye naturalmente las prioridades según lo que el usuario describe.
+
+TAREAS RECURRENTES:
+- Si el usuario indica que algo se repite (ej: "todos los lunes", "cada mes", "semanalmente", "diaria", "cada 2 semanas", "pagar alquiler el día 1", "sacar la basura lunes y jueves"), incluye el campo "recurrence".
+- frequency: "daily" (cada día), "weekly" (cada semana), "monthly" (cada mes), "yearly" (cada año)
+- interval: cada cuántas unidades se repite (por defecto 1). Ej: "cada 2 semanas" → interval: 2, frequency: "weekly"
+- daysOfWeek: array de días para "weekly". 0=Domingo, 1=Lunes, 2=Martes, 3=Miércoles, 4=Jueves, 5=Viernes, 6=Sábado. Ej: "lunes y jueves" → [1, 4]
+- dayOfMonth: día del mes para "monthly". Ej: "el día 1 de cada mes" → dayOfMonth: 1
+- Si hay recurrence, SIEMPRE incluye dueDate con la primera ocurrencia (la próxima fecha que toque).
+- Si NO hay patrón de repetición, NO incluyas el campo recurrence.
 
 TEXTO DEL USUARIO:
 ${userText}
@@ -98,12 +123,18 @@ FORMATO DE RESPUESTA (JSON estricto, sin markdown):
       "title": "Título claro y profesional de la tarea",
       "description": "Contexto adicional si es útil",
       "importance": 4,
-      "dueDate": "2026-01-25T23:59:00Z"
+      "dueDate": "2026-01-25T23:59:00Z",
+      "recurrence": {
+        "frequency": "weekly",
+        "interval": 1,
+        "daysOfWeek": [1, 4]
+      }
     }
   ]
 }
 
-NOTA: El campo "dueDate" es OPCIONAL. Solo inclúyelo si el usuario menciona una fecha.`;
+NOTA: El campo "dueDate" es OPCIONAL. Solo inclúyelo si el usuario menciona una fecha.
+NOTA: El campo "recurrence" es OPCIONAL. Solo inclúyelo si el usuario indica que la tarea se repite.`;
 }
 
 // Función principal para generar tareas con IA (GPT-5.2 Responses API)

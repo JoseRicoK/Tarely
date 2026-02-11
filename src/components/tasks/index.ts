@@ -11,4 +11,5 @@ export { KanbanCard, KanbanCardDraggable, KanbanCardStatic } from "./KanbanCard"
 export { CommentSection } from "./CommentSection";
 export { AttachmentSection } from "./AttachmentSection";
 export { ActivitySection } from "./ActivitySection";
+export { RecurrenceSelector, RecurrenceBadge } from "./RecurrenceSelector";
 

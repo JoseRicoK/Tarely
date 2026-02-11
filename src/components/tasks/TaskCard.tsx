@@ -74,6 +74,7 @@ const iconMap: Record<string, LucideIcon> = {
 };
 import { TaskAssignees } from "./TaskAssignees";
 import { SubtaskList } from "./SubtaskList";
+import { RecurrenceBadge } from "./RecurrenceSelector";
 
 interface TaskCardProps {
   task: Task;
@@ -353,21 +354,9 @@ export function TaskCard({
             )}
           </Badge>
 
-          {/* Asignados - en móvil solo si hay asignados, en desktop hover si vacío */}
-          {!task.completed && onAssigneesChange && (
-            <div className={cn(
-              hasAssignees ? "opacity-100" : "hidden md:block md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-            )}>
-              <TaskAssignees
-                taskId={task.id}
-                workspaceId={workspaceId}
-                assignees={task.assignees || []}
-                onAssigneesChange={(assignees) => onAssigneesChange(task.id, assignees)}
-                compact
-                externalOpen={assigneesOpen}
-                onExternalOpenChange={setAssigneesOpen}
-              />
-            </div>
+          {/* Indicador de tarea recurrente */}
+          {task.recurrence && (
+            <RecurrenceBadge recurrence={task.recurrence} compact />
           )}
 
           {/* Fecha límite - en móvil siempre visible (solo icono), en desktop hover si vacío */}
@@ -387,9 +376,22 @@ export function TaskCard({
             </div>
           )}
 
-          <span className="text-[10px] md:text-xs text-muted-foreground ml-auto">
-            {timeAgo}
-          </span>
+          {/* Asignados - en móvil solo si hay asignados, en desktop hover si vacío */}
+          {!task.completed && onAssigneesChange && (
+            <div className={cn(
+              hasAssignees ? "opacity-100" : "hidden md:block md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+            )}>
+              <TaskAssignees
+                taskId={task.id}
+                workspaceId={workspaceId}
+                assignees={task.assignees || []}
+                onAssigneesChange={(assignees) => onAssigneesChange(task.id, assignees)}
+                compact
+                externalOpen={assigneesOpen}
+                onExternalOpenChange={setAssigneesOpen}
+              />
+            </div>
+          )}
         </div>
 
         {/* Subtareas */}
@@ -413,7 +415,9 @@ export function TaskCard({
       </div>
 
       {/* Actions */}
-      <div className="flex items-start gap-1" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-col items-end justify-between self-stretch" onClick={(e) => e.stopPropagation()}>
+        {/* Action buttons */}
+        <div className="flex items-start gap-1">
         {/* Botón restaurar si está completada - solo desktop */}
         {task.completed && (
           <TooltipProvider>
@@ -609,6 +613,12 @@ export function TaskCard({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
+
+        {/* TimeAgo - bottom right */}
+        <span className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap">
+          {timeAgo}
+        </span>
       </div>
     </div>
   );

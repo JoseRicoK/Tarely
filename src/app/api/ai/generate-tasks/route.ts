@@ -25,6 +25,7 @@ export async function POST(request: NextRequest) {
     const generatedTasks = await generateTasksWithAI(workspace, validated.text);
 
     // Crear las tareas en el store
+    const now = new Date().toISOString();
     const tasksToCreate = generatedTasks.map((t) => ({
       workspaceId: validated.workspaceId,
       title: t.title,
@@ -32,6 +33,8 @@ export async function POST(request: NextRequest) {
       importance: t.importance,
       dueDate: t.dueDate,
       source: "ai" as const,
+      recurrence: t.recurrence || null,
+      nextDueAt: t.recurrence ? now : null, // Recurrentes visibles inmediatamente
     }));
 
     const createdTasks = await createManyTasks(tasksToCreate);

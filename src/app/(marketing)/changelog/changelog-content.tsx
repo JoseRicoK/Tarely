@@ -72,7 +72,25 @@ export function ChangelogContent() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen">
+      {/* Fondo con efectos */}
+      <div className="fixed inset-0 -z-10 overflow-hidden">
+        {/* Gradiente base */}
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-950/30 via-background to-blue-950/25" />
+        
+        {/* Orbes de luz */}
+        <div className="absolute -top-40 -right-40 w-96 h-96 bg-purple-500/15 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-blue-500/12 rounded-full blur-[100px] animate-pulse delay-1000" />
+        <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-indigo-500/10 rounded-full blur-[80px] animate-float" />
+        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 bg-violet-500/8 rounded-full blur-[60px] animate-pulse delay-2000" />
+        
+        {/* Grid pattern sutil */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.005)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.005)_1px,transparent_1px)] bg-[size:64px_64px]" />
+        
+        {/* Vignette */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.4)_100%)]" />
+      </div>
+
       {/* Header */}
       <header className="border-b border-white/5 bg-white/[0.02] backdrop-blur-sm sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
@@ -99,7 +117,7 @@ export function ChangelogContent() {
             <Sparkles className="h-4 w-4" />
             Novedades
           </div>
-          <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent">
+          <h1 className="text-4xl sm:text-5xl font-bold bg-gradient-to-r from-white via-white to-gray-400 bg-clip-text text-transparent mb-8 pb-2 leading-tight">
             Changelog
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -190,8 +208,8 @@ export function ChangelogContent() {
                         <div
                           className={`rounded-xl border transition-all overflow-hidden ${
                             isLatest
-                              ? "bg-white/[0.04] border-purple-500/20 shadow-lg shadow-purple-500/5"
-                              : "bg-white/[0.02] border-white/5 hover:border-white/10"
+                              ? "bg-white/[0.12] border-purple-500/20 shadow-lg shadow-purple-500/5"
+                              : "bg-white/[0.08] border-white/5 hover:border-white/10"
                           }`}
                         >
                           {/* Entry header */}

@@ -73,6 +73,7 @@ const KanbanBoard = lazy(() => import("@/components/tasks").then(m => ({ default
 const InstructionsSheet = lazy(() => import("@/components/workspace").then(m => ({ default: m.InstructionsSheet })));
 const ShareDialog = lazy(() => import("@/components/workspace").then(m => ({ default: m.ShareDialog })));
 const SectionDialog = lazy(() => import("@/components/workspace").then(m => ({ default: m.SectionDialog })));
+const WorkspaceSettingsDialog = lazy(() => import("@/components/workspace").then(m => ({ default: m.WorkspaceSettingsDialog })));
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -81,6 +82,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { Workspace, Task, TaskAssignee, WorkspaceSection, Subtask } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { calculateNextOccurrence } from "@/lib/recurrence";
 
 // Map of icon names to components
 const iconMap: Record<string, LucideIcon> = {
@@ -157,6 +159,7 @@ export default function WorkspacePage() {
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const [sectionDialogOpen, setSectionDialogOpen] = useState(false);
   const [editingSection, setEditingSection] = useState<WorkspaceSection | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Filters state
   const [searchQuery, setSearchQuery] = useState("");
@@ -256,6 +259,15 @@ export default function WorkspacePage() {
   const filteredTasks = useMemo(() => {
     let result = [...tasks];
 
+    // Hide recurring tasks whose next_due_at is in the future
+    const now = new Date();
+    result = result.filter((t) => {
+      if (t.recurrence && t.nextDueAt) {
+        return new Date(t.nextDueAt) <= now;
+      }
+      return true;
+    });
+
     // Filter by section (using helper that handles legacy flags)
     if (activeSectionId) {
       result = result.filter((t) => getTaskSection(t) === activeSectionId);
@@ -289,9 +301,16 @@ export default function WorkspacePage() {
 
   // Counts for tabs (using helper that handles legacy flags)
   const sectionCounts = useMemo(() => {
+    const now = new Date();
+    const visibleTasks = tasks.filter((t) => {
+      if (t.recurrence && t.nextDueAt) {
+        return new Date(t.nextDueAt) <= now;
+      }
+      return true;
+    });
     const counts: Record<string, number> = {};
     sections.forEach((section) => {
-      counts[section.id] = tasks.filter((t) => getTaskSection(t) === section.id).length;
+      counts[section.id] = visibleTasks.filter((t) => getTaskSection(t) === section.id).length;
     });
     return counts;
   }, [tasks, sections, getTaskSection]);
@@ -544,6 +563,31 @@ export default function WorkspacePage() {
 
   const handleToggleComplete = useCallback(async (task: Task) => {
     try {
+      // Si es una tarea recurrente y se está completando, avanzar next_due_at
+      if (task.recurrence && !task.completed) {
+        const baseDate = task.nextDueAt || task.dueDate;
+        const nextDate = calculateNextOccurrence(baseDate, task.recurrence);
+        
+        if (nextDate) {
+          const res = await fetch(`/api/tasks/${task.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ 
+              nextDueAt: nextDate, 
+              completed: false,
+            }),
+          });
+
+          if (!res.ok) throw new Error("Error al actualizar tarea recurrente");
+
+          toast.success("¡Ocurrencia completada! Desaparecerá hasta la próxima fecha.");
+          refetchTasks();
+          return;
+        } else {
+          toast.info("La recurrencia ha terminado.");
+        }
+      }
+
       // Encontrar las secciones de Completadas y Pendientes
       const completedSection = sections.find(s => s.name === "Completadas");
       const pendingSection = sections.find(s => s.name === "Pendientes");
@@ -625,14 +669,21 @@ export default function WorkspacePage() {
     description?: string;
     importance: number;
     dueDate?: string | null;
+    recurrence?: import("@/lib/types").RecurrenceRule | null;
   }) => {
     try {
+      // Si tiene recurrencia, inicializar nextDueAt a ahora (visible inmediatamente)
+      const taskData = {
+        ...data,
+        ...(data.recurrence ? { nextDueAt: new Date().toISOString() } : {}),
+      };
+
       if (taskDialogMode === "create") {
         const res = await fetch("/api/tasks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            ...data,
+            ...taskData,
             workspaceId,
             source: "manual",
           }),
@@ -643,7 +694,7 @@ export default function WorkspacePage() {
         const res = await fetch(`/api/tasks/${editingTask.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(data),
+          body: JSON.stringify(taskData),
         });
         if (!res.ok) throw new Error("Error al actualizar tarea");
         toast.success("Tarea actualizada correctamente");
@@ -745,6 +796,39 @@ export default function WorkspacePage() {
     );
   }, []);
 
+  const handleRemoveRecurrence = useCallback(async (taskId: string) => {
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recurrence: null, nextDueAt: null }),
+      });
+      if (!res.ok) throw new Error("Error al quitar recurrencia");
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, recurrence: undefined, nextDueAt: undefined } : t));
+      toast.success("Recurrencia eliminada");
+    } catch {
+      toast.error("Error al quitar la recurrencia");
+    }
+  }, []);
+
+  const handleUpdateRecurrence = useCallback(async (taskId: string, rule: import("@/lib/types").RecurrenceRule | null) => {
+    if (!rule) {
+      return handleRemoveRecurrence(taskId);
+    }
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recurrence: rule }),
+      });
+      if (!res.ok) throw new Error("Error al actualizar recurrencia");
+      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, recurrence: rule } : t));
+      toast.success("Recurrencia actualizada");
+    } catch {
+      toast.error("Error al actualizar la recurrencia");
+    }
+  }, [handleRemoveRecurrence]);
+
   if (isLoadingWorkspace) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -794,6 +878,14 @@ export default function WorkspacePage() {
             >
               <FileText className="h-4 w-4" />
               <span className="hidden md:inline ml-1.5">Instrucciones</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={() => setSettingsOpen(true)}
+              className="h-8 w-8 md:h-9 md:w-9"
+            >
+              <Settings className="h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -1078,6 +1170,7 @@ export default function WorkspacePage() {
                     description: editingTask.description,
                     importance: editingTask.importance,
                     dueDate: editingTask.dueDate,
+                    recurrence: editingTask.recurrence,
                   }
                 : undefined
             }
@@ -1128,6 +1221,19 @@ export default function WorkspacePage() {
             onSubmit={editingSection ? handleUpdateSection : handleCreateSection}
             section={editingSection ?? undefined}
             onDelete={handleDeleteSection}
+          />
+        </Suspense>
+      )}
+
+      {settingsOpen && (
+        <Suspense fallback={null}>
+          <WorkspaceSettingsDialog
+            open={settingsOpen}
+            onOpenChange={setSettingsOpen}
+            workspaceId={workspaceId}
+            tasks={tasks}
+            onRemoveRecurrence={handleRemoveRecurrence}
+            onUpdateRecurrence={handleUpdateRecurrence}
           />
         </Suspense>
       )}
