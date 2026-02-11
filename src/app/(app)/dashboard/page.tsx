@@ -24,6 +24,10 @@ import {
   Upload,
   Pencil,
   Save,
+  BarChart3,
+  Users,
+  LayoutList,
+  Building2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -159,9 +163,8 @@ function FeedbackPanel() {
   return (
     <div className="space-y-6">
       {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         {[
-          { label: "Total", value: counts.total, color: "from-ta/20 to-ta/5", textColor: "text-ta-light" },
           { label: "Pendientes", value: counts.pending, color: "from-amber-500/20 to-amber-500/5", textColor: "text-amber-400" },
           { label: "Revisados", value: counts.reviewed, color: "from-blue-500/20 to-blue-500/5", textColor: "text-blue-400" },
           { label: "Resueltos", value: counts.resolved, color: "from-emerald-500/20 to-emerald-500/5", textColor: "text-emerald-400" },
@@ -920,6 +923,104 @@ function ChangelogPanel() {
   );
 }
 
+// ==================== STATS PANEL ====================
+
+interface SiteStats {
+  totalTasks: number;
+  totalUsers: number;
+  totalWorkspaces: number;
+  avgWorkspacesPerUser: number;
+}
+
+function StatsPanel() {
+  const [stats, setStats] = useState<SiteStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStats() {
+      try {
+        const res = await fetch("/api/admin/stats");
+        if (!res.ok) throw new Error("Error al cargar estadísticas");
+        const data = await res.json();
+        setStats(data);
+      } catch {
+        toast.error("Error al cargar las estadísticas");
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchStats();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!stats) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-30" />
+        <p>No se pudieron cargar las estadísticas</p>
+      </div>
+    );
+  }
+
+  const statCards = [
+    {
+      label: "Total Tareas",
+      value: stats.totalTasks.toLocaleString("es-ES"),
+      color: "from-ta/20 to-ta/5",
+      textColor: "text-ta-light",
+      icon: LayoutList,
+    },
+    {
+      label: "Total Usuarios",
+      value: stats.totalUsers.toLocaleString("es-ES"),
+      color: "from-blue-500/20 to-blue-500/5",
+      textColor: "text-blue-400",
+      icon: Users,
+    },
+    {
+      label: "Total Workspaces",
+      value: stats.totalWorkspaces.toLocaleString("es-ES"),
+      color: "from-indigo-500/20 to-indigo-500/5",
+      textColor: "text-indigo-400",
+      icon: Building2,
+    },
+    {
+      label: "Media Workspaces/Usuario",
+      value: stats.avgWorkspacesPerUser.toLocaleString("es-ES", { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
+      color: "from-emerald-500/20 to-emerald-500/5",
+      textColor: "text-emerald-400",
+      icon: BarChart3,
+    },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {statCards.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <div
+              key={stat.label}
+              className={`bg-gradient-to-b ${stat.color} rounded-xl border border-border p-5 text-center space-y-2`}
+            >
+              <Icon className={`h-5 w-5 mx-auto ${stat.textColor} opacity-70`} />
+              <p className={`text-2xl font-bold ${stat.textColor}`}>{stat.value}</p>
+              <p className="text-xs text-muted-foreground">{stat.label}</p>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ==================== MAIN DASHBOARD ====================
 
 export default function DashboardPage() {
@@ -978,7 +1079,7 @@ export default function DashboardPage() {
               Panel de Administración
             </h1>
             <p className="text-sm text-muted-foreground">
-              Gestiona feedback y changelog de Tarely
+              Gestiona feedback, changelog y datos de Tarely
             </p>
           </div>
         </div>
@@ -995,6 +1096,10 @@ export default function DashboardPage() {
             <FileText className="h-4 w-4" />
             Changelog
           </TabsTrigger>
+          <TabsTrigger value="datos" className="flex items-center gap-2 data-[state=active]:bg-foreground/10">
+            <BarChart3 className="h-4 w-4" />
+            Datos
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="feedback">
@@ -1003,6 +1108,10 @@ export default function DashboardPage() {
 
         <TabsContent value="changelog">
           <ChangelogPanel />
+        </TabsContent>
+
+        <TabsContent value="datos">
+          <StatsPanel />
         </TabsContent>
       </Tabs>
     </div>

@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/tooltip";
 import { toast } from "sonner";
 import type { TaskAttachment } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, getAvatarUrl } from "@/lib/utils";
 
 interface AttachmentSectionProps {
   taskId: string;
@@ -50,8 +50,6 @@ export function AttachmentSection({ taskId, currentUserId }: AttachmentSectionPr
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dropZoneRef = useRef<HTMLDivElement>(null);
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   // Cargar attachments
   const loadAttachments = useCallback(async () => {
@@ -320,9 +318,7 @@ export function AttachmentSection({ taskId, currentUserId }: AttachmentSectionPr
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
             {images.map((attachment) => {
-              const avatarUrl = attachment.userAvatar?.startsWith("http")
-                ? attachment.userAvatar
-                : `${supabaseUrl}/storage/v1/object/public/avatars/${attachment.userAvatar}`;
+              const avatarUrl = getAvatarUrl(attachment.userAvatar, attachment.userId);
               const isOwner = attachment.userId === currentUserId;
 
               return (
@@ -430,9 +426,7 @@ export function AttachmentSection({ taskId, currentUserId }: AttachmentSectionPr
           </div>
           <div className="space-y-2">
             {documents.map((attachment) => {
-              const avatarUrl = attachment.userAvatar?.startsWith("http")
-                ? attachment.userAvatar
-                : `${supabaseUrl}/storage/v1/object/public/avatars/${attachment.userAvatar}`;
+              const avatarUrl = getAvatarUrl(attachment.userAvatar, attachment.userId);
               const isOwner = attachment.userId === currentUserId;
 
               return (

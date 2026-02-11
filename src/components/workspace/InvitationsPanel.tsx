@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Mail, Check, X, FolderOpen } from "lucide-react";
 import Image from "next/image";
+import { getAvatarUrl } from "@/lib/utils";
 
 interface Invitation {
   id: string;
@@ -14,6 +15,7 @@ interface Invitation {
   workspaceName: string;
   workspaceColor: string;
   invitedBy: {
+    id: string;
     name: string;
     avatar: string;
   };
@@ -24,8 +26,6 @@ export function InvitationsPanel() {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [respondingId, setRespondingId] = useState<string | null>(null);
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   useEffect(() => {
     fetchInvitations();
@@ -134,10 +134,11 @@ export function InvitationsPanel() {
                       <div className="flex items-center gap-1">
                         <div className="relative w-4 h-4 rounded-full overflow-hidden">
                           <Image
-                            src={`${supabaseUrl}/storage/v1/object/public/avatars/${invitation.invitedBy.avatar}`}
+                            src={getAvatarUrl(invitation.invitedBy.avatar, invitation.invitedBy.id)}
                             alt={invitation.invitedBy.name}
                             fill
                             className="object-cover"
+                            unoptimized
                           />
                         </div>
                         <span className="font-medium text-foreground/80">

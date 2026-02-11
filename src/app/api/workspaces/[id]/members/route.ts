@@ -51,7 +51,7 @@ export async function GET(
       invitedBy: m.invited_by,
       name: profile?.name || "Usuario",
       email: profile?.email || "",
-      avatar: profile?.avatar || "avatar1.png",
+      avatar: profile?.avatar || null,
     };
   });
 

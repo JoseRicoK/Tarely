@@ -20,7 +20,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { TaskActivity, TaskActivityAction } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, getAvatarUrl } from "@/lib/utils";
 
 interface ActivitySectionProps {
   taskId: string;
@@ -85,8 +85,6 @@ export function ActivitySection({ taskId }: ActivitySectionProps) {
   const [activities, setActivities] = useState<TaskActivity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   // Cargar actividad
   const loadActivity = useCallback(async () => {
@@ -158,9 +156,7 @@ export function ActivitySection({ taskId }: ActivitySectionProps) {
           {activities.map((activity, index) => {
             const config = activityConfig[activity.action] || activityConfig.updated;
             const Icon = config.icon;
-            const avatarUrl = activity.userAvatar?.startsWith("http")
-              ? activity.userAvatar
-              : `${supabaseUrl}/storage/v1/object/public/avatars/${activity.userAvatar}`;
+            const avatarUrl = getAvatarUrl(activity.userAvatar, activity.userId);
 
             return (
               <div key={activity.id} className="relative flex gap-4 pl-2">

@@ -30,7 +30,7 @@ export async function GET() {
       id: user.id,
       name: user.user_metadata?.name || user.email?.split("@")[0] || "Usuario",
       email: user.email,
-      avatar: user.user_metadata?.avatar || "avatar1.png",
+      avatar: user.user_metadata?.avatar || null,
     });
   }
 
@@ -38,7 +38,7 @@ export async function GET() {
     id: profile.id,
     name: profile.name,
     email: profile.email,
-    avatar: profile.avatar,
+    avatar: profile.avatar || null,
   });
 }
 

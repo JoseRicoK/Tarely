@@ -18,7 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, UserPlus, X, Crown, Users } from "lucide-react";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { cn, getAvatarUrl } from "@/lib/utils";
 
 interface Assignee {
   id: string;
@@ -76,8 +76,6 @@ export function TaskAssignees({
   const [isLoading, setIsLoading] = useState(false);
   const [assigningUserId, setAssigningUserId] = useState<string | null>(null);
   const [removingUserId, setRemovingUserId] = useState<string | null>(null);
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   const fetchMembers = async () => {
     setIsLoading(true);
@@ -183,10 +181,11 @@ export function TaskAssignees({
                           className="relative w-5 h-5 rounded-full overflow-hidden border-2 border-background cursor-pointer"
                         >
                           <Image
-                            src={`${supabaseUrl}/storage/v1/object/public/avatars/${assignee.avatar}`}
+                            src={getAvatarUrl(assignee.avatar, assignee.userId)}
                             alt={assignee.name}
                             fill
                             className="object-cover"
+                            unoptimized
                           />
                         </div>
                       </TooltipTrigger>
@@ -217,7 +216,6 @@ export function TaskAssignees({
             isLoading={isLoading}
             assigningUserId={assigningUserId}
             removingUserId={removingUserId}
-            supabaseUrl={supabaseUrl || ""}
             onAssign={handleAssign}
             onRemove={handleRemove}
           />
@@ -247,7 +245,6 @@ export function TaskAssignees({
               isLoading={isLoading}
               assigningUserId={assigningUserId}
               removingUserId={removingUserId}
-              supabaseUrl={supabaseUrl || ""}
               onAssign={handleAssign}
               onRemove={handleRemove}
             />
@@ -265,10 +262,11 @@ export function TaskAssignees({
             >
               <div className="relative w-5 h-5 rounded-full overflow-hidden">
                 <Image
-                  src={`${supabaseUrl}/storage/v1/object/public/avatars/${assignee.avatar}`}
+                  src={getAvatarUrl(assignee.avatar, assignee.userId)}
                   alt={assignee.name}
                   fill
                   className="object-cover"
+                  unoptimized
                 />
               </div>
               <span className="text-xs">{assignee.name}</span>
@@ -299,7 +297,6 @@ interface AssigneePopoverContentProps {
   isLoading: boolean;
   assigningUserId: string | null;
   removingUserId: string | null;
-  supabaseUrl: string;
   onAssign: (userId: string) => void;
   onRemove: (userId: string) => void;
 }
@@ -310,7 +307,6 @@ function AssigneePopoverContent({
   isLoading,
   assigningUserId,
   removingUserId,
-  supabaseUrl,
   onAssign,
   onRemove,
 }: AssigneePopoverContentProps) {
@@ -331,10 +327,11 @@ function AssigneePopoverContent({
                 <div className="flex items-center gap-2">
                   <div className="relative w-6 h-6 rounded-full overflow-hidden">
                     <Image
-                      src={`${supabaseUrl}/storage/v1/object/public/avatars/${assignee.avatar}`}
+                      src={getAvatarUrl(assignee.avatar, assignee.userId)}
                       alt={assignee.name}
                       fill
                       className="object-cover"
+                      unoptimized
                     />
                   </div>
                   <span className="text-sm">{assignee.name}</span>
@@ -384,10 +381,11 @@ function AssigneePopoverContent({
               <div className="flex items-center gap-2">
                 <div className="relative w-6 h-6 rounded-full overflow-hidden">
                   <Image
-                    src={`${supabaseUrl}/storage/v1/object/public/avatars/${member.avatar}`}
+                    src={getAvatarUrl(member.avatar, member.user_id)}
                     alt={member.name}
                     fill
                     className="object-cover"
+                    unoptimized
                   />
                 </div>
                 <span className="text-sm">{member.name}</span>

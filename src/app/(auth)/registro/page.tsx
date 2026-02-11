@@ -7,14 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Link from "next/link";
-import { Loader2, Mail, Lock, User, Sparkles, AlertCircle, Shuffle, ArrowLeft } from "lucide-react";
+import { Loader2, Mail, Lock, User, Sparkles, AlertCircle, ArrowLeft, Shuffle } from "lucide-react";
 import Image from "next/image";
 
-// Generar array de 20 avatares: avatar1.png, avatar2.png, ..., avatar20.png
-const AVATARS = Array.from({ length: 20 }, (_, i) => `avatar${i + 1}.png`);
-
-// Función para obtener un avatar aleatorio
-const getRandomAvatar = () => AVATARS[Math.floor(Math.random() * AVATARS.length)];
+import { getDiceBearUrl, generateRandomAvatarSeed } from "@/lib/utils";
 
 interface FieldErrors {
   name?: string;
@@ -29,19 +25,10 @@ export default function RegistroPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [selectedAvatar, setSelectedAvatar] = useState(getRandomAvatar());
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  // Handler para generar avatar aleatorio
-  const handleGenerateAvatar = () => {
-    const randomAvatar = getRandomAvatar();
-    setSelectedAvatar(randomAvatar);
-    toast.success("Avatar generado aleatoriamente");
-  };
+  const [avatarSeed, setAvatarSeed] = useState(() => generateRandomAvatarSeed());
 
   // Validaciones
   const validateName = (value: string) => {
@@ -117,7 +104,7 @@ export default function RegistroPage() {
           name, 
           email, 
           password,
-          avatar: selectedAvatar 
+          avatar: avatarSeed
         }),
       });
 
@@ -203,7 +190,7 @@ export default function RegistroPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Avatar y botón en la misma fila */}
+              {/* Avatar preview - generado automáticamente */}
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Avatar</Label>
                 <div className="flex items-center gap-4">
@@ -211,31 +198,29 @@ export default function RegistroPage() {
                   <div className="relative flex-shrink-0">
                     <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full blur-sm opacity-50" />
                     <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-white/20">
-                      <Image
-                        src={`${supabaseUrl}/storage/v1/object/public/avatars/${selectedAvatar}`}
-                        alt="Avatar seleccionado"
-                        fill
-                        sizes="80px"
-                        className="object-cover object-center"
-                        style={{ objectFit: 'cover' }}
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={getDiceBearUrl(avatarSeed)}
+                        alt="Avatar generado"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                   </div>
                   
-                  {/* Botón generar */}
-                  <div className="flex-1 space-y-1">
+                  <div className="flex-1 space-y-2">
+                    <p className="text-xs text-muted-foreground">
+                      Pulsa para generar otro avatar aleatorio
+                    </p>
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={handleGenerateAvatar}
-                      className="w-full bg-white/5 border-white/10 hover:bg-white/10 hover:border-purple-500/50"
+                      size="sm"
+                      onClick={() => setAvatarSeed(generateRandomAvatarSeed())}
+                      className="bg-white/5 border-white/10 hover:bg-white/10 hover:border-purple-500/50 transition-all"
                     >
-                      <Shuffle className="mr-2 h-4 w-4" />
-                      Generar aleatorio
+                      <Shuffle className="mr-2 h-3.5 w-3.5" />
+                      Cambiar avatar
                     </Button>
-                    <p className="text-xs text-muted-foreground text-center">
-                      Podrás subir tu imagen desde tu perfil
-                    </p>
                   </div>
                 </div>
               </div>

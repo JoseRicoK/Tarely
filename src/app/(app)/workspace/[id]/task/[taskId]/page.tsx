@@ -62,7 +62,7 @@ import {
 } from "@/components/tasks";
 import { useUser } from "@/components/auth/UserContext";
 import type { Task, Workspace, WorkspaceSection, Subtask, TaskAssignee } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, getAvatarUrl } from "@/lib/utils";
 
 // Colores de importancia
 const importanceConfig: Record<number, { bg: string; text: string; border: string; label: string }> = {
@@ -105,8 +105,6 @@ export default function TaskDetailPage() {
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   // Cargar datos
   const loadData = useCallback(async () => {
@@ -699,9 +697,7 @@ export default function TaskDetailPage() {
                 {task.assignees && task.assignees.length > 0 && (
                   <div className="mt-4 space-y-3">
                     {task.assignees.map((assignee: TaskAssignee) => {
-                      const avatarUrl = assignee.avatar?.startsWith("http")
-                        ? assignee.avatar
-                        : `${supabaseUrl}/storage/v1/object/public/avatars/${assignee.avatar}`;
+                      const avatarUrl = getAvatarUrl(assignee.avatar, assignee.userId);
 
                       return (
                         <div key={assignee.id} className="flex items-center gap-3">

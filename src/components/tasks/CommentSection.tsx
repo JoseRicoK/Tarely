@@ -26,7 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { toast } from "sonner";
 import type { TaskComment } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { getAvatarUrl } from "@/lib/utils";
 
 interface CommentSectionProps {
   taskId: string;
@@ -160,8 +160,6 @@ export function CommentSection({ taskId, currentUserId }: CommentSectionProps) {
     }
   };
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -212,9 +210,7 @@ export function CommentSection({ taskId, currentUserId }: CommentSectionProps) {
         ) : (
           <div className="space-y-4 pb-4">
             {comments.map((comment) => {
-              const avatarUrl = comment.userAvatar?.startsWith("http")
-                ? comment.userAvatar
-                : `${supabaseUrl}/storage/v1/object/public/avatars/${comment.userAvatar}`;
+              const avatarUrl = getAvatarUrl(comment.userAvatar, comment.userId);
               const isOwner = comment.userId === currentUserId;
               const wasEdited = comment.createdAt !== comment.updatedAt;
 

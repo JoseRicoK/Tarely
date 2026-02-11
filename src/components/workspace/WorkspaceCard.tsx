@@ -53,7 +53,7 @@ export function WorkspaceCard({
 
   return (
     <Card 
-      className="group relative flex flex-col transition-all duration-200 hover:shadow-xl hover:shadow-ta/10 hover:border-ta/30 cursor-pointer overflow-hidden"
+      className="group relative flex flex-col gap-2 xl:gap-6 py-3 xl:py-6 transition-all duration-200 hover:shadow-xl hover:shadow-ta/10 hover:border-ta/30 cursor-pointer overflow-hidden"
       onClick={handleCardClick}
     >
       {/* Barra superior de color */}
@@ -72,17 +72,17 @@ export function WorkspaceCard({
         </div>
       )}
       
-      <CardHeader className="pb-2 pt-4">
+      <CardHeader className="pb-2 pt-3 xl:pt-4">
         <div className="flex items-center justify-between gap-3">
           {/* Icono */}
           <div 
-            className="flex-shrink-0 h-10 w-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110"
+            className="flex-shrink-0 h-9 w-9 xl:h-10 xl:w-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110"
             style={{ 
               backgroundColor: `${workspaceColor}20`,
               color: workspaceColor 
             }}
           >
-            <WorkspaceIcon className="h-5 w-5" />
+            <WorkspaceIcon className="h-4 w-4 xl:h-5 xl:w-5" />
           </div>
           
           <div className="flex-1 min-w-0">
@@ -134,10 +134,10 @@ export function WorkspaceCard({
           </CardDescription>
         )}
       </CardHeader>
-      <CardContent className="flex-1 pb-3">
+      <CardContent className="flex-1">
         <div className="flex items-center gap-2">
           <div 
-            className="flex-shrink-0 h-8 w-8 rounded-md flex items-center justify-center"
+            className="flex-shrink-0 h-7 w-7 xl:h-8 xl:w-8 rounded-md flex items-center justify-center"
             style={{ 
               backgroundColor: `${workspaceColor}10`,
               color: workspaceColor 
@@ -146,7 +146,7 @@ export function WorkspaceCard({
             <CheckCircle2 className="h-4 w-4" />
           </div>
           <div>
-            <div className="text-lg font-semibold" style={{ color: workspaceColor }}>
+            <div className="text-base xl:text-lg font-semibold" style={{ color: workspaceColor }}>
               {workspace.pendingTasksCount ?? 0}
             </div>
             <div className="text-xs text-muted-foreground">
@@ -155,7 +155,7 @@ export function WorkspaceCard({
           </div>
         </div>
       </CardContent>
-      <CardFooter className="pt-3 border-t">
+      <CardFooter className="border-t">
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <Clock className="h-3 w-3" />
           <span>Actualizado {timeAgo}</span>

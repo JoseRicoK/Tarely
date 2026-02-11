@@ -678,7 +678,7 @@ export default function WorkspacePage() {
   }, [deletingTask, refetchTasks]);
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleGenerateTasks();
     }
@@ -839,7 +839,7 @@ export default function WorkspacePage() {
           </div>
           
           <Textarea
-            placeholder="Describe lo que necesitas hacer..."
+            placeholder="Describe lo que necesitas hacer... (Enter para organizar, Shift+Enter para salto de línea)"
             value={aiText}
             onChange={(e) => setAiText(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -847,11 +847,6 @@ export default function WorkspacePage() {
             className="resize-y bg-background/50 border-ta/20 focus:border-ta/40 transition-colors min-h-[80px] md:min-h-[120px] text-sm"
             disabled={isGenerating}
           />
-          
-          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-            <kbd className="px-1.5 py-0.5 text-xs bg-muted rounded border">Ctrl+Enter</kbd>
-            <span>para organizar rápido</span>
-          </p>
         </div>
       </div>
 

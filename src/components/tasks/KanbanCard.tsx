@@ -51,7 +51,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import type { Task, TaskAssignee, WorkspaceSection, Subtask } from "@/lib/types";
-import { cn } from "@/lib/utils";
+import { cn, getAvatarUrl } from "@/lib/utils";
 import Image from "next/image";
 import { SubtaskIndicator } from "./SubtaskList";
 import { TaskAssignees } from "./TaskAssignees";
@@ -123,16 +123,13 @@ function getImportanceBarColor(task: Task): string {
 function AssigneesAvatars({ assignees }: { assignees: TaskAssignee[] }) {
   if (!assignees || assignees.length === 0) return null;
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const displayAssignees = assignees.slice(0, 3);
   const remaining = assignees.length - 3;
 
   return (
     <div className="flex -space-x-1.5">
       {displayAssignees.map((assignee) => {
-        const avatarUrl = assignee.avatar?.startsWith("http")
-          ? assignee.avatar
-          : `${supabaseUrl}/storage/v1/object/public/avatars/${assignee.avatar}`;
+        const avatarUrl = getAvatarUrl(assignee.avatar, assignee.userId);
 
         return (
           <TooltipProvider key={assignee.id}>

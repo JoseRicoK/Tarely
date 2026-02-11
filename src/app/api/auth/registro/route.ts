@@ -30,7 +30,7 @@ export async function POST(request: Request) {
       email,
       name,
       password_hash: password, // Guardamos el password original, no hasheado
-      avatar,
+      avatar: avatar || null,
       confirmation_token: confirmationToken,
       confirmation_token_expires: tokenExpiry.toISOString(),
     });

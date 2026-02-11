@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, Search, UserPlus, Users, Crown, X, Check } from "lucide-react";
 import Image from "next/image";
+import { getAvatarUrl } from "@/lib/utils";
 
 interface User {
   id: string;
@@ -54,8 +55,6 @@ export function ShareDialog({
   const [isLoadingMembers, setIsLoadingMembers] = useState(false);
   const [invitingUserId, setInvitingUserId] = useState<string | null>(null);
   const [removingMemberId, setRemovingMemberId] = useState<string | null>(null);
-
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   useEffect(() => {
     const fetchMembersData = async () => {
@@ -216,12 +215,13 @@ export function ShareDialog({
                         <div className="flex items-center gap-3">
                           <div className="relative w-8 h-8 rounded-full overflow-hidden">
                             <Image
-                              src={`${supabaseUrl}/storage/v1/object/public/avatars/${user.avatar}`}
+                              src={getAvatarUrl(user.avatar, user.id)}
                               alt={user.name}
                               fill
                               sizes="32px"
                               className="object-cover object-center"
                               style={{ objectFit: 'cover' }}
+                              unoptimized
                             />
                           </div>
                           <div>
@@ -274,12 +274,13 @@ export function ShareDialog({
                       <div className="flex items-center gap-3">
                         <div className="relative w-8 h-8 rounded-full overflow-hidden">
                           <Image
-                            src={`${supabaseUrl}/storage/v1/object/public/avatars/${member.avatar}`}
+                            src={getAvatarUrl(member.avatar, member.userId)}
                             alt={member.name}
                             fill
                             sizes="32px"
                             className="object-cover object-center"
                             style={{ objectFit: 'cover' }}
+                            unoptimized
                           />
                         </div>
                         <div>

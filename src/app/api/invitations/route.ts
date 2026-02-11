@@ -62,8 +62,9 @@ export async function GET() {
       workspaceName: workspace?.name || "Workspace",
       workspaceColor: workspace?.color || "#8b5cf6",
       invitedBy: {
+        id: inv.invited_by || "",
         name: inviter?.name || "Usuario",
-        avatar: inviter?.avatar || "avatar1.png",
+        avatar: inviter?.avatar || null,
       },
       createdAt: inv.created_at,
     };
