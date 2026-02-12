@@ -45,6 +45,9 @@ export default function NotesPage() {
   const [templateDialogMode, setTemplateDialogMode] = useState<"select" | "save">("select");
 
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const selectedNoteIdRef = useRef<string | null>(null);
+  selectedNoteIdRef.current = selectedNote?.id ?? null;
+  const latestNoteRequestRef = useRef<string | null>(null);
 
   // ============== DATA FETCHING ==============
 
@@ -90,10 +93,15 @@ export default function NotesPage() {
   }, []);
 
   const fetchNote = useCallback(async (id: string) => {
+    latestNoteRequestRef.current = id;
     try {
       const res = await fetch(`/api/notes/${id}`);
       if (!res.ok) throw new Error();
-      setSelectedNote(await res.json());
+      const note = await res.json();
+      // Only set if this is still the latest request (prevents race conditions)
+      if (latestNoteRequestRef.current === id) {
+        setSelectedNote(note);
+      }
     } catch {
       toast.error("Error al cargar la nota");
     }
@@ -137,11 +145,11 @@ export default function NotesPage() {
 
   const handleSelectFolder = (id: string | null) => {
     setSelectedFolderId(id);
-    if (selectedWorkspaceId) fetchNotes(selectedWorkspaceId, id);
     setSelectedNote(null);
   };
 
   const handleSelectNote = async (id: string) => {
+    if (id === selectedNoteIdRef.current) return;
     await fetchNote(id);
   };
 
@@ -193,35 +201,30 @@ export default function NotesPage() {
   };
 
   const handleUpdateNote = useCallback(
-    async (json: Record<string, unknown>, text: string) => {
-      if (!selectedNote) return;
+    (json: Record<string, unknown>, text: string) => {
+      const noteId = selectedNoteIdRef.current;
+      if (!noteId) return;
       setSaving(true);
       if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
       saveTimeoutRef.current = setTimeout(async () => {
         try {
           const wordCount = text.split(/\s+/).filter(Boolean).length;
-          const res = await fetch(`/api/notes/${selectedNote.id}`, {
+          const res = await fetch(`/api/notes/${noteId}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ contentJson: json, contentText: text, wordCount }),
           });
           if (!res.ok) throw new Error();
           const updated = await res.json();
-          // Only update metadata from save response — NOT contentJson
-          // to avoid triggering editor.setContent() which causes cursor jumps
+          // Only update if still the same note
           setSelectedNote((prev) =>
-            prev
-              ? {
-                  ...prev,
-                  updatedAt: updated.updatedAt,
-                  wordCount: updated.wordCount,
-                  contentText: updated.contentText,
-                }
-              : updated
+            prev?.id === noteId
+              ? { ...prev, updatedAt: updated.updatedAt, wordCount: updated.wordCount, contentText: updated.contentText }
+              : prev
           );
           setNotes((prev) =>
             prev.map((n) =>
-              n.id === updated.id
+              n.id === noteId
                 ? { ...n, updatedAt: updated.updatedAt, wordCount: updated.wordCount, contentText: updated.contentText }
                 : n
             )
@@ -233,7 +236,7 @@ export default function NotesPage() {
         }
       }, 300);
     },
-    [selectedNote]
+    [] // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   const handleUpdateTitle = useCallback(
@@ -519,7 +522,7 @@ export default function NotesPage() {
     async (query: string) => {
       if (!selectedWorkspaceId) return;
       if (!query.trim()) {
-        fetchNotes(selectedWorkspaceId, selectedFolderId);
+        fetchNotes(selectedWorkspaceId);
         return;
       }
       try {
@@ -630,7 +633,7 @@ export default function NotesPage() {
                   {selectedNote.icon}
                 </span>
                 <input
-                  className="text-2xl font-bold bg-transparent border-none outline-none flex-1 placeholder:text-muted-foreground/30"
+                  className="text-4xl font-extrabold bg-transparent border-none outline-none flex-1 placeholder:text-muted-foreground/30"
                   value={selectedNote.title}
                   onChange={(e) =>
                     setSelectedNote((prev) => (prev ? { ...prev, title: e.target.value } : null))
@@ -644,7 +647,7 @@ export default function NotesPage() {
             {/* Editor + AI panel */}
             <div className="flex-1 flex overflow-hidden">
               <div className="flex-1 overflow-y-auto bg-background/60 backdrop-blur-sm">
-                <NoteEditor content={selectedNote.contentJson} onUpdate={handleUpdateNote} />
+                <NoteEditor key={selectedNote.id} content={selectedNote.contentJson} onUpdate={handleUpdateNote} />
               </div>
               <NoteAIPanel
                 noteContent={selectedNote.contentText || ""}

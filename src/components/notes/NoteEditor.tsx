@@ -48,8 +48,7 @@ import {
   ArrowLeft,
   Unlink,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 
 // ============== TYPES ==============
 
@@ -205,7 +204,10 @@ function TBtn({
         disabled && "opacity-30 pointer-events-none",
         extra
       )}
-      onClick={onClick}
+      onMouseDown={(e) => {
+        e.preventDefault();
+        onClick();
+      }}
       disabled={disabled}
     >
       <Icon className="h-3.5 w-3.5" />
@@ -323,7 +325,6 @@ export function NoteEditor({
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  const isInternalUpdate = useRef(false);
 
   // Slash command state
   const [slashOpen, setSlashOpen] = useState(false);
@@ -421,16 +422,12 @@ export function NoteEditor({
       },
     },
     onUpdate: ({ editor: ed }) => {
-      isInternalUpdate.current = true;
-
-      // Slash command detection
+      // Slash command detection — use current paragraph text only
       const { from, empty } = ed.state.selection;
       if (empty) {
-        const textBefore = ed.state.doc.textBetween(
-          Math.max(0, from - 50),
-          from
-        );
-        const match = textBefore.match(
+        const { $from } = ed.state.selection;
+        const textInNode = $from.parent.textBetween(0, $from.parentOffset, undefined, '\ufffc');
+        const match = textInNode.match(
           /(?:^|\s)\/([a-zA-ZáéíóúñÁÉÍÓÚÑ0-9]*)$/
         );
         if (match) {
@@ -492,20 +489,12 @@ export function NoteEditor({
     return () => document.removeEventListener("mousedown", handleClick);
   }, [slashOpen, turnIntoOpen]);
 
-  // Sync content from props ONLY when the note changes (not on every save)
+  // Cleanup debounce on unmount
   useEffect(() => {
-    if (!editor || !content) return;
-    // Skip if this was triggered by our own update
-    if (isInternalUpdate.current) {
-      isInternalUpdate.current = false;
-      return;
-    }
-    const currentJson = JSON.stringify(editor.getJSON());
-    const newJson = JSON.stringify(content);
-    if (currentJson !== newJson && Object.keys(content).length > 0) {
-      editor.commands.setContent(content);
-    }
-  }, [content, editor]);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const addImage = useCallback(() => {
     if (!editor) return;
@@ -557,7 +546,8 @@ export function NoteEditor({
               type="button"
               className="flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
               title="Añadir bloque"
-              onClick={() => {
+              onMouseDown={(e) => {
+                e.preventDefault();
                 editor.chain().focus().enter().run();
               }}
             >
@@ -739,8 +729,8 @@ export function NoteEditor({
           <button
             type="button"
             className="flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-accent transition-all"
-            onClick={() => {
-              // Insert "/" to trigger slash menu
+            onMouseDown={(e) => {
+              e.preventDefault();
               editor.chain().focus().insertContent("/").run();
             }}
             title='Pulsa para añadir bloque o escribe "/"'

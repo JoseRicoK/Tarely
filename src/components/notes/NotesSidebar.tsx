@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import {
   ChevronRight,
   ChevronDown,
@@ -255,7 +255,7 @@ export function NotesSidebar({
   );
 
   // Sync: when folders change, add new ones to openFolders
-  useMemo(() => {
+  useEffect(() => {
     setOpenFolders((prev) => {
       const next = new Set(prev);
       folders.forEach((f) => {
