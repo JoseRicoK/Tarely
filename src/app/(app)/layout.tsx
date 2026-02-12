@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Toaster } from "@/components/ui/sonner";
 import { UserMenu, UserProvider } from "@/components/auth";
-import { Calendar } from "lucide-react";
+import { AppNavLinks } from "@/components/app-nav-links";
 
 export const metadata: Metadata = {
   title: "Tarely - Gestión de Tareas con IA",
@@ -44,13 +44,7 @@ export default function AppLayout({
               <span className="text-accent-gradient">Tarely</span>
             </Link>
             <div className="flex items-center gap-2">
-              <Link
-                href="/calendario"
-                className="flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-colors"
-              >
-                <Calendar className="h-4 w-4" />
-                <span className="hidden sm:inline">Calendario</span>
-              </Link>
+              <AppNavLinks />
               <UserMenu />
             </div>
           </div>

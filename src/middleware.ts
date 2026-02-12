@@ -11,7 +11,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   
   // Rutas que NO deben ser indexadas por buscadores
-  const noIndexPaths = ['/app', '/workspace', '/calendario', '/perfil', '/login', '/registro', '/auth', '/dashboard'];
+  const noIndexPaths = ['/app', '/workspace', '/calendario', '/perfil', '/login', '/registro', '/auth', '/dashboard', '/notes'];
   const isNoIndexPath = noIndexPaths.some(path => pathname.startsWith(path));
 
   // Rutas públicas que no requieren autenticación
@@ -21,8 +21,8 @@ export async function middleware(request: NextRequest) {
   // La landing page (/) es pública
   const isLandingPage = pathname === '/';
   
-  // Rutas protegidas que requieren autenticación (todo lo que está en /app, /workspace, /calendario, /perfil, /dashboard)
-  const protectedPaths = ['/app', '/workspace', '/calendario', '/perfil', '/dashboard'];
+  // Rutas protegidas que requieren autenticación (todo lo que está en /app, /workspace, /calendario, /perfil, /dashboard, /notas)
+  const protectedPaths = ['/app', '/workspace', '/calendario', '/perfil', '/dashboard', '/notes'];
   const isProtectedPath = protectedPaths.some(path => pathname.startsWith(path));
 
   if (!supabaseUrl || !supabaseKey) {

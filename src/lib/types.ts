@@ -225,3 +225,111 @@ export interface UploadAttachmentInput {
   taskId: string;
   file: File;
 }
+
+// ============== NOTES ==============
+
+export interface NoteFolder {
+  id: string;
+  workspaceId: string;
+  parentFolderId: string | null;
+  name: string;
+  icon: string;
+  color: string;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+  children?: NoteFolder[];
+  noteCount?: number;
+}
+
+export interface Note {
+  id: string;
+  workspaceId: string;
+  folderId: string | null;
+  title: string;
+  contentJson: Record<string, unknown>;
+  contentText: string;
+  isPinned: boolean;
+  isFavorite: boolean;
+  taskId: string | null;
+  coverImage: string | null;
+  icon: string;
+  sortOrder: number;
+  wordCount: number;
+  createdAt: string;
+  updatedAt: string;
+  // Joined fields
+  folderPath?: string;
+  workspaceName?: string;
+  workspaceColor?: string;
+  workspaceIcon?: string;
+}
+
+export interface NoteTemplate {
+  id: string;
+  userId: string | null;
+  name: string;
+  description: string;
+  contentJson: Record<string, unknown>;
+  icon: string;
+  isGlobal: boolean;
+  category: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateNoteFolderInput {
+  workspaceId: string;
+  parentFolderId?: string | null;
+  name: string;
+  icon?: string;
+  color?: string;
+}
+
+export interface UpdateNoteFolderInput {
+  name?: string;
+  icon?: string;
+  color?: string;
+  parentFolderId?: string | null;
+  sortOrder?: number;
+}
+
+export interface CreateNoteInput {
+  workspaceId: string;
+  folderId?: string | null;
+  title?: string;
+  contentJson?: Record<string, unknown>;
+  contentText?: string;
+  icon?: string;
+  templateId?: string;
+}
+
+export interface UpdateNoteInput {
+  title?: string;
+  folderId?: string | null;
+  contentJson?: Record<string, unknown>;
+  contentText?: string;
+  isPinned?: boolean;
+  isFavorite?: boolean;
+  taskId?: string | null;
+  coverImage?: string | null;
+  icon?: string;
+  sortOrder?: number;
+  wordCount?: number;
+}
+
+export interface CreateNoteTemplateInput {
+  name: string;
+  description?: string;
+  contentJson: Record<string, unknown>;
+  icon?: string;
+  category?: string;
+}
+
+export interface UpdateNoteTemplateInput {
+  name?: string;
+  description?: string;
+  contentJson?: Record<string, unknown>;
+  icon?: string;
+  category?: string;
+}

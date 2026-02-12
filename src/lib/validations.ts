@@ -63,3 +63,72 @@ export type UpdateWorkspaceInput = z.infer<typeof updateWorkspaceSchema>;
 export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export type UpdateTaskInput = z.infer<typeof updateTaskSchema>;
 export type GenerateTasksInput = z.infer<typeof generateTasksSchema>;
+
+// ============== NOTE FOLDERS ==============
+
+export const createNoteFolderSchema = z.object({
+  workspaceId: z.string().uuid(),
+  parentFolderId: z.string().uuid().optional().nullable(),
+  name: z.string().min(1, "El nombre es obligatorio").max(100),
+  icon: z.string().max(50).default("Folder"),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Color inválido").default("#6366f1"),
+});
+
+export const updateNoteFolderSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  icon: z.string().max(50).optional(),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  parentFolderId: z.string().uuid().optional().nullable(),
+  sortOrder: z.number().int().optional(),
+});
+
+// ============== NOTES ==============
+
+export const createNoteSchema = z.object({
+  workspaceId: z.string().uuid(),
+  folderId: z.string().uuid().optional().nullable(),
+  title: z.string().max(500).default("Sin título"),
+  contentJson: z.record(z.string(), z.unknown()).optional().default({}),
+  contentText: z.string().max(100000).optional().default(""),
+  icon: z.string().max(10).default("📝"),
+  templateId: z.string().uuid().optional(),
+});
+
+export const updateNoteSchema = z.object({
+  title: z.string().max(500).optional(),
+  folderId: z.string().uuid().optional().nullable(),
+  contentJson: z.record(z.string(), z.unknown()).optional(),
+  contentText: z.string().max(100000).optional(),
+  isPinned: z.boolean().optional(),
+  isFavorite: z.boolean().optional(),
+  taskId: z.string().uuid().optional().nullable(),
+  coverImage: z.string().max(500).optional().nullable(),
+  icon: z.string().max(10).optional(),
+  sortOrder: z.number().int().optional(),
+  wordCount: z.number().int().optional(),
+});
+
+// ============== NOTE TEMPLATES ==============
+
+export const createNoteTemplateSchema = z.object({
+  name: z.string().min(1, "El nombre es obligatorio").max(100),
+  description: z.string().max(500).default(""),
+  contentJson: z.record(z.string(), z.unknown()),
+  icon: z.string().max(10).default("📋"),
+  category: z.string().max(50).default("general"),
+});
+
+export const updateNoteTemplateSchema = z.object({
+  name: z.string().min(1).max(100).optional(),
+  description: z.string().max(500).optional(),
+  contentJson: z.record(z.string(), z.unknown()).optional(),
+  icon: z.string().max(10).optional(),
+  category: z.string().max(50).optional(),
+});
+
+export type CreateNoteFolderInput = z.infer<typeof createNoteFolderSchema>;
+export type UpdateNoteFolderInput = z.infer<typeof updateNoteFolderSchema>;
+export type CreateNoteInput = z.infer<typeof createNoteSchema>;
+export type UpdateNoteInput = z.infer<typeof updateNoteSchema>;
+export type CreateNoteTemplateInput = z.infer<typeof createNoteTemplateSchema>;
+export type UpdateNoteTemplateInput = z.infer<typeof updateNoteTemplateSchema>;
