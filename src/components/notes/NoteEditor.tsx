@@ -1,7 +1,7 @@
 "use client";
 
 import { useEditor, EditorContent } from "@tiptap/react";
-import { BubbleMenu, FloatingMenu } from "@tiptap/react/menus";
+import { BubbleMenu } from "@tiptap/react/menus";
 import DragHandle from "@tiptap/extension-drag-handle-react";
 import StarterKit from "@tiptap/starter-kit";
 import Placeholder from "@tiptap/extension-placeholder";
@@ -15,7 +15,8 @@ import Underline from "@tiptap/extension-underline";
 import TextAlign from "@tiptap/extension-text-align";
 import { TextStyleKit } from "@tiptap/extension-text-style";
 import Typography from "@tiptap/extension-typography";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Node, mergeAttributes } from "@tiptap/core";
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -47,7 +48,65 @@ import {
   ArrowUp,
   ArrowLeft,
   Unlink,
+  FileText,
 } from "lucide-react";
+
+
+// ============== PDF NODE EXTENSION ==============
+
+const PdfNode = Node.create({
+  name: 'pdf',
+  group: 'block',
+  atom: true,
+
+  addAttributes() {
+    return {
+      src: { default: null },
+      fileName: { default: 'document.pdf' },
+      height: {
+        default: 500,
+        parseHTML: (el) => el.getAttribute('data-height') || 500,
+        renderHTML: (attrs) => ({ 'data-height': attrs.height }),
+      },
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: 'div[data-pdf]' }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    const src = HTMLAttributes.src || '';
+    const fileName = HTMLAttributes.fileName || 'document.pdf';
+    return [
+      'div',
+      mergeAttributes(HTMLAttributes, {
+        'data-pdf': '',
+        class: 'pdf-embed',
+      }),
+      [
+        'div',
+        { class: 'pdf-embed-header' },
+        ['span', { class: 'pdf-embed-icon' }, '📄'],
+        ['span', { class: 'pdf-embed-name' }, fileName],
+        ['a', { href: src, target: '_blank', rel: 'noopener noreferrer', class: 'pdf-embed-download', download: fileName }, 'Descargar'],
+      ],
+      [
+        'div',
+        { class: 'pdf-embed-resize-wrapper', style: `height: ${HTMLAttributes['data-height'] || 500}px` },
+        [
+          'iframe',
+          {
+            src: src,
+            class: 'pdf-embed-frame',
+            frameborder: '0',
+            loading: 'lazy',
+          },
+        ],
+      ],
+    ];
+  },
+});
 
 
 // ============== TYPES ==============
@@ -57,6 +116,10 @@ interface NoteEditorProps {
   onUpdate: (json: Record<string, unknown>, text: string) => void;
   editable?: boolean;
   className?: string;
+}
+
+export interface NoteEditorHandle {
+  insertContent: (text: string) => void;
 }
 
 interface SlashCommand {
@@ -160,6 +223,13 @@ const SLASH_COMMANDS: SlashCommand[] = [
     description: "Insertar imagen",
     icon: ImageIcon,
     keywords: ["imagen", "image", "foto", "photo", "img"],
+    action: null,
+  },
+  {
+    name: "PDF",
+    description: "Insertar documento PDF",
+    icon: FileText,
+    keywords: ["pdf", "documento", "document", "archivo", "file"],
     action: null,
   },
 ];
@@ -313,18 +383,171 @@ function TurnIntoDropdown({
   );
 }
 
+// ============== TABLE CONTROLS (Notion-style) ==============
+
+function TableControls({ editor }: { editor: NonNullable<ReturnType<typeof useEditor>> }) {
+  const [tableRect, setTableRect] = useState<DOMRect | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ top: number; left: number } | null>(null);
+  const tableElRef = useRef<HTMLTableElement | null>(null);
+
+  useEffect(() => {
+    const editorDom = editor.view.dom;
+    const scrollParent = editorDom.closest('.overflow-y-auto, .overflow-auto') || editorDom.parentElement;
+
+    const updateRect = () => {
+      if (tableElRef.current && tableElRef.current.isConnected) {
+        setTableRect(tableElRef.current.getBoundingClientRect());
+      } else {
+        tableElRef.current = null;
+        setTableRect(null);
+      }
+    };
+
+    let rafId = 0;
+    const handleMouseMove = (e: MouseEvent) => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        const target = e.target as HTMLElement;
+        if (target.closest('[data-table-controls]')) return;
+        const table = target.closest('table') as HTMLTableElement | null;
+        if (table && editorDom.contains(table)) {
+          if (tableElRef.current !== table) tableElRef.current = table;
+          updateRect();
+        } else if (tableElRef.current) {
+          tableElRef.current = null;
+          setTableRect(null);
+        }
+      });
+    };
+
+    const handleContextMenu = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const cell = target.closest('td, th');
+      if (cell && editorDom.contains(cell)) {
+        e.preventDefault();
+        try {
+          const pos = editor.view.posAtDOM(cell, 0);
+          editor.commands.setTextSelection(pos);
+        } catch { /* ignore */ }
+        setContextMenu({ top: e.clientY, left: e.clientX });
+      }
+    };
+
+    const handleScroll = () => updateRect();
+
+    editorDom.addEventListener('mousemove', handleMouseMove, { passive: true });
+    editorDom.addEventListener('contextmenu', handleContextMenu);
+    if (scrollParent) scrollParent.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      editorDom.removeEventListener('mousemove', handleMouseMove);
+      editorDom.removeEventListener('contextmenu', handleContextMenu);
+      if (scrollParent) scrollParent.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [editor]);
+
+  // Close context menu on click outside
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = (e: MouseEvent) => {
+      if (!(e.target as HTMLElement).closest('[data-table-controls]')) {
+        setContextMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', close);
+    return () => document.removeEventListener('mousedown', close);
+  }, [contextMenu]);
+
+  const menuItems = useMemo(() => [
+    { label: "Insertar columna izquierda", icon: ArrowLeft, action: () => editor.chain().focus().addColumnBefore().run() },
+    { label: "Insertar columna derecha", icon: ArrowRight, action: () => editor.chain().focus().addColumnAfter().run() },
+    { label: "Insertar fila arriba", icon: ArrowUp, action: () => editor.chain().focus().addRowBefore().run() },
+    { label: "Insertar fila abajo", icon: ArrowDown, action: () => editor.chain().focus().addRowAfter().run() },
+    { type: "separator" as const },
+    { label: "Eliminar columna", icon: Minus, action: () => editor.chain().focus().deleteColumn().run(), destructive: true },
+    { label: "Eliminar fila", icon: Minus, action: () => editor.chain().focus().deleteRow().run(), destructive: true },
+    { label: "Eliminar tabla", icon: Trash2, action: () => editor.chain().focus().deleteTable().run(), destructive: true },
+  ], [editor]);
+
+  if (!tableRect) return null;
+
+  return createPortal(
+    <div data-table-controls>
+      {/* + Add column (right edge) */}
+      <button
+        className="fixed z-20 flex items-center justify-center w-5 rounded-r-md bg-muted/60 hover:bg-accent border border-l-0 border-border/40 text-muted-foreground/40 hover:text-foreground transition-all"
+        style={{ top: tableRect.top, left: tableRect.right, height: tableRect.height }}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          editor.chain().focus().addColumnAfter().run();
+        }}
+        title="Añadir columna"
+      >
+        <Plus className="h-3 w-3" />
+      </button>
+
+      {/* + Add row (bottom edge) */}
+      <button
+        className="fixed z-20 flex items-center justify-center h-5 rounded-b-md bg-muted/60 hover:bg-accent border border-t-0 border-border/40 text-muted-foreground/40 hover:text-foreground transition-all"
+        style={{ top: tableRect.bottom, left: tableRect.left, width: tableRect.width }}
+        onMouseDown={(e) => {
+          e.preventDefault();
+          editor.chain().focus().addRowAfter().run();
+        }}
+        title="Añadir fila"
+      >
+        <Plus className="h-3 w-3" />
+      </button>
+
+      {/* Context menu */}
+      {contextMenu && (
+        <div
+          className="fixed z-[100] w-56 rounded-xl border border-border bg-popover shadow-2xl py-1.5 animate-in fade-in-0 zoom-in-95"
+          style={{ top: contextMenu.top, left: contextMenu.left }}
+        >
+          {menuItems.map((item, i) =>
+            'type' in item && item.type === 'separator' ? (
+              <div key={i} className="mx-2 my-1.5 border-t border-border/30" />
+            ) : (
+              <button
+                key={item.label}
+                className={cn(
+                  "flex items-center gap-2.5 w-full px-3 py-1.5 text-left text-sm transition-colors",
+                  item.destructive
+                    ? "text-destructive hover:bg-destructive/10"
+                    : "text-popover-foreground hover:bg-accent/50"
+                )}
+                onClick={() => {
+                  item.action?.();
+                  setContextMenu(null);
+                }}
+              >
+                {item.icon && <item.icon className="h-3.5 w-3.5 shrink-0" />}
+                <span className="text-[13px]">{item.label}</span>
+              </button>
+            )
+          )}
+        </div>
+      )}
+    </div>,
+    document.body
+  );
+}
+
 // ============== MAIN EDITOR ==============
 
-export function NoteEditor({
+export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function NoteEditor({
   content,
   onUpdate,
   editable = true,
   className,
-}: NoteEditorProps) {
+}, ref) {
   const [linkUrl, setLinkUrl] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const debounceRef = useRef<NodeJS.Timeout | null>(null);
 
   // Slash command state
   const [slashOpen, setSlashOpen] = useState(false);
@@ -336,21 +559,23 @@ export function NoteEditor({
   const [turnIntoOpen, setTurnIntoOpen] = useState(false);
   const [turnIntoPos, setTurnIntoPos] = useState({ top: 0, left: 0 });
 
-  const filteredCommands = SLASH_COMMANDS.filter((cmd) => {
+  const filteredCommands = useMemo(() => SLASH_COMMANDS.filter((cmd) => {
     if (!slashQuery) return true;
     const q = slashQuery.toLowerCase();
     return (
       cmd.name.toLowerCase().includes(q) ||
       cmd.keywords.some((k) => k.includes(q))
     );
-  });
+  }), [slashQuery]);
 
   const filteredRef = useRef(filteredCommands);
-  filteredRef.current = filteredCommands;
   const slashOpenRef = useRef(slashOpen);
-  slashOpenRef.current = slashOpen;
   const slashIndexRef = useRef(slashIndex);
-  slashIndexRef.current = slashIndex;
+
+  // Sync refs via effect to comply with React strict mode
+  useEffect(() => { filteredRef.current = filteredCommands; }, [filteredCommands]);
+  useEffect(() => { slashOpenRef.current = slashOpen; }, [slashOpen]);
+  useEffect(() => { slashIndexRef.current = slashIndex; }, [slashIndex]);
 
   const editor = useEditor({
     extensions: [
@@ -360,12 +585,16 @@ export function NoteEditor({
         underline: false,
       }),
       Placeholder.configure({
-        placeholder: ({ node }) => {
+        placeholder: ({ node, editor: pEditor }) => {
           if (node.type.name === "heading") {
             const level = node.attrs.level;
             return level === 1 ? "Título 1" : level === 2 ? "Título 2" : "Título 3";
           }
-          return 'Escribe "/" para comandos...';
+          // Solo mostrar placeholder en el primer párrafo cuando el editor está vacío
+          if (node.type.name === "paragraph" && pEditor.isEmpty) {
+            return 'Escribe "/" para comandos...';
+          }
+          return '';
         },
         includeChildren: true,
       }),
@@ -375,7 +604,18 @@ export function NoteEditor({
       TableKit.configure({
         table: { resizable: true },
       }),
-      ImageExtension.configure({ inline: false, allowBase64: true }),
+      ImageExtension.configure({
+        inline: false,
+        allowBase64: true,
+        resize: {
+          enabled: true,
+          directions: ['bottom-right', 'bottom-left', 'top-right', 'top-left'],
+          minWidth: 100,
+          minHeight: 50,
+          alwaysPreserveAspectRatio: true,
+        },
+      }),
+      PdfNode,
       Link.configure({
         openOnClick: false,
         HTMLAttributes: { class: "editor-link" },
@@ -390,7 +630,7 @@ export function NoteEditor({
     immediatelyRender: false,
     editorProps: {
       attributes: {
-        class: "tiptap-editor focus:outline-none min-h-[500px] px-12 py-6 max-w-none",
+        class: "tiptap-editor focus:outline-none min-h-[500px] pl-20 pr-12 pt-6 pb-[40vh] max-w-none",
       },
       handleKeyDown: (_view, event) => {
         if (!slashOpenRef.current) return false;
@@ -432,9 +672,15 @@ export function NoteEditor({
         );
         if (match) {
           const coords = ed.view.coordsAtPos(from);
+          const menuHeight = 320; // max-h-72 ≈ 288px + padding
+          const viewportH = window.innerHeight;
+          const spaceBelow = viewportH - coords.bottom - 10;
+          const top = spaceBelow < menuHeight
+            ? coords.top - menuHeight - 6
+            : coords.bottom + 6;
           setSlashQuery(match[1]);
           setSlashIndex(0);
-          setSlashPos({ top: coords.bottom + 6, left: coords.left });
+          setSlashPos({ top, left: coords.left });
           setSlashOpen(true);
         } else {
           setSlashOpen(false);
@@ -443,59 +689,22 @@ export function NoteEditor({
         setSlashOpen(false);
       }
 
-      // Debounced save — NOTE: no extra debounce here, page.tsx already debounces
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-      debounceRef.current = setTimeout(() => {
-        const json = ed.getJSON() as Record<string, unknown>;
-        const text = ed.getText();
-        onUpdate(json, text);
-      }, 150);
+      // Save immediately — page.tsx handles debouncing
+      const json = ed.getJSON() as Record<string, unknown>;
+      const text = ed.getText();
+      onUpdate(json, text);
     },
   });
 
-  // Execute slash command
-  const executeSlashCommand = useCallback(
-    (cmd: SlashCommand) => {
+  // Expose insertContent for external use (e.g., AI panel)
+  useImperativeHandle(ref, () => ({
+    insertContent: (text: string) => {
       if (!editor) return;
-      const { from } = editor.state.selection;
-      const deleteLen = slashQuery.length + 1;
-      editor
-        .chain()
-        .focus()
-        .deleteRange({ from: from - deleteLen, to: from })
-        .run();
-
-      if (cmd.name === "Imagen") {
-        addImage();
-      } else if (cmd.action) {
-        cmd.action(editor);
-      }
-      setSlashOpen(false);
+      editor.chain().focus().insertContent(text).run();
     },
-    [editor, slashQuery] // eslint-disable-line react-hooks/exhaustive-deps
-  );
+  }), [editor]);
 
-  // Close menus on click outside
-  useEffect(() => {
-    if (!slashOpen && !turnIntoOpen) return;
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (!target.closest("[data-slash-menu]")) {
-        setSlashOpen(false);
-        setTurnIntoOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, [slashOpen, turnIntoOpen]);
-
-  // Cleanup debounce on unmount
-  useEffect(() => {
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, []);
-
+  // Image insertion (must be declared before executeSlashCommand)
   const addImage = useCallback(() => {
     if (!editor) return;
     const input = document.createElement("input");
@@ -517,6 +726,68 @@ export function NoteEditor({
     input.click();
   }, [editor]);
 
+  // PDF insertion
+  const addPdf = useCallback(() => {
+    if (!editor) return;
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "application/pdf";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        editor.chain().insertContent({
+          type: 'pdf',
+          attrs: {
+            src: reader.result as string,
+            fileName: file.name,
+          },
+        }).run();
+      };
+      reader.readAsDataURL(file);
+    };
+    input.click();
+  }, [editor]);
+
+  // Execute slash command
+  const executeSlashCommand = useCallback(
+    (cmd: SlashCommand) => {
+      if (!editor) return;
+      const { from } = editor.state.selection;
+      const deleteLen = slashQuery.length + 1;
+      editor
+        .chain()
+        .focus()
+        .deleteRange({ from: from - deleteLen, to: from })
+        .run();
+
+      if (cmd.name === "Imagen") {
+        addImage();
+      } else if (cmd.name === "PDF") {
+        addPdf();
+      } else if (cmd.action) {
+        cmd.action(editor);
+      }
+      setSlashOpen(false);
+    },
+    [editor, slashQuery, addImage, addPdf]
+  );
+
+  // Close menus on click outside
+  useEffect(() => {
+    if (!slashOpen && !turnIntoOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest("[data-slash-menu]")) {
+        setSlashOpen(false);
+        setTurnIntoOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [slashOpen, turnIntoOpen]);
+
   const addLink = useCallback(() => {
     if (!editor || !linkUrl) return;
     const url = linkUrl.startsWith("http") ? linkUrl : `https://${linkUrl}`;
@@ -527,31 +798,35 @@ export function NoteEditor({
 
   if (!editor) return null;
 
-  const isInTable = editor.isActive("table");
-
   return (
     <div className={cn("relative h-full", className)}>
-      {/* ===== DRAG HANDLE (Notion-like block handle) ===== */}
+      {/* ===== DRAG HANDLE (Notion-style: + and grip on left margin) ===== */}
       {editable && (
-        <DragHandle editor={editor}>
-          <div className="flex items-center gap-0.5 opacity-0 group-hover/drag:opacity-100 transition-opacity">
+        <DragHandle editor={editor} nested={false}>
+          <div className="flex items-center gap-0.5">
             <button
               type="button"
-              className="flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors cursor-grab active:cursor-grabbing"
-              title="Arrastrar bloque"
-            >
-              <GripVertical className="h-3.5 w-3.5" />
-            </button>
-            <button
-              type="button"
-              className="flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-accent transition-colors"
               title="Añadir bloque"
               onMouseDown={(e) => {
                 e.preventDefault();
-                editor.chain().focus().enter().run();
+                const { $from } = editor.state.selection;
+                if ($from.parent.textContent === '') {
+                  editor.chain().focus().insertContent('/').run();
+                } else {
+                  // Insert space + / at end of the current text
+                  editor.chain().focus($from.end()).insertContent(' /').run();
+                }
               }}
             >
               <Plus className="h-3.5 w-3.5" />
+            </button>
+            <button
+              type="button"
+              className="flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-accent transition-colors cursor-grab active:cursor-grabbing"
+              title="Arrastrar bloque"
+            >
+              <GripVertical className="h-3.5 w-3.5" />
             </button>
           </div>
         </DragHandle>
@@ -687,6 +962,7 @@ export function NoteEditor({
                     {COLORS.map((color) => (
                       <button
                         key={color}
+                        title={`Color ${color}`}
                         className="h-5 w-5 rounded-full border border-white/10 hover:scale-125 transition-transform"
                         style={{ backgroundColor: color }}
                         onClick={() => {
@@ -712,51 +988,11 @@ export function NoteEditor({
         </BubbleMenu>
       )}
 
-      {/* ===== FLOATING MENU (appears on empty lines - "+" button) ===== */}
-      {editable && (
-        <FloatingMenu
-          editor={editor}
-          shouldShow={({ state }) => {
-            const { $from } = state.selection;
-            const currentLineText = $from.parent.textContent;
-            // Show only on empty paragraphs (not headings, not code)
-            return (
-              currentLineText === "" &&
-              $from.parent.type.name === "paragraph"
-            );
-          }}
-        >
-          <button
-            type="button"
-            className="flex items-center justify-center h-6 w-6 rounded-md text-muted-foreground/50 hover:text-foreground hover:bg-accent transition-all"
-            onMouseDown={(e) => {
-              e.preventDefault();
-              editor.chain().focus().insertContent("/").run();
-            }}
-            title='Pulsa para añadir bloque o escribe "/"'
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-        </FloatingMenu>
-      )}
-
-      {/* ===== TABLE TOOLBAR (shown when inside a table) ===== */}
-      {editable && isInTable && (
-        <div className="sticky top-0 z-10 flex items-center gap-0.5 px-4 py-1 bg-muted/60 border-b border-border/30 text-sm">
-          <span className="text-muted-foreground text-xs mr-2">Tabla:</span>
-          <TBtn onClick={() => editor.chain().focus().addRowAfter().run()} icon={ArrowDown} label="Fila abajo" />
-          <TBtn onClick={() => editor.chain().focus().addRowBefore().run()} icon={ArrowUp} label="Fila arriba" />
-          <TBtn onClick={() => editor.chain().focus().addColumnAfter().run()} icon={ArrowRight} label="Columna derecha" />
-          <TBtn onClick={() => editor.chain().focus().addColumnBefore().run()} icon={ArrowLeft} label="Columna izquierda" />
-          <div className="w-px h-4 bg-border/50 mx-1" />
-          <TBtn onClick={() => editor.chain().focus().deleteRow().run()} icon={Minus} label="Eliminar fila" className="text-destructive/70 hover:!text-destructive" />
-          <TBtn onClick={() => editor.chain().focus().deleteColumn().run()} icon={Minus} label="Eliminar columna" className="text-destructive/70 hover:!text-destructive" />
-          <TBtn onClick={() => editor.chain().focus().deleteTable().run()} icon={Trash2} label="Eliminar tabla" className="text-destructive/70 hover:!text-destructive" />
-        </div>
-      )}
-
       {/* ===== EDITOR CONTENT ===== */}
       <EditorContent editor={editor} className="h-full" />
+
+      {/* ===== TABLE CONTROLS (Notion-style: + on edges, right-click menu) ===== */}
+      {editable && <TableControls editor={editor} />}
 
       {/* ===== SLASH COMMAND MENU ===== */}
       {slashOpen && filteredCommands.length > 0 && (
@@ -778,4 +1014,4 @@ export function NoteEditor({
       )}
     </div>
   );
-}
+});

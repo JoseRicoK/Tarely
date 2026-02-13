@@ -31,23 +31,25 @@ export function DeleteDialog({
 }: DeleteDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent className="sm:max-w-md rounded-xl border-border/50 shadow-2xl">
         <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
+          <AlertDialogTitle className="text-lg font-semibold">{title}</AlertDialogTitle>
           <AlertDialogDescription asChild>
             {typeof description === 'string' ? (
-              <div className="whitespace-pre-line">{description}</div>
+              <div className="whitespace-pre-line text-sm text-muted-foreground">{description}</div>
             ) : (
-              <div>{description}</div>
+              <div className="text-sm text-muted-foreground">{description}</div>
             )}
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={isLoading}>Cancelar</AlertDialogCancel>
+        <AlertDialogFooter className="gap-2 sm:gap-2">
+          <AlertDialogCancel disabled={isLoading} className="rounded-lg">
+            Cancelar
+          </AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
             disabled={isLoading}
-            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            className="rounded-lg bg-destructive text-white hover:bg-destructive/90 border-0 shadow-sm"
           >
             {isLoading ? "Eliminando..." : "Eliminar"}
           </AlertDialogAction>

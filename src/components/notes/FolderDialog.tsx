@@ -64,6 +64,7 @@ export function FolderDialog({ open, onOpenChange, onSave, folder, isLoading }: 
               {FOLDER_COLORS.map(c => (
                 <button
                   key={c}
+                  title={`Color ${c}`}
                   className={cn(
                     "h-7 w-7 rounded-full border-2 transition-transform hover:scale-110",
                     color === c ? "border-foreground scale-110" : "border-transparent"

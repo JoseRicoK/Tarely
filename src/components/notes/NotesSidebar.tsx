@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import {
-  ChevronRight,
   ChevronDown,
   FolderPlus,
   FilePlus,
@@ -13,11 +12,33 @@ import {
   Star,
   Pin,
   FileText,
-  Home,
   Layout,
   Plus,
+  Folder,
+  Briefcase,
+  Code,
+  Palette,
+  BookOpen,
+  Rocket,
+  Target,
+  Heart,
+  Zap,
+  Coffee,
+  Music,
+  Camera,
+  Film,
+  Gamepad2,
+  ShoppingCart,
+  Home,
+  Car,
+  Plane,
+  Globe,
+  Building2,
+  GraduationCap,
+  Dumbbell,
+  Utensils,
 } from "lucide-react";
-import * as LucideIcons from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { NoteFolder, Note, NoteTemplate, Workspace } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -31,6 +52,13 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+
+// Static icon map — avoids importing the entire lucide-react library (~1000+ icons)
+const ICON_MAP: Record<string, LucideIcon> = {
+  Folder, Briefcase, Code, Palette, BookOpen, Rocket, Target, Heart,
+  Star, Zap, Coffee, Music, Camera, Film, Gamepad2, ShoppingCart,
+  Home, Car, Plane, Globe, Building2, GraduationCap, Dumbbell, Utensils,
+};
 
 interface NotesSidebarProps {
   workspaces: Workspace[];
@@ -50,11 +78,11 @@ interface NotesSidebarProps {
   onSearch: (query: string) => void;
   onOpenTemplates: () => void;
   onCreateNoteFromTemplate: (template: NoteTemplate) => void;
+  onMoveNote?: (noteId: string, targetFolderId: string | null) => void;
 }
 
 function getIcon(iconName: string, className?: string) {
-  const icons = LucideIcons as unknown as Record<string, React.ComponentType<{ className?: string }>>;
-  const Icon = icons[iconName] || LucideIcons.Folder;
+  const Icon = ICON_MAP[iconName] || Folder;
   return <Icon className={className} />;
 }
 
@@ -93,6 +121,9 @@ function FolderItem({
   onDeleteFolder,
   openFolders,
   onToggleFolder,
+  onMoveNote,
+  dragOverFolderId,
+  onDragOverFolder,
 }: {
   folder: NoteFolder & { children: NoteFolder[] };
   depth: number;
@@ -109,6 +140,9 @@ function FolderItem({
   onDeleteFolder: (folder: NoteFolder) => void;
   openFolders: Set<string>;
   onToggleFolder: (id: string) => void;
+  onMoveNote?: (noteId: string, targetFolderId: string | null) => void;
+  dragOverFolderId: string | null;
+  onDragOverFolder: (folderId: string | null) => void;
 }) {
   const isSelected = selectedFolderId === folder.id;
   const folderNotes = notes.filter((n) => n.folderId === folder.id);
@@ -120,10 +154,23 @@ function FolderItem({
           "group flex items-center gap-1.5 px-2 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
           isSelected
             ? "bg-accent text-accent-foreground"
-            : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
+            : "text-muted-foreground hover:text-foreground hover:bg-accent/40",
+          dragOverFolderId === folder.id && "ring-2 ring-primary/50 bg-primary/10"
         )}
         style={{ paddingLeft: `${8 + depth * 16}px` }}
         onClick={() => onSelectFolder(folder.id)}
+        onDragOver={(e) => {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+          onDragOverFolder(folder.id);
+        }}
+        onDragLeave={() => onDragOverFolder(null)}
+        onDrop={(e) => {
+          e.preventDefault();
+          onDragOverFolder(null);
+          const noteId = e.dataTransfer.getData('text/noteId');
+          if (noteId && onMoveNote) onMoveNote(noteId, folder.id);
+        }}
       >
         <button
           onClick={(e) => {
@@ -132,6 +179,7 @@ function FolderItem({
           }}
           className="shrink-0 p-0.5 hover:bg-accent/50 rounded transition-transform duration-200"
           style={{ transform: isOpen ? "rotate(0deg)" : "rotate(-90deg)" }}
+          title={isOpen ? "Contraer carpeta" : "Expandir carpeta"}
         >
           <ChevronDown className="h-3.5 w-3.5" />
         </button>
@@ -146,7 +194,7 @@ function FolderItem({
         )}
         <DropdownMenu>
           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-            <button className="shrink-0 p-1 opacity-0 group-hover:opacity-100 hover:bg-accent/50 rounded-md transition-opacity">
+            <button className="shrink-0 p-1 opacity-0 group-hover:opacity-100 hover:bg-accent/50 rounded-md transition-opacity" title="Opciones de carpeta">
               <MoreHorizontal className="h-3.5 w-3.5" />
             </button>
           </DropdownMenuTrigger>
@@ -194,11 +242,19 @@ function FolderItem({
               onDeleteFolder={onDeleteFolder}
               openFolders={openFolders}
               onToggleFolder={onToggleFolder}
+              onMoveNote={onMoveNote}
+              dragOverFolderId={dragOverFolderId}
+              onDragOverFolder={onDragOverFolder}
             />
           ))}
           {folderNotes.map((note) => (
             <div
               key={note.id}
+              draggable
+              onDragStart={(e) => {
+                e.dataTransfer.setData('text/noteId', note.id);
+                e.dataTransfer.effectAllowed = 'move';
+              }}
               className={cn(
                 "flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
                 selectedNoteId === note.id
@@ -240,12 +296,13 @@ export function NotesSidebar({
   onSearch,
   onOpenTemplates,
   onCreateNoteFromTemplate,
+  onMoveNote,
 }: NotesSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   // Folder open/close state managed at sidebar level for persistence
-  const [openFolders, setOpenFolders] = useState<Set<string>>(() => {
-    return new Set(folders.map((f) => f.id)); // all open by default
-  });
+  const [closedFolders, setClosedFolders] = useState<Set<string>>(new Set());
+  const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   const folderTree = useMemo(() => buildFolderTree(folders), [folders]);
   const rootNotes = useMemo(() => notes.filter((n) => !n.folderId), [notes]);
@@ -253,20 +310,19 @@ export function NotesSidebar({
     () => workspaces.find((w) => w.id === selectedWorkspaceId),
     [workspaces, selectedWorkspaceId]
   );
+  const favoriteNotes = useMemo(() => notes.filter((n) => n.isFavorite), [notes]);
 
-  // Sync: when folders change, add new ones to openFolders
-  useEffect(() => {
-    setOpenFolders((prev) => {
-      const next = new Set(prev);
-      folders.forEach((f) => {
-        if (!next.has(f.id)) next.add(f.id);
-      });
-      return next;
+  // A folder is "open" if it's NOT in closedFolders (all open by default)
+  const openFolders = useMemo(() => {
+    const open = new Set<string>();
+    folders.forEach((f) => {
+      if (!closedFolders.has(f.id)) open.add(f.id);
     });
-  }, [folders]);
+    return open;
+  }, [folders, closedFolders]);
 
   const toggleFolder = useCallback((folderId: string) => {
-    setOpenFolders((prev) => {
+    setClosedFolders((prev) => {
       const next = new Set(prev);
       if (next.has(folderId)) next.delete(folderId);
       else next.add(folderId);
@@ -277,10 +333,18 @@ export function NotesSidebar({
   const handleSearch = useCallback(
     (value: string) => {
       setSearchQuery(value);
-      onSearch(value);
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+      searchDebounceRef.current = setTimeout(() => onSearch(value), 300);
     },
     [onSearch]
   );
+
+  // Cleanup search debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    };
+  }, []);
 
   return (
     <div className="flex flex-col h-full border-r border-border/30 bg-background/95">
@@ -378,37 +442,34 @@ export function NotesSidebar({
           </TooltipTrigger>
           <TooltipContent>Nueva carpeta</TooltipContent>
         </Tooltip>
+        {templates.length > 0 && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 flex-1 text-xs gap-1.5 border border-border/30 hover:border-border/50 bg-muted/20"
+                onClick={onOpenTemplates}
+              >
+                <Layout className="h-3.5 w-3.5" />
+                Plantilla
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Crear nota desde plantilla</TooltipContent>
+          </Tooltip>
+        )}
       </div>
 
       {/* Content */}
       <ScrollArea className="flex-1">
         <div className="px-3 pb-2">
-          {/* All notes */}
-          <div
-            className={cn(
-              "flex items-center gap-2.5 px-3 py-2 rounded-lg cursor-pointer text-sm transition-colors mb-1",
-              selectedFolderId === null && !selectedNoteId
-                ? "bg-accent text-accent-foreground font-medium"
-                : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
-            )}
-            onClick={() => onSelectFolder(null)}
-          >
-            <Home className="h-4 w-4 shrink-0" />
-            <span className="font-medium flex-1">Todas las notas</span>
-            <span className="text-[11px] text-muted-foreground/50 tabular-nums bg-muted/40 px-1.5 py-0.5 rounded-md">
-              {notes.length}
-            </span>
-          </div>
-
           {/* Favorites */}
-          {notes.some((n) => n.isFavorite) && (
-            <div className="mt-3 mb-1">
+          {favoriteNotes.length > 0 && (
+            <div className="mb-1">
               <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em]">
                 Favoritas
               </div>
-              {notes
-                .filter((n) => n.isFavorite)
-                .map((note) => (
+              {favoriteNotes.map((note) => (
                   <div
                     key={note.id}
                     className={cn(
@@ -450,6 +511,9 @@ export function NotesSidebar({
               onDeleteFolder={onDeleteFolder}
               openFolders={openFolders}
               onToggleFolder={toggleFolder}
+              onMoveNote={onMoveNote}
+              dragOverFolderId={dragOverFolderId}
+              onDragOverFolder={setDragOverFolderId}
             />
           ))}
           {folderTree.length === 0 && (
@@ -460,13 +524,35 @@ export function NotesSidebar({
 
           {/* Root notes */}
           {rootNotes.length > 0 && (
-            <div className="mt-3 mb-1">
+            <div
+              className={cn(
+                "mt-3 mb-1 rounded-lg transition-colors",
+                dragOverFolderId === '__root__' && "ring-2 ring-primary/50 bg-primary/10"
+              )}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                setDragOverFolderId('__root__');
+              }}
+              onDragLeave={() => setDragOverFolderId(null)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOverFolderId(null);
+                const noteId = e.dataTransfer.getData('text/noteId');
+                if (noteId && onMoveNote) onMoveNote(noteId, null);
+              }}
+            >
               <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em]">
                 Sin carpeta
               </div>
               {rootNotes.map((note) => (
                 <div
                   key={note.id}
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('text/noteId', note.id);
+                    e.dataTransfer.effectAllowed = 'move';
+                  }}
                   className={cn(
                     "flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
                     selectedNoteId === note.id
@@ -498,12 +584,19 @@ export function NotesSidebar({
               <TooltipTrigger asChild>
                 <button
                   className="p-0.5 rounded text-muted-foreground/40 hover:text-muted-foreground hover:bg-accent/40 transition-colors"
-                  onClick={onOpenTemplates}
+                  onClick={() => {
+                    if (templates.length > 0) {
+                      onCreateNoteFromTemplate(templates[0]);
+                    } else {
+                      onOpenTemplates();
+                    }
+                  }}
+                  title={templates.length > 0 ? "Crear nota desde primera plantilla" : "Crear plantilla"}
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent>Gestionar plantillas</TooltipContent>
+              <TooltipContent>{templates.length > 0 ? "Nota rápida desde plantilla" : "Crear plantilla"}</TooltipContent>
             </Tooltip>
           </div>
 

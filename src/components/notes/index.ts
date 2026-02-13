@@ -1,5 +1,6 @@
 export { NotesSidebar } from './NotesSidebar';
 export { NoteEditor } from './NoteEditor';
+export type { NoteEditorHandle } from './NoteEditor';
 export { NoteCard } from './NoteCard';
 export { NotesList } from './NotesList';
 export { NotesToolbar } from './NotesToolbar';

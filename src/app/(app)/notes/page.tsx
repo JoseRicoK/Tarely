@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { DeleteDialog } from "@/components/ui/delete-dialog";
 import { NotesSidebar } from "@/components/notes/NotesSidebar";
 import { NoteEditor } from "@/components/notes/NoteEditor";
+import type { NoteEditorHandle } from "@/components/notes/NoteEditor";
 import { NotesToolbar } from "@/components/notes/NotesToolbar";
 import { NoteAIPanel } from "@/components/notes/NoteAIPanel";
 import { FolderDialog } from "@/components/notes/FolderDialog";
@@ -47,7 +48,14 @@ export default function NotesPage() {
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const selectedNoteIdRef = useRef<string | null>(null);
   selectedNoteIdRef.current = selectedNote?.id ?? null;
+  const selectedNoteRef = useRef<Note | null>(null);
+  selectedNoteRef.current = selectedNote;
   const latestNoteRequestRef = useRef<string | null>(null);
+  const editorRef = useRef<NoteEditorHandle>(null);
+  const selectedFolderIdRef = useRef<string | null>(null);
+  selectedFolderIdRef.current = selectedFolderId;
+  const selectedWorkspaceIdRef = useRef<string | null>(null);
+  selectedWorkspaceIdRef.current = selectedWorkspaceId;
 
   // ============== DATA FETCHING ==============
 
@@ -78,12 +86,9 @@ export default function NotesPage() {
     }
   }, []);
 
-  const fetchNotes = useCallback(async (wsId: string, folderId?: string | null) => {
+  const fetchNotes = useCallback(async (wsId: string) => {
     try {
-      const params = new URLSearchParams({ workspaceId: wsId });
-      if (folderId === null) params.set("folderId", "all");
-      else if (folderId) params.set("folderId", folderId);
-      else params.set("folderId", "all");
+      const params = new URLSearchParams({ workspaceId: wsId, folderId: 'all' });
       const res = await fetch(`/api/notes?${params}`);
       if (!res.ok) throw new Error();
       setNotes(await res.json());
@@ -138,42 +143,45 @@ export default function NotesPage() {
 
   // ============== HANDLERS ==============
 
-  const handleSelectWorkspace = (id: string) => {
+  const handleSelectWorkspace = useCallback((id: string) => {
     setSelectedWorkspaceId(id);
     router.replace(`/notes?workspace=${id}`, { scroll: false });
-  };
+  }, [router]);
 
-  const handleSelectFolder = (id: string | null) => {
+  const handleSelectFolder = useCallback((id: string | null) => {
     setSelectedFolderId(id);
     setSelectedNote(null);
-  };
+  }, []);
 
-  const handleSelectNote = async (id: string) => {
+  const handleSelectNote = useCallback(async (id: string) => {
     if (id === selectedNoteIdRef.current) return;
     await fetchNote(id);
-  };
+  }, [fetchNote]);
 
-  const handleCreateNote = async (folderId?: string | null) => {
-    if (!selectedWorkspaceId) return;
+  const handleCreateNote = useCallback(async (folderId?: string | null) => {
+    const wsId = selectedWorkspaceIdRef.current;
+    if (!wsId) return;
+    // If no explicit folder, use selected folder, or current note's folder
+    const targetFolder = folderId ?? selectedFolderIdRef.current ?? selectedNoteRef.current?.folderId ?? null;
     try {
       const res = await fetch("/api/notes", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          workspaceId: selectedWorkspaceId,
-          folderId: folderId ?? selectedFolderId,
+          workspaceId: wsId,
+          folderId: targetFolder,
           title: "",
         }),
       });
       if (!res.ok) throw new Error();
       const note = await res.json();
       setSelectedNote(note);
-      fetchNotes(selectedWorkspaceId, selectedFolderId);
+      fetchNotes(wsId);
       toast.success("Nota creada");
     } catch {
       toast.error("Error al crear la nota");
     }
-  };
+  }, [fetchNotes]);
 
   const handleCreateNoteFromTemplate = async (template: NoteTemplate) => {
     if (!selectedWorkspaceId) return;
@@ -192,7 +200,7 @@ export default function NotesPage() {
       if (!res.ok) throw new Error();
       const note = await res.json();
       setSelectedNote(note);
-      fetchNotes(selectedWorkspaceId, selectedFolderId);
+      fetchNotes(selectedWorkspaceId);
       setTemplateDialogOpen(false);
       toast.success("Nota creada desde plantilla");
     } catch {
@@ -236,14 +244,15 @@ export default function NotesPage() {
         }
       }, 300);
     },
-    [] // eslint-disable-line react-hooks/exhaustive-deps
+    [] 
   );
 
   const handleUpdateTitle = useCallback(
     async (title: string) => {
-      if (!selectedNote) return;
+      const noteId = selectedNoteIdRef.current;
+      if (!noteId) return;
       try {
-        const res = await fetch(`/api/notes/${selectedNote.id}`, {
+        const res = await fetch(`/api/notes/${noteId}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title }),
@@ -256,7 +265,7 @@ export default function NotesPage() {
         toast.error("Error al actualizar título");
       }
     },
-    [selectedNote]
+    []
   );
 
   const handleDeleteNote = async () => {
@@ -266,7 +275,7 @@ export default function NotesPage() {
       if (!res.ok) throw new Error();
       setSelectedNote(null);
       setDeleteNoteOpen(false);
-      fetchNotes(selectedWorkspaceId, selectedFolderId);
+      fetchNotes(selectedWorkspaceId);
       toast.success("Nota eliminada");
     } catch {
       toast.error("Error al eliminar la nota");
@@ -318,12 +327,33 @@ export default function NotesPage() {
       if (!res.ok) throw new Error();
       const updated = await res.json();
       setSelectedNote((prev) => (prev ? { ...prev, folderId: updated.folderId } : null));
-      fetchNotes(selectedWorkspaceId, selectedFolderId);
+      fetchNotes(selectedWorkspaceId);
       toast.success("Nota movida");
     } catch {
       toast.error("Error al mover la nota");
     }
   };
+
+  const handleDragMoveNote = useCallback(async (noteId: string, targetFolderId: string | null) => {
+    const wsId = selectedWorkspaceIdRef.current;
+    if (!wsId) return;
+    try {
+      const res = await fetch(`/api/notes/${noteId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folderId: targetFolderId }),
+      });
+      if (!res.ok) throw new Error();
+      if (selectedNoteIdRef.current === noteId) {
+        const updated = await res.json();
+        setSelectedNote((prev) => (prev ? { ...prev, folderId: updated.folderId } : null));
+      }
+      fetchNotes(wsId);
+      toast.success("Nota movida");
+    } catch {
+      toast.error("Error al mover la nota");
+    }
+  }, [fetchNotes]);
 
   const handleDuplicateNote = async () => {
     if (!selectedNote || !selectedWorkspaceId) return;
@@ -343,7 +373,7 @@ export default function NotesPage() {
       if (!res.ok) throw new Error();
       const note = await res.json();
       setSelectedNote(note);
-      fetchNotes(selectedWorkspaceId, selectedFolderId);
+      fetchNotes(selectedWorkspaceId);
       toast.success("Nota duplicada");
     } catch {
       toast.error("Error al duplicar");
@@ -351,11 +381,11 @@ export default function NotesPage() {
   };
 
   // Folder handlers
-  const handleCreateFolder = (parentId?: string | null) => {
+  const handleCreateFolder = useCallback((parentId?: string | null) => {
     setFolderDialogParent(parentId ?? null);
     setEditingFolder(null);
     setFolderDialogOpen(true);
-  };
+  }, []);
 
   const handleSaveFolder = async (data: { name: string; icon: string; color: string }) => {
     if (!selectedWorkspaceId) return;
@@ -396,7 +426,7 @@ export default function NotesPage() {
       setDeleteFolderTarget(null);
       if (selectedFolderId === deleteFolderTarget.id) setSelectedFolderId(null);
       fetchFolders(selectedWorkspaceId);
-      fetchNotes(selectedWorkspaceId, null);
+      fetchNotes(selectedWorkspaceId);
       toast.success("Carpeta eliminada");
     } catch {
       toast.error("Error al eliminar carpeta");
@@ -455,9 +485,10 @@ export default function NotesPage() {
   // AI handlers
   const handleAIInsertText = (text: string) => {
     if (!selectedNote) return;
-    const currentText = selectedNote.contentText || "";
-    const newText = currentText + "\n\n" + text;
-    handleUpdateNote(selectedNote.contentJson, newText);
+    // Insert via the editor ref for proper TipTap integration
+    if (editorRef.current) {
+      editorRef.current.insertContent(text);
+    }
     toast.success("Texto insertado");
   };
 
@@ -522,6 +553,7 @@ export default function NotesPage() {
     async (query: string) => {
       if (!selectedWorkspaceId) return;
       if (!query.trim()) {
+        // Restore all notes when clearing search
         fetchNotes(selectedWorkspaceId);
         return;
       }
@@ -535,8 +567,20 @@ export default function NotesPage() {
         // silent
       }
     },
-    [selectedWorkspaceId, selectedFolderId, fetchNotes]
+    [selectedWorkspaceId, fetchNotes]
   );
+
+  const handleRenameFolder = useCallback((f: NoteFolder) => {
+    setEditingFolder(f);
+    setFolderDialogOpen(true);
+  }, []);
+
+  const handleDeleteFolderTarget = useCallback((f: NoteFolder) => setDeleteFolderTarget(f), []);
+
+  const handleOpenTemplates = useCallback(() => {
+    setTemplateDialogMode("select");
+    setTemplateDialogOpen(true);
+  }, []);
 
   const selectedWorkspace = workspaces.find((w) => w.id === selectedWorkspaceId);
 
@@ -580,17 +624,12 @@ export default function NotesPage() {
           onSelectNote={handleSelectNote}
           onCreateFolder={handleCreateFolder}
           onCreateNote={handleCreateNote}
-          onRenameFolder={(f) => {
-            setEditingFolder(f);
-            setFolderDialogOpen(true);
-          }}
-          onDeleteFolder={(f) => setDeleteFolderTarget(f)}
+          onRenameFolder={handleRenameFolder}
+          onDeleteFolder={handleDeleteFolderTarget}
           onSearch={handleSearch}
-          onOpenTemplates={() => {
-            setTemplateDialogMode("select");
-            setTemplateDialogOpen(true);
-          }}
+          onOpenTemplates={handleOpenTemplates}
           onCreateNoteFromTemplate={handleCreateNoteFromTemplate}
+          onMoveNote={handleDragMoveNote}
         />
       </div>
 
@@ -647,17 +686,23 @@ export default function NotesPage() {
             {/* Editor + AI panel */}
             <div className="flex-1 flex overflow-hidden">
               <div className="flex-1 overflow-y-auto bg-background/60 backdrop-blur-sm">
-                <NoteEditor key={selectedNote.id} content={selectedNote.contentJson} onUpdate={handleUpdateNote} />
+                <NoteEditor ref={editorRef} key={selectedNote.id} content={selectedNote.contentJson} onUpdate={handleUpdateNote} />
               </div>
-              <NoteAIPanel
-                noteContent={selectedNote.contentText || ""}
-                onInsertText={handleAIInsertText}
-                onCreateTasks={handleAICreateTasks}
-                isOpen={aiPanelOpen}
-                onClose={() => setAiPanelOpen(false)}
-              />
+              {aiPanelOpen && (
+                <NoteAIPanel
+                  noteContent={selectedNote.contentText || ""}
+                  onInsertText={handleAIInsertText}
+                  onCreateTasks={handleAICreateTasks}
+                  isOpen={aiPanelOpen}
+                  onClose={() => setAiPanelOpen(false)}
+                />
+              )}
             </div>
           </>
+        ) : isLoading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-pulse text-muted-foreground text-sm">Cargando notas...</div>
+          </div>
         ) : (
           <EmptyNotes
             hasWorkspace={!!selectedWorkspaceId}
@@ -673,6 +718,7 @@ export default function NotesPage() {
 
       {/* Dialogs */}
       <FolderDialog
+        key={editingFolder?.id ?? "new-folder"}
         open={folderDialogOpen}
         onOpenChange={setFolderDialogOpen}
         onSave={handleSaveFolder}
