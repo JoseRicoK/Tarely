@@ -60,6 +60,7 @@ export interface Task {
   id: string;
   workspaceId: string;
   sectionId?: string; // Sección a la que pertenece
+  noteId?: string | null; // Vinculación bidireccional con Note
   title: string;
   description?: string;
   importance: number; // 1-10
@@ -101,6 +102,7 @@ export interface UpdateWorkspaceInput {
 export interface CreateTaskInput {
   workspaceId: string;
   sectionId?: string | null;
+  noteId?: string | null; // Para vincular con una nota
   title: string;
   description?: string;
   importance: number;
@@ -116,6 +118,7 @@ export interface UpdateTaskInput {
   importance?: number;
   completed?: boolean;
   sectionId?: string | null;
+  noteId?: string | null; // Para vincular/desvincular nota
   dueDate?: string | null; // null para eliminar la fecha
   recurrence?: RecurrenceRule | null; // null para eliminar la recurrencia
   nextDueAt?: string | null;
@@ -252,6 +255,8 @@ export interface Note {
   isPinned: boolean;
   isFavorite: boolean;
   taskId: string | null;
+  completed: boolean; // Si la tarea vinculada está completada
+  completedAt: string | null; // Cuándo se completó la tarea vinculada
   coverImage: string | null;
   icon: string;
   sortOrder: number;
@@ -312,6 +317,8 @@ export interface UpdateNoteInput {
   isPinned?: boolean;
   isFavorite?: boolean;
   taskId?: string | null;
+  completed?: boolean; // Para marcar como completada desde la nota
+  completedAt?: string | null;
   coverImage?: string | null;
   icon?: string;
   sortOrder?: number;

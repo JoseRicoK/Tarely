@@ -134,6 +134,7 @@ export interface Database {
           id: string;
           workspace_id: string;
           section_id: string | null;
+          note_id: string | null;
           user_id: string | null;
           title: string;
           description: string | null;
@@ -156,6 +157,7 @@ export interface Database {
           id?: string;
           workspace_id: string;
           section_id?: string | null;
+          note_id?: string | null;
           user_id?: string;
           title: string;
           description?: string | null;
@@ -178,6 +180,7 @@ export interface Database {
           id?: string;
           workspace_id?: string;
           section_id?: string | null;
+          note_id?: string | null;
           user_id?: string;
           title?: string;
           description?: string | null;

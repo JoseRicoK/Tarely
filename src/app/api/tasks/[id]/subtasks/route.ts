@@ -259,7 +259,7 @@ async function generateSubtasks(
     }
 
     const openai = new OpenAI({ apiKey });
-    const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+    const model = process.env.OPENAI_MODEL || "gpt-5-mini";
 
     const prompt = `Eres un asistente que desglosa tareas en subtareas concretas y accionables.
 
@@ -289,14 +289,12 @@ FORMATO DE RESPUESTA (JSON estricto, sin markdown):
   ]
 }`;
 
-    const response = await openai.chat.completions.create({
+    const response = await openai.responses.create({
       model,
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
-      max_completion_tokens: 500,
+      input: prompt,
     });
 
-    const content = response.choices[0]?.message?.content;
+    const content = response.output_text;
     if (!content) {
       return NextResponse.json(
         { error: "No se pudo generar subtareas" },

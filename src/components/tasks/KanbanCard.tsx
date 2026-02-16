@@ -48,6 +48,7 @@ import {
   Inbox,
   Box,
   ExternalLink,
+  FileText,
   type LucideIcon,
 } from "lucide-react";
 import type { Task, TaskAssignee, WorkspaceSection, Subtask } from "@/lib/types";
@@ -194,12 +195,31 @@ export function KanbanCardStatic({
       <div className="flex items-start gap-2">
         {/* Content */}
         <div className="flex-1 min-w-0">
+          {/* Indicador de nota vinculada - DISEÑO MEJORADO Y CLICKABLE */}
+          {task.noteId && (
+            <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-500/15 to-indigo-500/15 border-l-[3px] border-purple-500 hover:from-purple-500/25 hover:to-indigo-500/25 transition-colors cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                window.location.href = `/notes?noteId=${task.noteId}`;
+              }}
+            >
+              <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-semibold text-purple-700 dark:text-purple-300 block">Nota Vinculada</span>
+              </div>
+              <ExternalLink className="h-3 w-3 text-purple-600 dark:text-purple-400 shrink-0" />
+            </div>
+          )}
+          
           <div className="flex items-start gap-1.5 mb-2">
             {/* Indicador de tarea nueva */}
             {task.isNew && (
               <div className="h-2 w-2 rounded-full bg-blue-500 mt-1.5 flex-shrink-0 animate-pulse" />
             )}
-            <h3 className="font-medium text-sm leading-tight line-clamp-2">
+            <h3 className={cn(
+              "font-medium text-sm leading-tight line-clamp-2",
+              task.noteId && "text-[15px] font-semibold"
+            )}>
               {task.title}
             </h3>
           </div>
@@ -326,6 +346,22 @@ export function KanbanCardDraggable({
       <div className="flex items-start gap-2">
         {/* Content */}
         <div className="flex-1 min-w-0">
+          {/* Indicador de nota vinculada - DISEÑO MEJORADO Y CLICKABLE */}
+          {task.noteId && (
+            <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-500/15 to-indigo-500/15 border-l-[3px] border-purple-500 hover:from-purple-500/25 hover:to-indigo-500/25 transition-colors cursor-pointer"
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/notes?noteId=${task.noteId}`);
+              }}
+            >
+              <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0" />
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-semibold text-purple-700 dark:text-purple-300 block">Nota Vinculada</span>
+              </div>
+              <ExternalLink className="h-3 w-3 text-purple-600 dark:text-purple-400 shrink-0" />
+            </div>
+          )}
+          
           {/* Header with title and menu */}
           <div className="flex items-start justify-between gap-2 mb-1">
             <div className="flex items-start gap-1.5 flex-1 min-w-0">
@@ -342,7 +378,10 @@ export function KanbanCardDraggable({
                   </Tooltip>
                 </TooltipProvider>
               )}
-              <h3 className="font-medium text-[15px] sm:text-sm leading-tight line-clamp-2">
+              <h3 className={cn(
+                "font-medium text-[15px] sm:text-sm leading-tight line-clamp-2",
+                task.noteId && "font-semibold"
+              )}>
                 {task.title}
               </h3>
             </div>

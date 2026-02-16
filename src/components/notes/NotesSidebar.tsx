@@ -37,6 +37,9 @@ import {
   GraduationCap,
   Dumbbell,
   Utensils,
+  CheckCircle2,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -107,12 +110,11 @@ function buildFolderTree(folders: NoteFolder[]): (NoteFolder & { children: NoteF
 
 function FolderItem({
   folder,
-  depth,
-  isOpen,
-  onToggle,
+  depth = 0,
   selectedFolderId,
   selectedNoteId,
   notes,
+  hideCompleted,
   onSelectFolder,
   onSelectNote,
   onCreateFolder,
@@ -126,12 +128,11 @@ function FolderItem({
   onDragOverFolder,
 }: {
   folder: NoteFolder & { children: NoteFolder[] };
-  depth: number;
-  isOpen: boolean;
-  onToggle: () => void;
+  depth?: number;
   selectedFolderId: string | null;
   selectedNoteId: string | null;
   notes: Note[];
+  hideCompleted: boolean;
   onSelectFolder: (id: string | null) => void;
   onSelectNote: (id: string) => void;
   onCreateFolder: (parentId?: string | null) => void;
@@ -145,7 +146,8 @@ function FolderItem({
   onDragOverFolder: (folderId: string | null) => void;
 }) {
   const isSelected = selectedFolderId === folder.id;
-  const folderNotes = notes.filter((n) => n.folderId === folder.id);
+  const allFolderNotes = notes.filter((n) => n.folderId === folder.id);
+  const folderNotes = hideCompleted ? allFolderNotes.filter(n => !n.completed) : allFolderNotes;
 
   return (
     <div>
@@ -175,13 +177,14 @@ function FolderItem({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onToggle();
+            onToggleFolder(folder.id);
           }}
-          className="shrink-0 p-0.5 hover:bg-accent/50 rounded transition-transform duration-200"
-          style={{ transform: isOpen ? "rotate(0deg)" : "rotate(-90deg)" }}
-          title={isOpen ? "Contraer carpeta" : "Expandir carpeta"}
+          className="p-0 hover:bg-accent/50 rounded transition-colors"
         >
-          <ChevronDown className="h-3.5 w-3.5" />
+          <ChevronDown className={cn(
+            "h-3.5 w-3.5 transition-transform",
+            !openFolders.has(folder.id) && "-rotate-90"
+          )} />
         </button>
         <span className="shrink-0" style={{ color: folder.color }}>
           {getIcon(folder.icon, "h-4 w-4")}
@@ -222,18 +225,17 @@ function FolderItem({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      {isOpen && (
+      {openFolders.has(folder.id) && (
         <div>
           {folder.children.map((child) => (
             <FolderItem
               key={child.id}
               folder={child as NoteFolder & { children: NoteFolder[] }}
               depth={depth + 1}
-              isOpen={openFolders.has(child.id)}
-              onToggle={() => onToggleFolder(child.id)}
               selectedFolderId={selectedFolderId}
               selectedNoteId={selectedNoteId}
               notes={notes}
+              hideCompleted={hideCompleted}
               onSelectFolder={onSelectFolder}
               onSelectNote={onSelectNote}
               onCreateFolder={onCreateFolder}
@@ -264,8 +266,15 @@ function FolderItem({
               style={{ paddingLeft: `${28 + (depth + 1) * 16}px` }}
               onClick={() => onSelectNote(note.id)}
             >
-              <span className="shrink-0 text-base leading-none">{note.icon}</span>
-              <span className="truncate flex-1">{note.title || "Sin título"}</span>
+              {note.completed ? (
+                <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+              ) : (
+                <span className="shrink-0 text-base leading-none">{note.icon}</span>
+              )}
+              <span className={cn(
+                "truncate flex-1",
+                note.completed && "line-through opacity-70"
+              )}>{note.title || "Sin título"}</span>
               {note.isPinned && <Pin className="h-3 w-3 shrink-0 text-muted-foreground/40" />}
               {note.isFavorite && <Star className="h-3 w-3 shrink-0 text-yellow-500 fill-yellow-500" />}
             </div>
@@ -302,15 +311,66 @@ export function NotesSidebar({
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   // Folder open/close state managed at sidebar level for persistence
   const [closedFolders, setClosedFolders] = useState<Set<string>>(new Set());
+  // Toggle para mostrar/ocultar notas completadas
+  const [hideCompleted, setHideCompleted] = useState(true); // Siempre true inicialmente para evitar mismatch de hidratación
+  const [isClient, setIsClient] = useState(false); // Flag para saber si estamos en el cliente
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
-  const folderTree = useMemo(() => buildFolderTree(folders), [folders]);
-  const rootNotes = useMemo(() => notes.filter((n) => !n.folderId), [notes]);
-  const selectedWorkspace = useMemo(
+  // Inicializar desde localStorage solo en el cliente
+  useEffect(() => {
+    setIsClient(true);
+    const saved = localStorage.getItem('notes-hide-completed');
+    if (saved !== null) {
+      setHideCompleted(JSON.parse(saved));
+    }
+  }, []);
+
+  // Memoizar workspace
+  const workspace = useMemo(
     () => workspaces.find((w) => w.id === selectedWorkspaceId),
     [workspaces, selectedWorkspaceId]
   );
-  const favoriteNotes = useMemo(() => notes.filter((n) => n.isFavorite), [notes]);
+
+  // Memoizar árbol de carpetas
+  const folderTree = useMemo(() => buildFolderTree(folders), [folders]);
+
+  // Memoizar filtrado de notas por búsqueda
+  const searchedNotes = useMemo(() => {
+    if (!searchQuery.trim()) return notes;
+    const query = searchQuery.toLowerCase();
+    return notes.filter(
+      (note) =>
+        note.title.toLowerCase().includes(query) ||
+        note.contentText.toLowerCase().includes(query)
+    );
+  }, [notes, searchQuery]);
+
+  // Memoizar notas favoritas
+  const favoriteNotes = useMemo(() => {
+    return hideCompleted 
+      ? searchedNotes.filter((n) => n.isFavorite && !n.completed)
+      : searchedNotes.filter((n) => n.isFavorite);
+  }, [searchedNotes, hideCompleted]);
+
+  // Memoizar notas sin carpeta
+  const rootNotes = useMemo(() => {
+    return hideCompleted
+      ? searchedNotes.filter((n) => !n.folderId && !n.isFavorite && !n.completed)
+      : searchedNotes.filter((n) => !n.folderId && !n.isFavorite);
+  }, [searchedNotes, hideCompleted]);
+
+  // Persistir estado del toggle
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('notes-hide-completed', JSON.stringify(hideCompleted));
+    }
+  }, [hideCompleted]);
+
+  // Filtrar notas de una carpeta según el toggle
+  const getFilteredFolderNotes = useCallback((folderId: string) => {
+    const folderNotes = notes.filter((n) => n.folderId === folderId);
+    return hideCompleted ? folderNotes.filter(n => !n.completed) : folderNotes;
+  }, [notes, hideCompleted]);
 
   // A folder is "open" if it's NOT in closedFolders (all open by default)
   const openFolders = useMemo(() => {
@@ -347,9 +407,9 @@ export function NotesSidebar({
   }, []);
 
   return (
-    <div className="flex flex-col h-full border-r border-border/30 bg-background/95">
-      {/* Workspace selector */}
-      <div className="p-4 pb-3 border-b border-border/30">
+    <div className="flex flex-col h-full border-r border-border/40 bg-muted/25">
+      {/* Workspace selector - Fijo arriba */}
+      <div className="shrink-0 p-4 pb-3 border-b border-border/30">
         <div className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em] mb-2 px-0.5">
           Workspace
         </div>
@@ -359,16 +419,16 @@ export function NotesSidebar({
               variant="outline"
               className="w-full justify-start gap-2.5 h-10 px-3 font-semibold text-sm border-border/50 bg-muted/30 hover:bg-accent/50"
             >
-              {selectedWorkspace && (
+              {workspace && (
                 <span
                   className="shrink-0 flex items-center justify-center w-6 h-6 rounded-md"
-                  style={{ backgroundColor: `${selectedWorkspace.color}20`, color: selectedWorkspace.color }}
+                  style={{ backgroundColor: `${workspace.color}20`, color: workspace.color }}
                 >
-                  {getIcon(selectedWorkspace.icon, "h-3.5 w-3.5")}
+                  {getIcon(workspace.icon, "h-3.5 w-3.5")}
                 </span>
               )}
               <span className="truncate flex-1 text-left">
-                {selectedWorkspace?.name || "Seleccionar workspace"}
+                {workspace?.name || "Seleccionar workspace"}
               </span>
               <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground" />
             </Button>
@@ -399,8 +459,8 @@ export function NotesSidebar({
         </DropdownMenu>
       </div>
 
-      {/* Search */}
-      <div className="px-4 pt-3 pb-2">
+      {/* Search + Toggle - Fijos */}
+      <div className="shrink-0 px-4 pt-3 pb-2 space-y-2">
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
           <Input
@@ -410,58 +470,67 @@ export function NotesSidebar({
             className="h-8 pl-8 text-sm bg-muted/30 border-border/40 focus:border-border/60"
           />
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setHideCompleted(!hideCompleted)}
+          className="h-7 w-full justify-start gap-2 text-xs text-muted-foreground hover:text-foreground"
+        >
+          {hideCompleted ? (
+            <><EyeOff className="h-3.5 w-3.5" /> Mostrar completadas</>
+          ) : (
+            <><Eye className="h-3.5 w-3.5" /> Ocultar completadas</>
+          )}
+        </Button>
       </div>
 
-      {/* Quick actions */}
-      <div className="px-4 pb-2 flex gap-1.5">
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 flex-1 text-xs gap-1.5 border border-border/30 hover:border-border/50 bg-muted/20"
-              onClick={() => onCreateNote(selectedFolderId)}
-            >
-              <FilePlus className="h-3.5 w-3.5" />
-              Nota
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Nueva nota</TooltipContent>
-        </Tooltip>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 flex-1 text-xs gap-1.5 border border-border/30 hover:border-border/50 bg-muted/20"
-              onClick={() => onCreateFolder(selectedFolderId)}
-            >
-              <FolderPlus className="h-3.5 w-3.5" />
-              Carpeta
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Nueva carpeta</TooltipContent>
-        </Tooltip>
-        {templates.length > 0 && (
+      {/* Quick actions - Fijos */}
+      <div className="shrink-0 px-4 pb-3 border-b border-border/30">
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onCreateNote()}
+            className="flex-1 h-10 sm:h-9 gap-2 active:scale-95 transition-transform"
+          >
+            <FilePlus className="h-4 w-4" />
+            <span className="text-sm">Nueva nota</span>
+          </Button>
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="h-8 flex-1 text-xs gap-1.5 border border-border/30 hover:border-border/50 bg-muted/20"
-                onClick={onOpenTemplates}
+                onClick={() => onCreateFolder()}
+                className="h-10 w-10 sm:h-9 sm:w-9 p-0 active:scale-95 transition-transform"
               >
-                <Layout className="h-3.5 w-3.5" />
-                Plantilla
+                <FolderPlus className="h-4 w-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Crear nota desde plantilla</TooltipContent>
+            <TooltipContent>
+              <p>Nueva carpeta</p>
+            </TooltipContent>
           </Tooltip>
-        )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onOpenTemplates}
+                className="h-10 w-10 sm:h-9 sm:w-9 p-0 active:scale-95 transition-transform"
+              >
+                <Layout className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Plantillas</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
 
-      {/* Content */}
-      <ScrollArea className="flex-1">
+      {/* Contenido scrolleable */}
+      <ScrollArea className="flex-1 overflow-y-auto">
         <div className="px-3 pb-2">
           {/* Favorites */}
           {favoriteNotes.length > 0 && (
@@ -498,11 +567,10 @@ export function NotesSidebar({
               key={folder.id}
               folder={folder}
               depth={0}
-              isOpen={openFolders.has(folder.id)}
-              onToggle={() => toggleFolder(folder.id)}
               selectedFolderId={selectedFolderId}
               selectedNoteId={selectedNoteId}
               notes={notes}
+              hideCompleted={hideCompleted}
               onSelectFolder={onSelectFolder}
               onSelectNote={onSelectNote}
               onCreateFolder={onCreateFolder}
@@ -561,8 +629,15 @@ export function NotesSidebar({
                   )}
                   onClick={() => onSelectNote(note.id)}
                 >
-                  <FileText className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate flex-1">{note.title || "Sin título"}</span>
+                  {note.completed ? (
+                    <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+                  ) : (
+                    <FileText className="h-3.5 w-3.5 shrink-0" />
+                  )}
+                  <span className={cn(
+                    "truncate flex-1",
+                    note.completed && "line-through opacity-70"
+                  )}>{note.title || "Sin título"}</span>
                   {note.isPinned && <Pin className="h-3 w-3 shrink-0 text-muted-foreground/40" />}
                 </div>
               ))}

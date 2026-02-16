@@ -120,6 +120,7 @@ interface NoteEditorProps {
 
 export interface NoteEditorHandle {
   insertContent: (text: string) => void;
+  editor: ReturnType<typeof useEditor> | null;
 }
 
 interface SlashCommand {
@@ -696,12 +697,13 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
     },
   });
 
-  // Expose insertContent for external use (e.g., AI panel)
+  // Expose insertContent and editor for external use (e.g., AI panel)
   useImperativeHandle(ref, () => ({
     insertContent: (text: string) => {
       if (!editor) return;
       editor.chain().focus().insertContent(text).run();
     },
+    editor,
   }), [editor]);
 
   // Image insertion (must be declared before executeSlashCommand)

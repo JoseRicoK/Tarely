@@ -17,7 +17,7 @@ function getOpenAIClient() {
 }
 
 function getModel() {
-  return process.env.OPENAI_MODEL || "gpt-4o-mini";
+  return process.env.OPENAI_MODEL || "gpt-5-mini";
 }
 
 const ACTION_PROMPTS: Record<string, string> = {
@@ -44,17 +44,12 @@ export async function POST(request: NextRequest) {
     const openai = getOpenAIClient();
     const systemPrompt = ACTION_PROMPTS[action];
 
-    const response = await openai.chat.completions.create({
+    const response = await openai.responses.create({
       model: getModel(),
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: noteContent },
-      ],
-      temperature: action === "extract_tasks" ? 0.3 : 0.7,
-      max_tokens: 2000,
+      input: `${systemPrompt}\n\n${noteContent}`,
     });
 
-    const result = response.choices[0]?.message?.content || "";
+    const result = response.output_text || "";
 
     // For extract_tasks, try to parse as JSON
     if (action === "extract_tasks") {

@@ -58,6 +58,7 @@ function mapTaskFromDB(row: TaskRow): Task {
     id: row.id,
     workspaceId: row.workspace_id,
     sectionId: row.section_id ?? undefined,
+    noteId: row.note_id ?? undefined,
     title: row.title,
     description: row.description ?? undefined,
     importance: row.importance,
@@ -394,6 +395,7 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     .from('tasks')
     .insert({
       workspace_id: input.workspaceId,
+      note_id: input.noteId || null,
       title: input.title,
       description: input.description || null,
       importance: input.importance,
@@ -433,6 +435,7 @@ export async function createManyTasks(inputs: CreateTaskInput[]): Promise<Task[]
   
   const insertData = inputs.map(input => ({
     workspace_id: input.workspaceId,
+    note_id: input.noteId || null,
     title: input.title,
     description: input.description || null,
     importance: input.importance,
@@ -480,6 +483,7 @@ export async function updateTask(
   if (input.description !== undefined) updateData.description = input.description || null;
   if (input.importance !== undefined) updateData.importance = input.importance;
   if (input.sectionId !== undefined) updateData.section_id = input.sectionId;
+  if (input.noteId !== undefined) updateData.note_id = input.noteId;
   if (input.dueDate !== undefined) updateData.due_date = input.dueDate;
 
   // Campos de recurrencia

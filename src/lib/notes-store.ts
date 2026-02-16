@@ -41,6 +41,8 @@ interface NoteRow {
   is_pinned: boolean;
   is_favorite: boolean;
   task_id: string | null;
+  completed: boolean;
+  completed_at: string | null;
   cover_image: string | null;
   icon: string;
   sort_order: number;
@@ -87,6 +89,8 @@ function mapNoteFromDB(row: NoteRow): Note {
     isPinned: row.is_pinned,
     isFavorite: row.is_favorite,
     taskId: row.task_id,
+    completed: row.completed ?? false,
+    completedAt: row.completed_at ?? null,
     coverImage: row.cover_image,
     icon: row.icon || '📝',
     sortOrder: row.sort_order,
@@ -313,6 +317,8 @@ export async function updateNote(id: string, input: UpdateNoteInput): Promise<No
   if (input.isPinned !== undefined) updates.is_pinned = input.isPinned;
   if (input.isFavorite !== undefined) updates.is_favorite = input.isFavorite;
   if (input.taskId !== undefined) updates.task_id = input.taskId;
+  if (input.completed !== undefined) updates.completed = input.completed;
+  if (input.completedAt !== undefined) updates.completed_at = input.completedAt;
   if (input.coverImage !== undefined) updates.cover_image = input.coverImage;
   if (input.icon !== undefined) updates.icon = input.icon;
   if (input.sortOrder !== undefined) updates.sort_order = input.sortOrder;

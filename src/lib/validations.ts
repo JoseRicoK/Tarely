@@ -31,6 +31,7 @@ export const updateWorkspaceSchema = z.object({
 // Tasks
 export const createTaskSchema = z.object({
   workspaceId: z.string().uuid(),
+  noteId: z.string().uuid().optional().nullable(), // Para vincular con una nota
   title: z.string().min(1, "El título es obligatorio").max(1000),
   description: z.string().max(5000).optional(),
   importance: z.number().int().min(1).max(10),
@@ -46,6 +47,7 @@ export const updateTaskSchema = z.object({
   importance: z.number().int().min(1).max(10).optional(),
   completed: z.boolean().optional(),
   sectionId: z.string().uuid().optional().nullable(),
+  noteId: z.string().uuid().optional().nullable(), // Para vincular/desvincular nota
   dueDate: z.string().datetime().optional().nullable(),
   recurrence: recurrenceRuleSchema.optional().nullable(),
   nextDueAt: z.string().datetime().optional().nullable(),

@@ -51,6 +51,7 @@ import {
   ListChecks,
   Loader2,
   ExternalLink,
+  FileText,
   type LucideIcon,
 } from "lucide-react";
 import type { Task, TaskAssignee, WorkspaceSection, Subtask } from "@/lib/types";
@@ -282,6 +283,22 @@ export function TaskCard({
       </div>
 
       <div className="flex-1 min-w-0">
+        {/* Indicador de nota vinculada - DISEÑO MEJORADO Y CLICKABLE */}
+        {task.noteId && (
+          <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-500/15 to-indigo-500/15 border-l-[3px] border-purple-500 hover:from-purple-500/25 hover:to-indigo-500/25 transition-colors cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/notes?noteId=${task.noteId}`);
+            }}
+          >
+            <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <span className="text-xs font-semibold text-purple-700 dark:text-purple-300 block">Nota Vinculada</span>
+            </div>
+            <ExternalLink className="h-3 w-3 text-purple-600 dark:text-purple-400 shrink-0" />
+          </div>
+        )}
+        
         {/* Header with title and badges */}
         <div className="flex items-start gap-2 mb-1.5 md:mb-2">
           {/* Indicador de tarea nueva */}
@@ -299,7 +316,8 @@ export function TaskCard({
           )}
           <h3 className={cn(
             "font-medium leading-snug flex-1 break-words text-[15px] md:text-base",
-            task.completed && "line-through text-muted-foreground"
+            task.completed && "line-through text-muted-foreground",
+            task.noteId && "font-semibold"
           )}>
             {task.title}
           </h3>

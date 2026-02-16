@@ -11,10 +11,14 @@ import {
   Copy,
   Download,
   FolderInput,
+  CheckCircle2,
+  Circle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Note, NoteFolder, Workspace } from "@/lib/types";
+import type { Editor } from "@tiptap/react";
 import { Button } from "@/components/ui/button";
+import { AIAgentPanel } from "./AIAgentPanel";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,13 +35,14 @@ interface NotesToolbarProps {
   note: Note;
   folders: NoteFolder[];
   workspace: Workspace | undefined;
+  editor: Editor | null;
   onTogglePin: () => void;
   onToggleFavorite: () => void;
   onDelete: () => void;
   onLinkTask: () => void;
   onUnlinkTask: () => void;
+  onToggleComplete: () => void;
   onMoveToFolder: (folderId: string | null) => void;
-  onOpenAI: () => void;
   onSaveAsTemplate: () => void;
   onDuplicate: () => void;
   saving?: boolean;
@@ -47,21 +52,22 @@ export function NotesToolbar({
   note,
   folders,
   workspace,
+  editor,
   onTogglePin,
   onToggleFavorite,
   onDelete,
   onLinkTask,
   onUnlinkTask,
+  onToggleComplete,
   onMoveToFolder,
-  onOpenAI,
   onSaveAsTemplate,
   onDuplicate,
   saving,
 }: NotesToolbarProps) {
   return (
-    <div className="flex items-center gap-2 px-5 py-2.5 border-b border-border/30 bg-background/60 backdrop-blur-sm">
-      {/* Breadcrumb */}
-      <div className="flex items-center gap-1.5 text-sm flex-1 min-w-0">
+    <div className="flex items-center gap-2 px-3 sm:px-4 md:px-5 py-3 md:py-2.5 border-b border-border/30 bg-background/60 backdrop-blur-sm">
+      {/* Breadcrumb - Hidden on mobile, visible on tablet+ */}
+      <div className="hidden sm:flex items-center gap-1.5 text-xs sm:text-sm flex-1 min-w-0">
         {workspace && (
           <span className="truncate font-medium text-muted-foreground" style={{ color: workspace.color }}>
             {workspace.name}
@@ -86,71 +92,104 @@ export function NotesToolbar({
         )}
       </div>
 
-      {/* Action buttons — prominent */}
-      <div className="flex items-center gap-1 shrink-0">
+      {/* Mobile: Just saving indicator */}
+      <div className="sm:hidden flex-1 min-w-0">
+        {saving && (
+          <span className="text-xs text-muted-foreground/50 animate-pulse">
+            Guardando...
+          </span>
+        )}
+      </div>
+
+      {/* Action buttons - Touch optimized */}
+      <div className="flex items-center gap-1 sm:gap-1.5 shrink-0">
+        {/* Pin - Hidden on small mobile */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
               className={cn(
-                "h-9 w-9 p-0 rounded-lg",
-                note.isPinned && "text-[var(--color-ta)] bg-[var(--color-ta)]/10"
+                "hidden xs:flex h-9 w-9 md:h-8 md:w-8 p-0 hover:bg-accent/50 active:scale-95 transition-transform",
+                note.isPinned && "text-[var(--color-ta)]"
               )}
+              style={
+                note.isPinned && workspace
+                  ? ({ "--color-ta": workspace.color } as React.CSSProperties)
+                  : undefined
+              }
               onClick={onTogglePin}
             >
-              <Pin className={cn("h-[18px] w-[18px]", note.isPinned && "fill-current")} />
+              <Pin className={cn("h-4 w-4 md:h-3.5 md:w-3.5", note.isPinned && "fill-current")} />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>{note.isPinned ? "Desfijar" : "Fijar nota"}</TooltipContent>
+          <TooltipContent>
+            <p>{note.isPinned ? "Desanclar" : "Anclar"}</p>
+          </TooltipContent>
         </Tooltip>
 
+        {/* Favorite - Hidden on small mobile */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
               className={cn(
-                "h-9 w-9 p-0 rounded-lg",
-                note.isFavorite && "text-yellow-500 bg-yellow-500/10"
+                "hidden xs:flex h-9 w-9 md:h-8 md:w-8 p-0 hover:bg-accent/50 active:scale-95 transition-transform",
+                note.isFavorite && "text-yellow-500"
               )}
               onClick={onToggleFavorite}
             >
-              <Star className={cn("h-[18px] w-[18px]", note.isFavorite && "fill-current")} />
+              <Star className={cn("h-4 w-4 md:h-3.5 md:w-3.5", note.isFavorite && "fill-current")} />
             </Button>
           </TooltipTrigger>
-          <TooltipContent>{note.isFavorite ? "Quitar de favoritas" : "Favorita"}</TooltipContent>
+          <TooltipContent>
+            <p>{note.isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}</p>
+          </TooltipContent>
         </Tooltip>
 
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-9 gap-1.5 px-3 rounded-lg text-sm font-medium"
-              onClick={onOpenAI}
-            >
-              <Sparkles className="h-[18px] w-[18px]" />
-              <span className="hidden lg:inline">IA</span>
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>Asistente IA</TooltipContent>
-        </Tooltip>
+        <AIAgentPanel
+          noteId={note.id}
+          editor={editor}
+          noteContent={note.contentText || ""}
+        />
 
         {note.taskId ? (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-9 w-9 p-0 rounded-lg text-[var(--color-ta)]"
-                onClick={onUnlinkTask}
-              >
-                <Unlink className="h-[18px] w-[18px]" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Desvincular tarea</TooltipContent>
-          </Tooltip>
+          <>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={cn(
+                    "h-9 w-9 p-0 rounded-lg",
+                    note.completed ? "text-green-500 bg-green-500/10" : "text-muted-foreground"
+                  )}
+                  onClick={onToggleComplete}
+                >
+                  {note.completed ? (
+                    <CheckCircle2 className="h-[18px] w-[18px]" />
+                  ) : (
+                    <Circle className="h-[18px] w-[18px]" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>{note.completed ? "Marcar como pendiente" : "Completar tarea"}</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-9 w-9 p-0 rounded-lg text-[var(--color-ta)]"
+                  onClick={onUnlinkTask}
+                >
+                  <Unlink className="h-[18px] w-[18px]" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Desvincular tarea</TooltipContent>
+            </Tooltip>
+          </>
         ) : (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -167,45 +206,74 @@ export function NotesToolbar({
           </Tooltip>
         )}
 
+        {/* More actions - Touch optimized */}
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="sm" className="h-9 w-9 p-0 rounded-lg">
-              <MoreHorizontal className="h-[18px] w-[18px]" />
-            </Button>
-          </DropdownMenuTrigger>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="h-9 w-9 md:h-8 md:w-8 p-0 hover:bg-accent/50 active:scale-95 transition-transform">
+                  <MoreHorizontal className="h-5 w-5 md:h-4 md:w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Más opciones</p>
+            </TooltipContent>
+          </Tooltip>
           <DropdownMenuContent align="end" className="w-56">
+            {/* Mobile-only: Pin & Favorite */}
+            <div className="xs:hidden">
+              <DropdownMenuItem onClick={onTogglePin} className="cursor-pointer min-h-[44px]">
+                <Pin className={cn("mr-2 h-4 w-4", note.isPinned && "fill-current")} />
+                {note.isPinned ? "Desanclar" : "Anclar"}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onToggleFavorite} className="cursor-pointer min-h-[44px]">
+                <Star className={cn("mr-2 h-4 w-4", note.isFavorite && "fill-current")} />
+                {note.isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </div>
+
+            {/* Move to folder */}
             <DropdownMenuSub>
-              <DropdownMenuSubTrigger className="gap-2">
-                <FolderInput className="h-4 w-4" />
+              <DropdownMenuSubTrigger className="cursor-pointer min-h-[44px] md:min-h-[36px]">
+                <FolderInput className="mr-2 h-4 w-4" />
                 Mover a carpeta
               </DropdownMenuSubTrigger>
-              <DropdownMenuSubContent className="w-52">
-                <DropdownMenuItem onClick={() => onMoveToFolder(null)} className="gap-2">
+              <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
+                <DropdownMenuItem onClick={() => onMoveToFolder(null)} className="cursor-pointer min-h-[44px] md:min-h-[36px]">
                   Sin carpeta
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                {folders.map((f) => (
-                  <DropdownMenuItem key={f.id} onClick={() => onMoveToFolder(f.id)} className="gap-2">
-                    {f.name}
+                {folders.map((folder) => (
+                  <DropdownMenuItem
+                    key={folder.id}
+                    onClick={() => onMoveToFolder(folder.id)}
+                    className="cursor-pointer min-h-[44px] md:min-h-[36px]"
+                  >
+                    {folder.name}
                   </DropdownMenuItem>
                 ))}
               </DropdownMenuSubContent>
             </DropdownMenuSub>
-            <DropdownMenuItem onClick={onDuplicate} className="gap-2">
-              <Copy className="h-4 w-4" />
-              Duplicar nota
+
+            <DropdownMenuItem onClick={onDuplicate} className="cursor-pointer min-h-[44px] md:min-h-[36px]">
+              <Copy className="mr-2 h-4 w-4" />
+              Duplicar
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={onSaveAsTemplate} className="gap-2">
-              <Download className="h-4 w-4" />
+
+            <DropdownMenuItem onClick={onSaveAsTemplate} className="cursor-pointer min-h-[44px] md:min-h-[36px]">
+              <Download className="mr-2 h-4 w-4" />
               Guardar como plantilla
             </DropdownMenuItem>
+
             <DropdownMenuSeparator />
+
             <DropdownMenuItem
               onClick={onDelete}
-              className="gap-2 text-destructive focus:text-destructive"
+              className="cursor-pointer text-destructive focus:text-destructive min-h-[44px] md:min-h-[36px]"
             >
-              <Trash2 className="h-4 w-4" />
-              Eliminar nota
+              <Trash2 className="mr-2 h-4 w-4" />
+              Eliminar
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
