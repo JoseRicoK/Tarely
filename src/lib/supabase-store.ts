@@ -348,14 +348,41 @@ export async function listTasks(workspaceId: string): Promise<Task[]> {
     tasks = ((sharedTasks ?? []) as TaskRow[]).map(mapTaskFromDB);
   }
 
-  // Cargar assignees para todas las tareas
+  // Cargar assignees y subtareas para todas las tareas
   if (tasks.length > 0) {
     const taskIds = tasks.map(t => t.id);
     const assigneesMap = await loadTaskAssignees(supabase, taskIds);
     
+    // Cargar subtareas
+    const { data: subtasksData } = await supabase
+      .from('subtasks')
+      .select('*')
+      .in('task_id', taskIds)
+      .order('order', { ascending: true });
+
+    const subtasksMap = new Map<string, Task['subtasks']>();
+    if (subtasksData) {
+      for (const s of subtasksData) {
+        const taskId = (s as { task_id: string }).task_id;
+        if (!subtasksMap.has(taskId)) {
+          subtasksMap.set(taskId, []);
+        }
+        subtasksMap.get(taskId)!.push({
+          id: (s as { id: string }).id,
+          taskId: (s as { task_id: string }).task_id,
+          title: (s as { title: string }).title,
+          completed: (s as { completed: boolean }).completed,
+          order: (s as { order: number }).order,
+          createdAt: (s as { created_at: string }).created_at,
+          updatedAt: (s as { updated_at: string }).updated_at,
+        });
+      }
+    }
+    
     tasks = tasks.map(task => ({
       ...task,
       assignees: assigneesMap.get(task.id) || [],
+      subtasks: subtasksMap.get(task.id) || [],
     }));
   }
 
@@ -379,7 +406,34 @@ export async function getTask(id: string): Promise<Task | null> {
     throw new Error(`Error obteniendo tarea: ${error.message}`);
   }
 
-  return data ? mapTaskFromDB(data as TaskRow) : null;
+  if (!data) return null;
+
+  const task = mapTaskFromDB(data as TaskRow);
+
+  // Cargar subtareas
+  const { data: subtasksData } = await supabase
+    .from('subtasks')
+    .select('*')
+    .eq('task_id', id)
+    .order('order', { ascending: true });
+
+  if (subtasksData) {
+    task.subtasks = subtasksData.map((s: { id: string; task_id: string; title: string; completed: boolean; order: number; created_at: string; updated_at: string }) => ({
+      id: s.id,
+      taskId: s.task_id,
+      title: s.title,
+      completed: s.completed,
+      order: s.order,
+      createdAt: s.created_at,
+      updatedAt: s.updated_at,
+    }));
+  }
+
+  // Cargar assignees
+  const assigneesMap = await loadTaskAssignees(supabase, [id]);
+  task.assignees = assigneesMap.get(id) || [];
+
+  return task;
 }
 
 export async function createTask(input: CreateTaskInput): Promise<Task> {

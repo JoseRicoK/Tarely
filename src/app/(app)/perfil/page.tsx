@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Loader2, User, ArrowLeft, Sparkles, Upload, Shuffle } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { getAvatarUrl, getDiceBearUrl, generateRandomAvatarSeed } from "@/lib/utils";
 
@@ -22,6 +22,7 @@ interface UserProfile {
 }
 
 export default function PerfilPage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [name, setName] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
@@ -174,11 +175,9 @@ export default function PerfilPage() {
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Link href="/app">
-            <Button variant="ghost" size="icon" className="hover:bg-foreground/5">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
+          <Button variant="ghost" size="icon" className="hover:bg-foreground/5" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <div>
             <h1 className="text-2xl font-bold text-accent-gradient">
               Mi Perfil

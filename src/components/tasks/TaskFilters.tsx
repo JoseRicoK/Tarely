@@ -41,23 +41,22 @@ export function TaskFilters({
       : "Más antiguo primero";
 
   return (
-    <div className="flex flex-col sm:flex-row gap-2 md:gap-3">
+    <div className="flex gap-2 md:gap-3">
       <div className="relative flex-1">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Buscar tareas..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9 h-9 md:h-10 text-sm"
+          className="pl-9 h-10 md:h-10 text-sm md:text-base bg-background/95 backdrop-blur-sm border-border/50"
         />
       </div>
 
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline" className="gap-2 h-9 md:h-10 text-xs md:text-sm">
-            <ArrowUpDown className="h-3.5 w-3.5 md:h-4 md:w-4" />
-            <span className="hidden sm:inline">{sortLabel}</span>
-            <span className="sm:hidden">Ordenar</span>
+          <Button variant="outline" className="gap-2 h-10 w-10 md:w-auto md:h-10 text-sm md:text-sm md:px-4 shrink-0">
+            <ArrowUpDown className="h-4 w-4" />
+            <span className="hidden md:inline">{sortLabel}</span>
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">

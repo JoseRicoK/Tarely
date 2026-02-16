@@ -71,12 +71,16 @@ export function CommentSection({ taskId, currentUserId }: CommentSectionProps) {
     loadComments();
   }, [loadComments]);
 
-  // Auto-scroll al final cuando hay nuevos comentarios
+  // Auto-scroll al final cuando hay nuevos comentarios o cuando se cargan
   useEffect(() => {
     if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      setTimeout(() => {
+        if (scrollRef.current) {
+          scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+      }, 100);
     }
-  }, [comments]);
+  }, [comments, isLoading]);
 
   // Enviar comentario
   const handleSend = async () => {
@@ -196,9 +200,9 @@ export function CommentSection({ taskId, currentUserId }: CommentSectionProps) {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Lista de comentarios */}
-      <ScrollArea className="flex-1 pr-4 -mr-4 max-h-[400px]" ref={scrollRef}>
+    <div className="flex flex-col gap-4">
+      {/* Lista de comentarios - Scrolleable independiente */}
+      <ScrollArea className="pr-4 -mr-4 h-[300px] md:h-[400px]" ref={scrollRef}>
         {comments.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -342,17 +346,17 @@ export function CommentSection({ taskId, currentUserId }: CommentSectionProps) {
         )}
       </ScrollArea>
 
-      {/* Input para nuevo comentario */}
-      <div className="pt-4 border-t mt-4">
+      {/* Input para nuevo comentario - Siempre visible */}
+      <div className="pt-4 border-t sticky bottom-0 bg-background">
         <div className="flex gap-2 items-end">
           <div className="flex-1 relative">
             <Textarea
               ref={textareaRef}
-              placeholder="Escribe un comentario... (Soporta Markdown: **negrita**, - listas, ![img](url))"
+              placeholder="Escribe un comentario..."
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               onKeyDown={handleKeyDown}
-              className="min-h-[80px] resize-none pr-10"
+              className="min-h-[60px] md:min-h-[80px] resize-none pr-10 text-sm"
               disabled={isSending}
             />
             <Button
@@ -377,7 +381,7 @@ export function CommentSection({ taskId, currentUserId }: CommentSectionProps) {
             )}
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground mt-2">
+        <p className="text-xs text-muted-foreground mt-2 hidden md:block">
           Soporta Markdown: <code className="px-1 py-0.5 bg-muted rounded">**negrita**</code>, <code className="px-1 py-0.5 bg-muted rounded">- listas</code>, <code className="px-1 py-0.5 bg-muted rounded">![](url)</code> para imágenes
         </p>
       </div>

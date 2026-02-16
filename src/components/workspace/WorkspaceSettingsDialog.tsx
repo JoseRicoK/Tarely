@@ -66,14 +66,14 @@ export function WorkspaceSettingsDialog({
         className="sm:max-w-5xl w-[95vw] h-[88vh] max-h-[880px] !p-0 !gap-0 overflow-hidden grid-rows-[auto_1fr]"
       >
         {/* Header */}
-        <div className="flex items-start justify-between px-6 py-5 border-b self-start h-auto min-h-0">
+        <div className="flex items-start justify-between px-4 md:px-6 py-4 md:py-5 border-b self-start h-auto min-h-0">
           <div>
-            <DialogHeader className="gap-0 text-left pl-6">
-              <DialogTitle className="flex items-center gap-2 text-lg pl-2">
-                <Settings className="h-6 w-6 text-muted-foreground" />
+            <DialogHeader className="gap-0 text-left pl-0 md:pl-6">
+              <DialogTitle className="flex items-center gap-2 text-base md:text-lg pl-0 md:pl-2">
+                <Settings className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground" />
                 Ajustes del workspace
               </DialogTitle>
-              <DialogDescription className="text-xs mt-0">
+              <DialogDescription className="text-xs mt-1">
                 Configura las opciones de tu workspace
               </DialogDescription>
             </DialogHeader>
@@ -81,7 +81,7 @@ export function WorkspaceSettingsDialog({
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 shrink-0"
+            className="h-9 w-9 md:h-8 md:w-8 shrink-0"
             onClick={() => onOpenChange(false)}
           >
             <X className="h-4 w-4" />

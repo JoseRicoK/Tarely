@@ -177,7 +177,7 @@ export function TaskCard({
   return (
     <div 
       className={cn(
-        "group relative flex gap-3 md:gap-4 p-3 md:p-4 rounded-lg border bg-card transition-all duration-200 hover:shadow-md hover:border-ta/20 cursor-pointer",
+        "group relative flex gap-2.5 md:gap-4 p-3 md:p-4 rounded-lg border bg-card transition-all duration-200 hover:shadow-md hover:border-ta/20 cursor-pointer",
         task.completed && "opacity-70 bg-muted/30"
       )}
       onClick={handleNavigateToTask}
@@ -201,7 +201,7 @@ export function TaskCard({
       />
 
       {/* Botones de estado (completar y mover) */}
-      <div className="flex flex-col items-center gap-1" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-col items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
         {/* Botón de completar */}
         <TooltipProvider>
           <Tooltip>
@@ -210,7 +210,7 @@ export function TaskCard({
                 variant={task.completed ? "default" : "outline"}
                 size="icon"
                 className={cn(
-                  "h-7 w-7 md:h-8 md:w-8 rounded-full transition-all shadow-sm",
+                  "h-9 w-9 md:h-9 md:w-9 rounded-full transition-all shadow-sm shrink-0",
                   task.completed 
                     ? "bg-green-500 hover:bg-green-600 text-white shadow-green-500/25" 
                     : "hover:bg-green-500/15 hover:text-green-600 hover:border-green-500 hover:shadow-md hover:shadow-green-500/20"
@@ -221,9 +221,9 @@ export function TaskCard({
                 }}
               >
                 {task.completed ? (
-                  <Check className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                  <Check className="h-4 w-4 md:h-4.5 md:w-4.5" />
                 ) : (
-                  <Check className="h-3.5 w-3.5 md:h-4 md:w-4 opacity-60" />
+                  <Check className="h-4 w-4 md:h-4.5 md:w-4.5 opacity-60" />
                 )}
               </Button>
             </TooltipTrigger>
@@ -243,10 +243,10 @@ export function TaskCard({
                     <Button
                       variant="outline"
                       size="icon"
-                      className="hidden md:flex h-7 w-7 rounded-full transition-all hover:bg-ta/10 hover:text-ta-light hover:border-ta"
+                      className="hidden md:flex h-8 w-8 rounded-full transition-all hover:bg-ta/10 hover:text-ta-light hover:border-ta"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <MoveRight className="h-3.5 w-3.5" />
+                      <MoveRight className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                 </TooltipTrigger>
@@ -282,31 +282,31 @@ export function TaskCard({
         )}
       </div>
 
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 overflow-hidden">
         {/* Indicador de nota vinculada - DISEÑO MEJORADO Y CLICKABLE */}
         {task.noteId && (
-          <div className="flex items-center gap-2 mb-3 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-500/15 to-indigo-500/15 border-l-[3px] border-purple-500 hover:from-purple-500/25 hover:to-indigo-500/25 transition-colors cursor-pointer"
+          <div className="flex items-center gap-1.5 md:gap-2 mb-2 md:mb-3 px-2 py-1.5 md:px-3 md:py-2 rounded-lg bg-gradient-to-r from-purple-500/15 to-indigo-500/15 border-l-[3px] border-purple-500 hover:from-purple-500/25 hover:to-indigo-500/25 transition-colors cursor-pointer"
             onClick={(e) => {
               e.stopPropagation();
               router.push(`/notes?noteId=${task.noteId}`);
             }}
           >
-            <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400 shrink-0" />
+            <FileText className="h-3.5 w-3.5 md:h-4 md:w-4 text-purple-600 dark:text-purple-400 shrink-0" />
             <div className="flex-1 min-w-0">
-              <span className="text-xs font-semibold text-purple-700 dark:text-purple-300 block">Nota Vinculada</span>
+              <span className="text-[10px] md:text-xs font-semibold text-purple-700 dark:text-purple-300 block">Nota Vinculada</span>
             </div>
-            <ExternalLink className="h-3 w-3 text-purple-600 dark:text-purple-400 shrink-0" />
+            <ExternalLink className="h-2.5 w-2.5 md:h-3 md:w-3 text-purple-600 dark:text-purple-400 shrink-0" />
           </div>
         )}
         
         {/* Header with title and badges */}
-        <div className="flex items-start gap-2 mb-1.5 md:mb-2">
+        <div className="flex items-start gap-1.5 md:gap-2 mb-1 md:mb-1.5">
           {/* Indicador de tarea nueva */}
           {task.isNew && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="h-2 w-2 rounded-full bg-blue-500 mt-1.5 md:mt-2 flex-shrink-0 animate-pulse" />
+                  <div className="h-2 w-2 rounded-full bg-blue-500 mt-1 md:mt-1.5 flex-shrink-0 animate-pulse" />
                 </TooltipTrigger>
                 <TooltipContent>
                   <p className="text-xs">Tarea recién creada</p>
@@ -315,7 +315,7 @@ export function TaskCard({
             </TooltipProvider>
           )}
           <h3 className={cn(
-            "font-medium leading-snug flex-1 break-words text-[15px] md:text-base",
+            "font-medium leading-tight flex-1 break-words text-sm md:text-base",
             task.completed && "line-through text-muted-foreground",
             task.noteId && "font-semibold"
           )}>
@@ -325,13 +325,13 @@ export function TaskCard({
 
         {/* Description if exists */}
         {task.description && (
-          <p className="text-xs md:text-sm text-muted-foreground mb-2 md:mb-3 line-clamp-1 md:line-clamp-2">
+          <p className="text-[11px] md:text-sm text-muted-foreground mb-1.5 md:mb-2.5 line-clamp-1 md:line-clamp-2 leading-tight">
             {task.description}
           </p>
         )}
 
         {/* Footer with badges and meta */}
-        <div className="flex flex-wrap items-center gap-1.5 md:gap-2" onClick={(e) => e.stopPropagation()}>
+        <div className="flex flex-wrap items-center gap-1 md:gap-2" onClick={(e) => e.stopPropagation()}>
           {/* Importancia - editable inline si no está completada */}
           {!task.completed && onImportanceChange ? (
             <ImportancePicker
@@ -433,7 +433,7 @@ export function TaskCard({
       </div>
 
       {/* Actions */}
-      <div className="flex flex-col items-end justify-between self-stretch" onClick={(e) => e.stopPropagation()}>
+      <div className="flex flex-col items-end justify-start shrink-0" onClick={(e) => e.stopPropagation()}>
         {/* Action buttons */}
         <div className="flex items-start gap-1">
         {/* Botón restaurar si está completada - solo desktop */}
@@ -632,12 +632,12 @@ export function TaskCard({
           </DropdownMenuContent>
         </DropdownMenu>
         </div>
-
-        {/* TimeAgo - bottom right */}
-        <span className="text-[10px] md:text-xs text-muted-foreground whitespace-nowrap">
-          {timeAgo}
-        </span>
       </div>
+      
+      {/* TimeAgo - positioned absolutely at bottom right to not affect layout */}
+      <span className="absolute bottom-2 right-2 md:bottom-3 md:right-3 text-[10px] md:text-xs text-muted-foreground/80 whitespace-nowrap pointer-events-none">
+        {timeAgo}
+      </span>
     </div>
   );
 }

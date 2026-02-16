@@ -218,11 +218,9 @@ export default function AjustesPage() {
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center gap-4">
-          <Link href="/app">
-            <Button variant="ghost" size="icon" className="hover:bg-foreground/5">
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-          </Link>
+          <Button variant="ghost" size="icon" className="hover:bg-foreground/5" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
           <div>
             <h1 className="text-2xl font-bold text-accent-gradient">
               Ajustes

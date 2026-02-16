@@ -38,7 +38,7 @@ export default function AppLayout({
                 alt="Tarely"
                 width={32}
                 height={32}
-                className="h-7 w-7 sm:h-8 sm:w-8 object-contain group-hover:scale-105 transition-transform dark:drop-shadow-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+                className="h-7 w-7 sm:h-8 sm:w-8 object-contain group-hover:scale-105 transition-transform dark:drop-shadow-none filter drop-shadow-[0_4px_8px_rgba(0,0,0,1)]"
                 priority
               />
               <span className="text-accent-gradient">Tarely</span>

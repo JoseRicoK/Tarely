@@ -842,105 +842,57 @@ export default function WorkspacePage() {
   }
 
   return (
-    <div className="space-y-4 md:space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-3 md:gap-4">
-        <div className="flex items-center gap-2 md:gap-4">
-          <Button variant="ghost" size="icon" className="h-8 w-8 md:h-10 md:w-10" asChild>
-            <Link href="/app">
-              <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
-              <span className="sr-only">Volver</span>
-            </Link>
-          </Button>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-lg md:text-2xl font-bold tracking-tight truncate">
-              {workspace.name}
-            </h1>
-            {workspace.description && (
-              <p className="text-xs md:text-sm text-muted-foreground line-clamp-1">{workspace.description}</p>
-            )}
-          </div>
-          <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setShareDialogOpen(true)}
-              className="h-8 w-8 md:h-9 md:w-auto md:px-3"
-            >
-              <Share2 className="h-4 w-4" />
-              <span className="hidden md:inline ml-1.5">Compartir</span>
+    <div className="relative min-h-screen pb-32 md:pb-28">
+      <div className="space-y-4 md:space-y-6">
+        {/* Header */}
+        <div className="flex flex-col gap-3 md:gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
+            <Button variant="ghost" size="icon" className="h-8 w-8 md:h-10 md:w-10" asChild>
+              <Link href="/app">
+                <ArrowLeft className="h-4 w-4 md:h-5 md:w-5" />
+                <span className="sr-only">Volver</span>
+              </Link>
             </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setInstructionsOpen(true)}
-              className="h-8 w-8 md:h-9 md:w-auto md:px-3"
-            >
-              <FileText className="h-4 w-4" />
-              <span className="hidden md:inline ml-1.5">Instrucciones</span>
-            </Button>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={() => setSettingsOpen(true)}
-              className="h-8 w-8 md:h-9 md:w-9"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      <Separator />
-
-      {/* AI Generation Area */}
-      <div className="relative overflow-hidden rounded-lg border-2 border-ta/20 bg-gradient-to-br from-ta/5 via-card to-card p-3 md:p-4 shadow-sm hover:shadow-md transition-shadow">
-        {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-32 h-32 bg-ta/5 rounded-full blur-3xl -z-10" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-ta/5 rounded-full blur-2xl -z-10" />
-        
-        <div className="space-y-2 md:space-y-3">
-          <div className="flex items-start gap-2 md:gap-3">
-            <div className="p-1.5 rounded-lg bg-ta/10 mt-0.5">
-              <Sparkles className="h-4 w-4 text-ta-light" />
-            </div>
             <div className="flex-1 min-w-0">
-              <h2 className="font-semibold text-sm md:text-base">Convierte el caos en tareas ordenadas</h2>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Pega aquí tus notas, ideas o textos desordenados y los convertiremos en tareas organizadas
-              </p>
-            </div>
-            <Button
-              onClick={handleGenerateTasks}
-              disabled={isGenerating || !aiText.trim()}
-              size="sm"
-              className="gap-1.5 md:gap-2 shadow-sm shrink-0 h-8 md:h-9 text-xs md:text-sm"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 md:h-4 md:w-4 animate-spin" />
-                  <span className="hidden sm:inline">Organizando...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                  <span className="hidden sm:inline">Organizar</span>
-                </>
+              <h1 className="text-lg md:text-2xl font-bold tracking-tight truncate">
+                {workspace.name}
+              </h1>
+              {workspace.description && (
+                <p className="text-xs md:text-sm text-muted-foreground line-clamp-1">{workspace.description}</p>
               )}
-            </Button>
+            </div>
+            <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setShareDialogOpen(true)}
+                className="h-9 w-9 md:h-10 md:w-auto md:px-4"
+              >
+                <Share2 className="h-4 w-4 md:h-4.5 md:w-4.5" />
+                <span className="hidden md:inline ml-1.5">Compartir</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setInstructionsOpen(true)}
+                className="h-9 w-9 md:h-10 md:w-auto md:px-4"
+              >
+                <FileText className="h-4 w-4 md:h-4.5 md:w-4.5" />
+                <span className="hidden md:inline ml-1.5">Instrucciones</span>
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setSettingsOpen(true)}
+                className="h-9 w-9 md:h-10 md:w-10"
+              >
+                <Settings className="h-4 w-4 md:h-4.5 md:w-4.5" />
+              </Button>
+            </div>
           </div>
-          
-          <Textarea
-            placeholder="Describe lo que necesitas hacer... (Enter para organizar, Shift+Enter para salto de línea)"
-            value={aiText}
-            onChange={(e) => setAiText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            rows={3}
-            className="resize-y bg-background/50 border-ta/20 focus:border-ta/40 transition-colors min-h-[80px] md:min-h-[120px] text-sm"
-            disabled={isGenerating}
-          />
         </div>
-      </div>
+
+        <Separator />
 
       {/* Tasks Section */}
       <div className="space-y-3 md:space-y-4">
@@ -951,28 +903,28 @@ export default function WorkspacePage() {
           </div>
           <div className="flex items-center gap-1.5 md:gap-2">
             {/* View mode toggle */}
-            <div className="flex items-center border rounded-lg p-0.5 md:p-1">
+            <div className="flex items-center border rounded-lg p-0.5 md:p-1 bg-background/95 backdrop-blur-sm border-border/50">
               <Button
                 variant={viewMode === "list" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setViewMode("list")}
-                className="gap-1 h-7 md:h-8 px-2 md:px-3"
+                className="gap-1.5 h-9 md:h-9 px-2.5 md:px-3"
               >
-                <List className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <List className="h-4 w-4" />
                 <span className="hidden sm:inline text-xs md:text-sm">Lista</span>
               </Button>
               <Button
                 variant={viewMode === "kanban" ? "default" : "ghost"}
                 size="sm"
                 onClick={() => setViewMode("kanban")}
-                className="gap-1 h-7 md:h-8 px-2 md:px-3"
+                className="gap-1.5 h-9 md:h-9 px-2.5 md:px-3"
               >
-                <LayoutGrid className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                <LayoutGrid className="h-4 w-4" />
                 <span className="hidden sm:inline text-xs md:text-sm">Kanban</span>
               </Button>
             </div>
-            <Button onClick={handleCreateTask} size="sm" className="gap-1.5 h-7 md:h-9 px-2.5 md:px-4 text-xs md:text-sm btn-accent-gradient text-white">
-              <Plus className="h-3.5 w-3.5 md:h-4 md:w-4" />
+            <Button onClick={handleCreateTask} size="sm" className="gap-1.5 h-9 md:h-10 px-3 md:px-4 text-sm md:text-base btn-accent-gradient text-white font-semibold">
+              <Plus className="h-4 w-4" />
               <span className="hidden sm:inline">Nueva tarea</span>
               <span className="sm:hidden">Nueva</span>
             </Button>
@@ -991,17 +943,17 @@ export default function WorkspacePage() {
                     className={cn(
                       "flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors whitespace-nowrap group",
                       activeSectionId === section.id
-                        ? "border-ta bg-ta/10 text-ta shadow-sm"
-                        : "border-border bg-card hover:bg-accent/50"
+                        ? "border-ta bg-background/95 text-ta shadow-md shadow-ta/20"
+                        : "border-border bg-background/95 hover:bg-accent/50 shadow-sm"
                     )}
                   >
                     <button
                       onClick={() => setActiveSectionId(section.id)}
-                      className="flex items-center gap-2"
+                      className="flex items-center gap-1.5 md:gap-2"
                     >
-                      <IconComponent className="h-4 w-4" style={{ color: section.color }} />
-                      <span>{section.name}</span>
-                      <Badge variant="secondary" className="ml-1">
+                      <IconComponent className="h-4 w-4 shrink-0" style={{ color: section.color }} />
+                      <span className="text-sm md:text-base">{section.name}</span>
+                      <Badge variant="secondary" className="ml-1 text-xs">
                         {sectionCounts[section.id] || 0}
                       </Badge>
                     </button>
@@ -1237,6 +1189,51 @@ export default function WorkspacePage() {
           />
         </Suspense>
       )}
+      </div>
+
+      {/* Floating AI Input Bar */}
+      <div className="fixed bottom-0 left-0 right-0 z-40">
+        <div className="max-w-7xl mx-auto px-3 pb-3 md:px-4 md:pb-6">
+          <div className="relative">
+            {/* Input with button inside - with BLUR SHADOW effect */}
+            <div className="relative group z-0">
+              {/* Contenedor del Input - Sin bordes, solo fondo translúcido y blur shadow */}
+              <div className="relative rounded-2xl bg-background/60 backdrop-blur-md border border-black/10 dark:border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.5)] dark:shadow-[0_15px_40px_rgba(0,0,0,0.5)]">
+                <Textarea
+                  placeholder="Describe tus tareas..."
+                  value={aiText}
+                  onChange={(e) => setAiText(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  rows={1}
+                  className="resize-none bg-transparent !border-0 !shadow-none !ring-0 !outline-none focus-visible:!ring-0 focus-visible:!border-0 transition-all w-full min-h-[48px] md:min-h-[52px] text-base md:text-base rounded-2xl pr-[120px] md:pr-[140px] pl-4 py-3 md:py-3.5"
+                  disabled={isGenerating}
+                  style={{ fontSize: '16px' }}
+                />
+                
+                {/* Button positioned inside input */}
+                <Button
+                  onClick={handleGenerateTasks}
+                  disabled={isGenerating || !aiText.trim()}
+                  size="sm"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 gap-1.5 md:gap-2 h-[40px] md:h-[44px] px-3 md:px-5 bg-ta hover:bg-ta-light text-white border-0 shadow-md transition-all rounded-[14px]"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span className="text-xs md:text-sm font-medium">Creando...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4" />
+                      <span className="text-xs md:text-sm font-medium">Organizar</span>
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

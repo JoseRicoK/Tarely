@@ -10,16 +10,21 @@ import {
   Calendar,
   Check,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
   Circle,
   Clock,
+  Copy,
   Edit3,
   ExternalLink,
   Flag,
   History,
   Loader2,
+  ListChecks,
   MessageCircle,
   MoreVertical,
   Paperclip,
+  Plus,
   Repeat,
   Sparkles,
   Trash2,
@@ -27,9 +32,6 @@ import {
   Users,
   X,
   AlertTriangle,
-  ListChecks,
-  ChevronRight,
-  Copy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -109,6 +111,8 @@ export default function TaskDetailPage() {
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [isAddingSubtask, setIsAddingSubtask] = useState(false);
+  const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(true);
 
   // Cargar datos
   const loadData = useCallback(async () => {
@@ -383,11 +387,9 @@ export default function TaskDetailPage() {
           <p className="text-muted-foreground mb-6">
             La tarea que buscas no existe o no tienes acceso
           </p>
-          <Button asChild>
-            <Link href={`/workspace/${workspaceId}`}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver al workspace
-            </Link>
+          <Button onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Volver
           </Button>
         </div>
       </div>
@@ -405,10 +407,8 @@ export default function TaskDetailPage() {
       <div className="flex items-center justify-between mb-6">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 min-w-0">
-          <Button variant="ghost" size="icon" className="shrink-0" asChild>
-            <Link href={`/workspace/${workspaceId}`}>
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
+          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => router.back()}>
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           
           <div className="flex items-center gap-1.5 text-sm text-muted-foreground truncate">
@@ -491,7 +491,7 @@ export default function TaskDetailPage() {
       <div className="max-w-6xl mx-auto">
         <div className="grid lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Columna principal */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-6 rounded-xl bg-card/50 dark:bg-card/30 backdrop-blur-sm border border-border/50 p-6">
             {/* Indicador de importancia */}
             <div
               className={cn(
@@ -624,6 +624,18 @@ export default function TaskDetailPage() {
             {/* Subtareas */}
             <div className="pl-10">
               <div className="flex items-center gap-2 mb-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 -ml-2 hover:bg-muted"
+                  onClick={() => setIsSubtasksExpanded(!isSubtasksExpanded)}
+                >
+                  {isSubtasksExpanded ? (
+                    <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                  ) : (
+                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </Button>
                 <ListChecks className="h-5 w-5 text-muted-foreground" />
                 <h3 className="font-semibold">Subtareas</h3>
                 {totalSubtasks > 0 && (
@@ -631,12 +643,26 @@ export default function TaskDetailPage() {
                     {completedSubtasks}/{totalSubtasks}
                   </Badge>
                 )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 ml-auto hover:bg-muted"
+                  onClick={() => setIsAddingSubtask(true)}
+                  title="Añadir subtarea"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
               </div>
-              <SubtaskList
-                taskId={task.id}
-                subtasks={task.subtasks || []}
-                onSubtasksChange={handleSubtasksChange}
-              />
+              {isSubtasksExpanded && (
+                <SubtaskList
+                  taskId={task.id}
+                  subtasks={task.subtasks || []}
+                  onSubtasksChange={handleSubtasksChange}
+                  hideHeader
+                  forceAdding={isAddingSubtask}
+                  onAddingChange={setIsAddingSubtask}
+                />
+              )}
             </div>
 
             <Separator />
@@ -644,16 +670,16 @@ export default function TaskDetailPage() {
             {/* Tabs: Comentarios, Archivos, Actividad */}
             <div className="pl-10">
               <Tabs defaultValue="comments">
-                <TabsList className="w-full justify-start bg-muted/50 p-1">
-                  <TabsTrigger value="comments" className="gap-2">
+                <TabsList className="w-full justify-start bg-muted/50 border border-border/50 p-1">
+                  <TabsTrigger value="comments" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
                     <MessageCircle className="h-4 w-4" />
                     Comentarios
                   </TabsTrigger>
-                  <TabsTrigger value="attachments" className="gap-2">
+                  <TabsTrigger value="attachments" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
                     <Paperclip className="h-4 w-4" />
                     Archivos
                   </TabsTrigger>
-                  <TabsTrigger value="activity" className="gap-2">
+                  <TabsTrigger value="activity" className="gap-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
                     <History className="h-4 w-4" />
                     Actividad
                   </TabsTrigger>
@@ -676,7 +702,7 @@ export default function TaskDetailPage() {
           </div>
 
           {/* Sidebar derecha */}
-          <div className="space-y-4">
+          <div className="space-y-4 lg:mt-0">
             {/* Panel de propiedades */}
             <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
               <div className="p-4 bg-muted/30 border-b">

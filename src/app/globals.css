@@ -255,7 +255,7 @@
 }
 /* App gradient background */
 .app-bg-gradient {
-  background: linear-gradient(to bottom right, rgb(241 245 249), var(--background), rgb(241 245 249));
+  background: linear-gradient(to bottom right, rgb(230 235 240), var(--background), rgb(230 235 240));
 }
 .dark .app-bg-gradient {
   background: linear-gradient(to bottom right, rgb(2 6 23), var(--background), rgb(2 6 23));

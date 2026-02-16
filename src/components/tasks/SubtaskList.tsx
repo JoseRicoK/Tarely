@@ -23,6 +23,9 @@ interface SubtaskListProps {
   subtasks: Subtask[];
   onSubtasksChange: (subtasks: Subtask[]) => void;
   compact?: boolean;
+  hideHeader?: boolean;
+  forceAdding?: boolean;
+  onAddingChange?: (isAdding: boolean) => void;
 }
 
 export function SubtaskList({
@@ -30,9 +33,19 @@ export function SubtaskList({
   subtasks,
   onSubtasksChange,
   compact = false,
+  hideHeader = false,
+  forceAdding = false,
+  onAddingChange,
 }: SubtaskListProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
+
+  // Sincronizar con forceAdding externo
+  useEffect(() => {
+    if (forceAdding) {
+      setIsAdding(true);
+    }
+  }, [forceAdding]);
   const [newTitle, setNewTitle] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTitle, setEditingTitle] = useState("");
@@ -61,6 +74,7 @@ export function SubtaskList({
   const handleAdd = async () => {
     if (!newTitle.trim()) {
       setIsAdding(false);
+      onAddingChange?.(false);
       return;
     }
 
@@ -77,6 +91,7 @@ export function SubtaskList({
       onSubtasksChange([...subtasks, subtask]);
       setNewTitle("");
       setIsAdding(false);
+      onAddingChange?.(false);
     } catch {
       toast.error("Error al crear subtarea");
     }
@@ -187,38 +202,40 @@ export function SubtaskList({
   return (
     <div className="mt-2" onClick={(e) => e.stopPropagation()}>
       {/* Header con toggle y acciones */}
-      <div className="flex items-center gap-2 mb-1">
-        {hasSubtasks && (
-          <button
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            onClick={() => setIsExpanded(!isExpanded)}
-          >
-            {isExpanded ? (
-              <ChevronDown className="h-3.5 w-3.5" />
-            ) : (
-              <ChevronRight className="h-3.5 w-3.5" />
-            )}
-            <ListChecks className="h-3.5 w-3.5" />
-            <span>
-              Subtareas ({completedCount}/{subtasks.length})
-            </span>
-          </button>
-        )}
+      {!hideHeader && (
+        <div className="flex items-center gap-2 mb-1">
+          {hasSubtasks && (
+            <button
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
+              {isExpanded ? (
+                <ChevronDown className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronRight className="h-3.5 w-3.5" />
+              )}
+              <ListChecks className="h-3.5 w-3.5" />
+              <span>
+                Subtareas ({completedCount}/{subtasks.length})
+              </span>
+            </button>
+          )}
 
-        {hasSubtasks && isExpanded && subtasks.length < 5 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-5 w-5 p-0 ml-auto"
-            onClick={() => setIsAdding(true)}
-          >
-            <Plus className="h-3 w-3" />
-          </Button>
-        )}
-      </div>
+          {hasSubtasks && isExpanded && subtasks.length < 5 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-5 w-5 p-0 ml-auto"
+              onClick={() => setIsAdding(true)}
+            >
+              <Plus className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+      )}
 
-      {/* Lista de subtareas */}
-      {isExpanded && hasSubtasks && (
+      {/* Lista de subtareas o input para añadir */}
+      {((hideHeader || isExpanded) && (hasSubtasks || isAdding)) && (
         <div className="space-y-1 pl-4 border-l-2 border-muted ml-1">
           {subtasks.map((subtask) => (
             <div
@@ -309,12 +326,14 @@ export function SubtaskList({
                   if (e.key === "Escape") {
                     setIsAdding(false);
                     setNewTitle("");
+                    onAddingChange?.(false);
                   }
                 }}
                 onBlur={() => {
                   if (!newTitle.trim()) {
                     setIsAdding(false);
                     setNewTitle("");
+                    onAddingChange?.(false);
                   }
                 }}
               />
@@ -325,6 +344,7 @@ export function SubtaskList({
                 onClick={() => {
                   setIsAdding(false);
                   setNewTitle("");
+                  onAddingChange?.(false);
                 }}
               >
                 <X className="h-3 w-3" />

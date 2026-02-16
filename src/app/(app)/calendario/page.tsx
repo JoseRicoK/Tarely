@@ -265,7 +265,7 @@ export default function CalendarPage() {
 
         {/* Workspace filter */}
         <Select value={selectedWorkspace} onValueChange={setSelectedWorkspace}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[200px] bg-background/60 backdrop-blur-md border border-border/50">
             <SelectValue placeholder="Todos los workspaces" />
           </SelectTrigger>
           <SelectContent>
