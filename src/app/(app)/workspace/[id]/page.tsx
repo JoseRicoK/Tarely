@@ -1294,7 +1294,7 @@ export default function WorkspacePage() {
               {/* Contenedor del Input - Sin bordes, solo fondo translúcido y blur shadow */}
               <div className="relative rounded-2xl bg-background/60 backdrop-blur-md border border-black/10 dark:border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.5)] dark:shadow-[0_15px_40px_rgba(0,0,0,0.5)]">
                 <Textarea
-                  placeholder="Describe tus tareas..."
+                  placeholder="Crear tareas con IA"
                   value={aiText}
                   onChange={(e) => setAiText(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -1309,7 +1309,7 @@ export default function WorkspacePage() {
                   onClick={handleGenerateTasks}
                   disabled={isGenerating || !aiText.trim()}
                   size="sm"
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 gap-1.5 md:gap-2 h-[40px] md:h-[44px] px-3 md:px-5 bg-ta hover:bg-ta-light text-white border-0 shadow-md transition-all rounded-[14px]"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 gap-1.5 md:gap-2 h-[40px] md:h-[44px] px-3 md:px-5 btn-accent-gradient text-white border-0 shadow-md transition-all rounded-[14px]"
                 >
                   {isGenerating ? (
                     <>

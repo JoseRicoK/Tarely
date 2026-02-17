@@ -19,6 +19,7 @@ export interface Workspace {
   instructions: string; // Instrucciones largas para la IA
   icon: string; // Nombre del icono de Lucide (ej: Folder, Briefcase)
   color: string; // Color en formato hex (ej: #6366f1)
+  sortOrder: number; // Orden de visualización (0-based)
   createdAt: string;
   updatedAt: string;
   isShared?: boolean; // true si es un workspace compartido contigo

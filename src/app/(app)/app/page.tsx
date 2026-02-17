@@ -6,6 +6,21 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, FolderPlus, AlertTriangle, Circle, Calendar } from "lucide-react";
 import { toast } from "sonner";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+} from "@dnd-kit/sortable";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -40,6 +55,17 @@ export default function AppHomePage() {
   const [deletingWorkspace, setDeletingWorkspace] = useState<Workspace | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Verificar si es primera vez (desde Supabase)
   useEffect(() => {
@@ -220,6 +246,31 @@ export default function AppHomePage() {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (!over || active.id === over.id) return;
+
+    setWorkspaces((items) => {
+      const oldIndex = items.findIndex((item) => item.id === active.id);
+      const newIndex = items.findIndex((item) => item.id === over.id);
+
+      const newOrder = arrayMove(items, oldIndex, newIndex);
+      
+      const workspaceIds = newOrder.map((w) => w.id);
+      fetch("/api/workspaces/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ workspaceIds }),
+      }).catch(() => {
+        toast.error("Error al guardar el orden");
+        fetchWorkspaces();
+      });
+
+      return newOrder;
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Onboarding carousel */}
@@ -256,16 +307,27 @@ export default function AppHomePage() {
           </Button>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {workspaces.map((workspace) => (
-            <WorkspaceCard
-              key={workspace.id}
-              workspace={workspace}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={workspaces.map((w) => w.id)}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {workspaces.map((workspace) => (
+                <WorkspaceCard
+                  key={workspace.id}
+                  workspace={workspace}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Separador visual */}

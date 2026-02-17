@@ -31,6 +31,7 @@ function mapWorkspaceFromDB(row: WorkspaceRow, isShared = false, ownerName?: str
     instructions: row.instructions,
     icon: row.icon || 'Folder',
     color: row.color || '#6366f1',
+    sortOrder: row.sort_order ?? 0,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     isShared,
@@ -79,11 +80,11 @@ function mapTaskFromDB(row: TaskRow): Task {
 export async function listWorkspaces(): Promise<Workspace[]> {
   const supabase = await createClient();
   
-  // Obtener workspaces propios
+  // Obtener workspaces propios ordenados por sort_order
   const { data, error } = await supabase
     .from('workspaces')
     .select('*')
-    .order('updated_at', { ascending: false });
+    .order('sort_order', { ascending: true });
 
   if (error) {
     console.error('Error listando workspaces:', error);
@@ -167,6 +168,16 @@ export async function createWorkspace(
     throw new Error('Usuario no autenticado');
   }
   
+  // Obtener el máximo sort_order actual para añadir al final
+  const { data: maxData } = await supabase
+    .from('workspaces')
+    .select('sort_order')
+    .order('sort_order', { ascending: false })
+    .limit(1)
+    .single();
+  
+  const nextSortOrder = (maxData?.sort_order ?? -1) + 1;
+  
   const { data, error } = await supabase
     .from('workspaces')
     .insert({
@@ -175,6 +186,7 @@ export async function createWorkspace(
       instructions: input.instructions,
       icon: input.icon || 'Folder',
       color: input.color || '#6366f1',
+      sort_order: nextSortOrder,
       user_id: user.id,
     })
     .select()
