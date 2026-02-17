@@ -659,19 +659,13 @@ export function NotesSidebar({
               <TooltipTrigger asChild>
                 <button
                   className="p-0.5 rounded text-muted-foreground/40 hover:text-muted-foreground hover:bg-accent/40 transition-colors"
-                  onClick={() => {
-                    if (templates.length > 0) {
-                      onCreateNoteFromTemplate(templates[0]);
-                    } else {
-                      onOpenTemplates();
-                    }
-                  }}
-                  title={templates.length > 0 ? "Crear nota desde primera plantilla" : "Crear plantilla"}
+                  onClick={onOpenTemplates}
+                  title="Gestionar plantillas"
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent>{templates.length > 0 ? "Nota rápida desde plantilla" : "Crear plantilla"}</TooltipContent>
+              <TooltipContent>Crear o usar plantilla</TooltipContent>
             </Tooltip>
           </div>
 

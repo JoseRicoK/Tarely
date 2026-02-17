@@ -464,7 +464,8 @@ export function NotesPageClient() {
           workspaceId: selectedWorkspaceId,
           title: selectedNote.title || "Nueva tarea",
           description: selectedNote.contentText || "",
-          status: "todo",
+          importance: 5,
+          source: "manual",
           noteId: selectedNote.id,
         }),
       });
