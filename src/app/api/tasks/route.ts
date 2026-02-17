@@ -45,6 +45,24 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validated = createTaskSchema.parse(body);
     const task = await createTask(validated);
+    
+    // Auto-sync with Google Calendar if task has a due date
+    if (task.dueDate) {
+      try {
+        await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/google-calendar/sync-task`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            taskId: task.id,
+            action: 'create',
+          }),
+        });
+      } catch (syncError) {
+        console.error('Error auto-syncing task with Google Calendar:', syncError);
+        // Don't fail the task creation if sync fails
+      }
+    }
+    
     return NextResponse.json(task, { status: 201 });
   } catch (error) {
     if (error instanceof Error && error.name === "ZodError") {

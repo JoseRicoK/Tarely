@@ -41,6 +41,22 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
         { status: 404 }
       );
     }
+    
+    // Auto-sync with Google Calendar
+    try {
+      const action = task.dueDate ? 'update' : 'delete';
+      await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/google-calendar/sync-task`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId: task.id,
+          action,
+        }),
+      });
+    } catch (syncError) {
+      console.error('Error auto-syncing task with Google Calendar:', syncError);
+    }
+    
     return NextResponse.json(task);
   } catch (error) {
     if (error instanceof Error && error.name === "ZodError") {
@@ -61,6 +77,21 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   try {
     const { id } = await params;
+    
+    // Try to delete from Google Calendar before deleting task
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/google-calendar/sync-task`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taskId: id,
+          action: 'delete',
+        }),
+      });
+    } catch (syncError) {
+      console.error('Error syncing deletion with Google Calendar:', syncError);
+    }
+    
     const deleted = await deleteTask(id);
     if (!deleted) {
       return NextResponse.json(

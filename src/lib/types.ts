@@ -340,3 +340,58 @@ export interface UpdateNoteTemplateInput {
   icon?: string;
   category?: string;
 }
+
+// ============== GOOGLE CALENDAR ==============
+
+export interface GoogleCalendarToken {
+  id: string;
+  userId: string;
+  accessToken: string;
+  refreshToken: string;
+  tokenExpiry: string;
+  scope: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaskGoogleCalendarSync {
+  id: string;
+  taskId: string;
+  userId: string;
+  googleEventId: string;
+  googleCalendarId: string;
+  lastSyncedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GoogleCalendarEvent {
+  id: string;
+  summary: string;
+  description?: string;
+  start: {
+    dateTime?: string;
+    date?: string;
+    timeZone?: string;
+  };
+  end: {
+    dateTime?: string;
+    date?: string;
+    timeZone?: string;
+  };
+  status?: string;
+  htmlLink?: string;
+}
+
+export interface GoogleCalendarBusySlot {
+  start: string;
+  end: string;
+}
+
+export interface GoogleFreeBusyResponse {
+  calendars: {
+    [calendarId: string]: {
+      busy: GoogleCalendarBusySlot[];
+    };
+  };
+}

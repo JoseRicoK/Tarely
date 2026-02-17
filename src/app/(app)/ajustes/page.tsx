@@ -25,6 +25,7 @@ import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { lazy, Suspense } from "react";
+import { GoogleCalendarSettings } from "@/components/calendar/GoogleCalendarSettings";
 
 const FeedbackPanel = lazy(() => import("@/components/workspace").then(m => ({ default: m.FeedbackPanel })));
 
@@ -231,6 +232,9 @@ export default function AjustesPage() {
 
         {/* Apariencia */}
         <ThemeSettingsSection />
+
+        {/* Google Calendar */}
+        <GoogleCalendarSettings />
 
         {/* Panel de sugerencias y errores */}
         <Suspense fallback={
