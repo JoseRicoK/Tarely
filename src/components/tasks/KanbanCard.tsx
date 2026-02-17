@@ -51,12 +51,13 @@ import {
   FileText,
   type LucideIcon,
 } from "lucide-react";
-import type { Task, TaskAssignee, WorkspaceSection, Subtask } from "@/lib/types";
+import type { Task, TaskAssignee, TaskTag, WorkspaceSection, Subtask } from "@/lib/types";
 import { cn, getAvatarUrl } from "@/lib/utils";
 import Image from "next/image";
 import { SubtaskIndicator } from "./SubtaskList";
 import { TaskAssignees } from "./TaskAssignees";
 import { RecurrenceBadge } from "./RecurrenceSelector";
+import { TagSelector } from "./TagSelector";
 
 // Icon map for dynamic section icons
 const iconMap: Record<string, LucideIcon> = {
@@ -88,6 +89,7 @@ interface KanbanCardDraggableProps {
   onDueDateChange?: (taskId: string, dueDate: string | null) => void;
   onImportanceChange?: (taskId: string, importance: number) => void;
   onSubtasksChange?: (taskId: string, subtasks: Subtask[]) => void;
+  onTagsChange?: (taskId: string, tags: TaskTag[]) => void;
   onQuickDelete?: (task: Task) => void;
 }
 
@@ -280,6 +282,7 @@ export function KanbanCardDraggable({
   onAssigneesChange,
   onDueDateChange,
   onImportanceChange,
+  onTagsChange,
   onQuickDelete,
 }: KanbanCardDraggableProps) {
   const router = useRouter();
@@ -305,12 +308,18 @@ export function KanbanCardDraggable({
   const importanceColor = getImportanceColor(task.importance);
   const hasAssignees = task.assignees && task.assignees.length > 0;
   const hasDueDate = !!task.dueDate;
+  const hasTags = task.tags && task.tags.length > 0;
 
   const [assigneesOpen, setAssigneesOpen] = React.useState(false);
   const [datePickerOpen, setDatePickerOpen] = React.useState(false);
+  const [tagSelectorOpen, setTagSelectorOpen] = React.useState(false);
 
   const handleNavigateToTask = () => {
-    router.push(`/workspace/${workspaceId}/task/${task.id}`);
+    const params = new URLSearchParams({ view: "kanban" });
+    if (currentSectionId) {
+      params.set("section", currentSectionId);
+    }
+    router.push(`/workspace/${workspaceId}/task/${task.id}?${params.toString()}`);
   };
 
   const handleCardClick = (e: React.MouseEvent) => {
@@ -420,6 +429,12 @@ export function KanbanCardDraggable({
                   <DropdownMenuItem onClick={() => setTimeout(() => setDatePickerOpen(true), 100)}>
                     <CalendarIcon className="h-4 w-4 mr-2" />
                     Fecha límite
+                  </DropdownMenuItem>
+                )}
+                {!task.completed && onTagsChange && (
+                  <DropdownMenuItem onClick={() => setTimeout(() => setTagSelectorOpen(true), 100)}>
+                    <Tag className="h-4 w-4 mr-2" />
+                    Etiquetas
                   </DropdownMenuItem>
                 )}
                 {/* Submenú Mover a sección */}
@@ -559,6 +574,28 @@ export function KanbanCardDraggable({
               ) : hasAssignees ? (
                 <AssigneesAvatars assignees={task.assignees || []} />
               ) : null}
+
+              {/* Tags - en móvil solo si hay tags, en desktop hover si vacío */}
+              {!task.completed && onTagsChange && (
+                <div 
+                  className={cn(
+                    "transition-opacity duration-200",
+                    !hasTags && "hidden sm:block sm:opacity-0 sm:group-hover:opacity-100"
+                  )}
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <TagSelector
+                    taskId={task.id}
+                    workspaceId={workspaceId}
+                    tags={task.tags || []}
+                    onTagsChange={(tags) => onTagsChange(task.id, tags)}
+                    compact
+                    externalOpen={tagSelectorOpen}
+                    onExternalOpenChange={setTagSelectorOpen}
+                  />
+                </div>
+              )}
 
               {/* Subtasks indicator */}
               {task.subtasks && task.subtasks.length > 0 && (

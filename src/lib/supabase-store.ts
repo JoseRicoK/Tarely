@@ -9,6 +9,7 @@ import { createClient } from '@/lib/supabase/server';
 import type {
   Workspace,
   Task,
+  TaskTag,
   CreateWorkspaceInput,
   UpdateWorkspaceInput,
   CreateTaskInput,
@@ -309,9 +310,61 @@ async function loadTaskAssignees(
   return assigneesMap;
 }
 
-export async function listTasks(workspaceId: string): Promise<Task[]> {
-  const supabase = await createClient();
-  
+/**
+ * Carga los tags para un conjunto de tareas
+ */
+async function loadTaskTags(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  taskIds: string[]
+): Promise<Map<string, TaskTag[]>> {
+  if (taskIds.length === 0) return new Map();
+
+  interface TaskTagRow {
+    id: string;
+    task_id: string;
+    tag_id: string;
+    workspace_tags: { id: string; name: string; color: string } | null;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: tagsData, error: tagsError } = await (supabase as any)
+    .from('task_tags')
+    .select('id, task_id, tag_id, workspace_tags(id, name, color)')
+    .in('task_id', taskIds) as { data: TaskTagRow[] | null; error: { message: string } | null };
+
+  if (tagsError) {
+    console.error('Error cargando tags:', tagsError);
+    return new Map();
+  }
+
+  if (!tagsData || tagsData.length === 0) {
+    return new Map();
+  }
+
+  const tagsMap = new Map<string, TaskTag[]>();
+
+  for (const row of tagsData) {
+    const taskId = row.task_id;
+    if (!tagsMap.has(taskId)) {
+      tagsMap.set(taskId, []);
+    }
+    if (row.workspace_tags) {
+      tagsMap.get(taskId)!.push({
+        id: row.id,
+        tagId: row.tag_id,
+        name: row.workspace_tags.name,
+        color: row.workspace_tags.color,
+      });
+    }
+  }
+
+  return tagsMap;
+}
+
+async function listWorkspaceTasksBase(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  workspaceId: string
+): Promise<Task[]> {
   // Primero intentar con query directa (workspaces propios)
   const { data, error } = await supabase
     .from('tasks')
@@ -319,39 +372,62 @@ export async function listTasks(workspaceId: string): Promise<Task[]> {
     .eq('workspace_id', workspaceId)
     .order('created_at', { ascending: false });
 
-  let tasks: Task[] = [];
-
-  // Si hay tareas, mapearlas
   if (data && data.length > 0) {
-    tasks = ((data ?? []) as TaskRow[]).map(mapTaskFromDB);
-  } else if (error && error.code !== 'PGRST116') {
-    // Si es un error de RLS, intentar con la función
-    const { data: sharedTasks, error: sharedError } = await supabase
-      .rpc('get_workspace_tasks', { p_workspace_id: workspaceId } as never) as { data: TaskRow[] | null; error: { message: string } | null };
-    
-    if (sharedError) {
+    return ((data ?? []) as TaskRow[]).map(mapTaskFromDB);
+  }
+
+  // Intentar con la función SECURITY DEFINER (workspaces compartidos)
+  const { data: sharedTasks, error: sharedError } = await supabase
+    .rpc('get_workspace_tasks', { p_workspace_id: workspaceId } as never) as { data: TaskRow[] | null; error: { message: string } | null };
+
+  if (sharedError) {
+    if (error && error.code !== 'PGRST116') {
       console.error('Error listando tareas:', sharedError);
       throw new Error(`Error listando tareas: ${sharedError.message}`);
     }
-    
-    tasks = ((sharedTasks ?? []) as TaskRow[]).map(mapTaskFromDB);
-  } else {
-    // Si no hay error pero tampoco datos, intentar con función por si es compartido
-    const { data: sharedTasks, error: sharedError } = await supabase
-      .rpc('get_workspace_tasks', { p_workspace_id: workspaceId } as never) as { data: TaskRow[] | null; error: { message: string } | null };
-    
-    if (sharedError) {
-      console.error('Error listando tareas compartidas:', sharedError);
-      return [];
-    }
-    
-    tasks = ((sharedTasks ?? []) as TaskRow[]).map(mapTaskFromDB);
+    console.error('Error listando tareas compartidas:', sharedError);
+    return [];
   }
 
-  // Cargar assignees y subtareas para todas las tareas
+  return ((sharedTasks ?? []) as TaskRow[]).map(mapTaskFromDB);
+}
+
+export async function listTasksLite(workspaceId: string): Promise<Task[]> {
+  const supabase = await createClient();
+  return listWorkspaceTasksBase(supabase, workspaceId);
+}
+
+/**
+ * Carga las tareas con tags (sin assignees ni subtareas).
+ * Usado por el overview para la primera carga rápida con tags visibles.
+ */
+export async function listTasksWithTags(workspaceId: string): Promise<Task[]> {
+  const supabase = await createClient();
+  let tasks = await listWorkspaceTasksBase(supabase, workspaceId);
+
   if (tasks.length > 0) {
     const taskIds = tasks.map(t => t.id);
-    const assigneesMap = await loadTaskAssignees(supabase, taskIds);
+    const tagsMap = await loadTaskTags(supabase, taskIds);
+    tasks = tasks.map(task => ({
+      ...task,
+      tags: tagsMap.get(task.id) || [],
+    }));
+  }
+
+  return tasks;
+}
+
+export async function listTasks(workspaceId: string): Promise<Task[]> {
+  const supabase = await createClient();
+  let tasks = await listWorkspaceTasksBase(supabase, workspaceId);
+
+  // Cargar assignees, subtareas y tags para todas las tareas
+  if (tasks.length > 0) {
+    const taskIds = tasks.map(t => t.id);
+    const [assigneesMap, tagsMap] = await Promise.all([
+      loadTaskAssignees(supabase, taskIds),
+      loadTaskTags(supabase, taskIds),
+    ]);
     
     // Cargar subtareas
     const { data: subtasksData } = await supabase
@@ -383,6 +459,7 @@ export async function listTasks(workspaceId: string): Promise<Task[]> {
       ...task,
       assignees: assigneesMap.get(task.id) || [],
       subtasks: subtasksMap.get(task.id) || [],
+      tags: tagsMap.get(task.id) || [],
     }));
   }
 
@@ -432,6 +509,10 @@ export async function getTask(id: string): Promise<Task | null> {
   // Cargar assignees
   const assigneesMap = await loadTaskAssignees(supabase, [id]);
   task.assignees = assigneesMap.get(id) || [];
+
+  // Cargar tags
+  const tagsMap = await loadTaskTags(supabase, [id]);
+  task.tags = tagsMap.get(id) || [];
 
   return task;
 }

@@ -151,6 +151,14 @@ export async function listTasks(workspaceId: string): Promise<Task[]> {
   return data.tasks.filter((t) => t.workspaceId === workspaceId);
 }
 
+export async function listTasksLite(workspaceId: string): Promise<Task[]> {
+  return listTasks(workspaceId);
+}
+
+export async function listTasksWithTags(workspaceId: string): Promise<Task[]> {
+  return listTasks(workspaceId);
+}
+
 export async function getTask(id: string): Promise<Task | null> {
   const data = await readData();
   return data.tasks.find((t) => t.id === id) || null;

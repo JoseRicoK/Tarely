@@ -38,6 +38,22 @@ export interface WorkspaceSection {
   updatedAt: string;
 }
 
+export interface WorkspaceTag {
+  id: string;
+  workspaceId: string;
+  name: string;
+  color: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaskTag {
+  id: string;
+  tagId: string;
+  name: string;
+  color: string;
+}
+
 export interface TaskAssignee {
   id: string;
   userId: string;
@@ -75,6 +91,7 @@ export interface Task {
   subtasks?: Subtask[]; // Subtareas
   recurrence?: RecurrenceRule; // Regla de recurrencia (null = tarea normal)
   nextDueAt?: string; // Cuándo aparece como pendiente (solo recurrentes)
+  tags?: TaskTag[]; // Etiquetas asignadas
 }
 
 export interface TareAIData {
@@ -136,6 +153,17 @@ export interface UpdateSectionInput {
   icon?: string;
   color?: string;
   order?: number;
+}
+
+export interface CreateTagInput {
+  workspaceId: string;
+  name: string;
+  color: string;
+}
+
+export interface UpdateTagInput {
+  name?: string;
+  color?: string;
 }
 
 // Tipos para la API de IA

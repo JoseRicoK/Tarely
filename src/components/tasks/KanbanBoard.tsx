@@ -19,7 +19,7 @@ import {
   horizontalListSortingStrategy,
   arrayMove,
 } from "@dnd-kit/sortable";
-import type { Task, TaskAssignee, WorkspaceSection } from "@/lib/types";
+import type { Task, TaskAssignee, TaskTag, WorkspaceSection } from "@/lib/types";
 import { KanbanColumn } from "./KanbanColumn";
 import { KanbanCardDraggable, KanbanCardStatic } from "./KanbanCard";
 import { Button } from "@/components/ui/button";
@@ -42,9 +42,11 @@ interface KanbanBoardProps {
   onAssigneesChange?: (taskId: string, assignees: TaskAssignee[]) => void;
   onDueDateChange?: (taskId: string, dueDate: string | null) => void;
   onImportanceChange?: (taskId: string, importance: number) => void;
+  onTagsChange?: (taskId: string, tags: TaskTag[]) => void;
   onQuickDelete?: (task: Task) => void;
   onAddSection?: () => void;
   searchQuery: string;
+  selectedTagIds?: string[];
   sortField: "importance" | "createdAt";
   sortOrder: "asc" | "desc";
 }
@@ -65,9 +67,11 @@ export function KanbanBoard({
   onAssigneesChange,
   onDueDateChange,
   onImportanceChange,
+  onTagsChange,
   onQuickDelete,
   onAddSection,
   searchQuery,
+  selectedTagIds,
   sortField,
   sortOrder,
 }: KanbanBoardProps) {
@@ -101,7 +105,15 @@ export function KanbanBoard({
       result = result.filter(
         (t) =>
           t.title.toLowerCase().includes(query) ||
-          t.description?.toLowerCase().includes(query)
+          t.description?.toLowerCase().includes(query) ||
+          t.tags?.some(tag => tag.name.toLowerCase().includes(query))
+      );
+    }
+
+    // Filter by selected tags
+    if (selectedTagIds && selectedTagIds.length > 0) {
+      result = result.filter((t) =>
+        selectedTagIds.some(tagId => t.tags?.some(tt => tt.tagId === tagId))
       );
     }
 
@@ -119,7 +131,7 @@ export function KanbanBoard({
     });
 
     return result;
-  }, [tasks, searchQuery, sortField, sortOrder]);
+  }, [tasks, searchQuery, selectedTagIds, sortField, sortOrder]);
 
   // Helper to determine which section a task belongs to
   // Uses sectionId if available, otherwise falls back to legacy completed flag
@@ -256,6 +268,7 @@ export function KanbanBoard({
                     onAssigneesChange={onAssigneesChange}
                     onDueDateChange={onDueDateChange}
                     onImportanceChange={onImportanceChange}
+                    onTagsChange={onTagsChange}
                     onQuickDelete={section.name === "Completadas" ? onQuickDelete : undefined}
                   />
                 ))}

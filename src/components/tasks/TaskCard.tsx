@@ -54,7 +54,7 @@ import {
   FileText,
   type LucideIcon,
 } from "lucide-react";
-import type { Task, TaskAssignee, WorkspaceSection, Subtask } from "@/lib/types";
+import type { Task, TaskAssignee, TaskTag, WorkspaceSection, Subtask } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -76,6 +76,7 @@ const iconMap: Record<string, LucideIcon> = {
 import { TaskAssignees } from "./TaskAssignees";
 import { SubtaskList } from "./SubtaskList";
 import { RecurrenceBadge } from "./RecurrenceSelector";
+import { TagSelector } from "./TagSelector";
 
 interface TaskCardProps {
   task: Task;
@@ -91,6 +92,7 @@ interface TaskCardProps {
   onDueDateChange?: (taskId: string, dueDate: string | null) => void;
   onImportanceChange?: (taskId: string, importance: number) => void;
   onSubtasksChange?: (taskId: string, subtasks: Subtask[]) => void;
+  onTagsChange?: (taskId: string, tags: TaskTag[]) => void;
   onQuickDelete?: (task: Task) => void; // Para eliminar directamente sin confirmación (vista completadas)
 }
 
@@ -124,12 +126,14 @@ export function TaskCard({
   onDueDateChange,
   onImportanceChange,
   onSubtasksChange,
+  onTagsChange,
   onQuickDelete,
 }: TaskCardProps) {
   const router = useRouter();
   const [isGeneratingSubtasks, setIsGeneratingSubtasks] = useState(false);
   const [assigneesOpen, setAssigneesOpen] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [tagSelectorOpen, setTagSelectorOpen] = useState(false);
   
   const timeAgo = formatDistanceToNow(new Date(task.createdAt), {
     addSuffix: true,
@@ -141,12 +145,17 @@ export function TaskCard({
 
   // Navegar a la página de detalle de la tarea
   const handleNavigateToTask = () => {
-    router.push(`/workspace/${workspaceId}/task/${task.id}`);
+    const params = new URLSearchParams({ view: "list" });
+    if (currentSectionId) {
+      params.set("section", currentSectionId);
+    }
+    router.push(`/workspace/${workspaceId}/task/${task.id}?${params.toString()}`);
   };
 
   const hasAssignees = task.assignees && task.assignees.length > 0;
   const hasDueDate = !!task.dueDate;
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+  const hasTags = task.tags && task.tags.length > 0;
 
   // Función para generar subtareas con IA
   const handleGenerateSubtasks = async () => {
@@ -410,6 +419,23 @@ export function TaskCard({
               />
             </div>
           )}
+
+          {/* Etiquetas - en móvil solo si hay tags, en desktop hover si vacío */}
+          {!task.completed && onTagsChange && (
+            <div className={cn(
+              hasTags ? "opacity-100" : "hidden md:block md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+            )}>
+              <TagSelector
+                taskId={task.id}
+                workspaceId={workspaceId}
+                tags={task.tags || []}
+                onTagsChange={(tags) => onTagsChange(task.id, tags)}
+                compact
+                externalOpen={tagSelectorOpen}
+                onExternalOpenChange={setTagSelectorOpen}
+              />
+            </div>
+          )}
         </div>
 
         {/* Subtareas */}
@@ -557,6 +583,16 @@ export function TaskCard({
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 Fecha límite
+              </DropdownMenuItem>
+            )}
+            {/* Etiquetas - visible solo en móvil */}
+            {!task.completed && onTagsChange && (
+              <DropdownMenuItem
+                onClick={() => setTimeout(() => setTagSelectorOpen(true), 100)}
+                className="md:hidden"
+              >
+                <Tag className="mr-2 h-4 w-4" />
+                Etiquetas
               </DropdownMenuItem>
             )}
             {/* Generar subtareas - visible en dropdown en móvil */}

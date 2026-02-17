@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -63,6 +63,7 @@ import {
   TaskFilters,
   type SortField,
   type SortOrder,
+  type TagFilterItem,
 } from "@/components/tasks";
 import { DeleteDialog } from "@/components/ui/delete-dialog";
 
@@ -127,10 +128,19 @@ function getIconComponent(iconName: string): LucideIcon {
   return iconMap[iconName] || Folder;
 }
 
+interface WorkspaceOverviewResponse {
+  workspace: Workspace;
+  tasks: Task[];
+  sections: WorkspaceSection[];
+}
+
 export default function WorkspacePage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const workspaceId = params.id as string;
+  const viewModeFromQuery = searchParams.get("view");
+  const sectionIdFromQuery = searchParams.get("section");
 
   // State
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
@@ -166,80 +176,129 @@ export default function WorkspacePage() {
   const [sortField, setSortField] = useState<SortField>("importance");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<"list" | "kanban">(
+    viewModeFromQuery === "kanban" ? "kanban" : "list"
+  );
+  const taskDetailsHydrationRef = useRef(0);
 
-  // Fetch all data in parallel - Mucho más rápido
-  const fetchAllData = useCallback(async () => {
+  const applyNewTaskFlags = useCallback((taskList: Task[]): Task[] => {
     try {
-      // Ejecutar las 3 llamadas en paralelo en lugar de secuencialmente
-      const [workspaceRes, tasksRes, sectionsRes] = await Promise.all([
-        fetch(`/api/workspaces/${workspaceId}`),
-        fetch(`/api/tasks?workspaceId=${workspaceId}`),
-        fetch(`/api/sections?workspaceId=${workspaceId}`),
-      ]);
+      const storedData = sessionStorage.getItem("newTasksData");
+      let newTaskIds: string[] = [];
 
-      // Workspace
-      if (!workspaceRes.ok) {
-        if (workspaceRes.status === 404) {
+      if (storedData) {
+        const parsed = JSON.parse(storedData) as { tasks?: string[]; timestamp?: number };
+        const timestamp = typeof parsed.timestamp === "number" ? parsed.timestamp : 0;
+        const elapsed = Date.now() - timestamp;
+
+        if (elapsed > 20000) {
+          sessionStorage.removeItem("newTasksData");
+        } else if (Array.isArray(parsed.tasks)) {
+          newTaskIds = parsed.tasks;
+        }
+      }
+
+      return taskList.map((task) => ({
+        ...task,
+        isNew: newTaskIds.includes(task.id),
+      }));
+    } catch {
+      return taskList;
+    }
+  }, []);
+
+  // Fast initial load: one request for critical data + non-blocking hydration
+  const fetchAllData = useCallback(async () => {
+    setIsLoadingWorkspace(true);
+    setIsLoadingTasks(true);
+    setIsLoadingSections(true);
+
+    try {
+      const overviewRes = await fetch(`/api/workspaces/${workspaceId}/overview`);
+
+      if (!overviewRes.ok) {
+        if (overviewRes.status === 404) {
           toast.error("Workspace no encontrado");
           router.push("/app");
           return;
         }
-        throw new Error("Error al cargar workspace");
+        throw new Error("Error al cargar datos del workspace");
       }
-      const workspaceData = await workspaceRes.json();
-      setWorkspace(workspaceData);
-      setIsLoadingWorkspace(false);
 
-      // Tasks
-      if (tasksRes.ok) {
-        const tasksData = await tasksRes.json();
-        
-        // Verificar si las tareas "nuevas" aún son válidas
-        const storedData = sessionStorage.getItem('newTasksData');
-        let newTaskIds: string[] = [];
-        
-        if (storedData) {
-          const { tasks, timestamp } = JSON.parse(storedData);
-          const elapsed = Date.now() - timestamp;
-          
-          if (elapsed > 20000) {
-            sessionStorage.removeItem('newTasksData');
-          } else {
-            newTaskIds = tasks;
+      const overview = await overviewRes.json() as Partial<WorkspaceOverviewResponse>;
+      const tasksLite = applyNewTaskFlags(Array.isArray(overview.tasks) ? overview.tasks : []);
+
+      setWorkspace(overview.workspace ?? null);
+      setTasks(tasksLite);
+      setSections(Array.isArray(overview.sections) ? overview.sections : []);
+
+      if (tasksLite.length > 0) {
+        // Do not block first paint with assignees/subtasks hydration
+        const hydrateRequestId = ++taskDetailsHydrationRef.current;
+        void (async () => {
+          try {
+            const fullTasksRes = await fetch(`/api/tasks?workspaceId=${workspaceId}`);
+            if (!fullTasksRes.ok || hydrateRequestId !== taskDetailsHydrationRef.current) return;
+
+            const fullTasks = applyNewTaskFlags(await fullTasksRes.json() as Task[]);
+            const fullById = new Map(fullTasks.map((task) => [task.id, task]));
+
+            setTasks((prev) =>
+              prev.map((task) => {
+                const full = fullById.get(task.id);
+                if (!full) return task;
+                return {
+                  ...task,
+                  assignees: full.assignees,
+                  subtasks: full.subtasks,
+                  tags: full.tags,
+                };
+              })
+            );
+          } catch {
+            // Silent fail for background hydration
           }
-        }
-        
-        const tasksWithNewFlag = tasksData.map((task: Task) => ({
-          ...task,
-          isNew: newTaskIds.includes(task.id)
-        }));
-        
-        setTasks(tasksWithNewFlag);
+        })();
       }
-      setIsLoadingTasks(false);
 
-      // Sections
-      if (sectionsRes.ok) {
-        const sectionsData = await sectionsRes.json();
-        setSections(sectionsData);
-        // Set first section as active if none selected
-        if (sectionsData.length > 0 && !activeSectionId) {
-          setActiveSectionId(sectionsData[0].id);
-        }
-      }
+      setIsLoadingWorkspace(false);
+      setIsLoadingTasks(false);
       setIsLoadingSections(false);
-    } catch (error) {
+    } catch {
       toast.error("Error al cargar los datos");
       setIsLoadingWorkspace(false);
       setIsLoadingTasks(false);
       setIsLoadingSections(false);
     }
-  }, [workspaceId, router, activeSectionId]);
+  }, [workspaceId, router, applyNewTaskFlags]);
+
 
   useEffect(() => {
     fetchAllData();
   }, [fetchAllData]);
+
+  useEffect(() => {
+    if (sections.length === 0) return;
+
+    if (!activeSectionId) {
+      if (sectionIdFromQuery && sections.some((section) => section.id === sectionIdFromQuery)) {
+        setActiveSectionId(sectionIdFromQuery);
+        return;
+      }
+      setActiveSectionId(sections[0].id);
+      return;
+    }
+
+    const activeSectionExists = sections.some((section) => section.id === activeSectionId);
+    if (!activeSectionExists) {
+      if (sectionIdFromQuery && sections.some((section) => section.id === sectionIdFromQuery)) {
+        setActiveSectionId(sectionIdFromQuery);
+        return;
+      }
+      setActiveSectionId(sections[0].id);
+    }
+  }, [sections, activeSectionId, sectionIdFromQuery]);
 
   // Helper to determine which section a task belongs to
   // Uses sectionId if available, otherwise falls back to legacy completed flag
@@ -279,7 +338,15 @@ export default function WorkspacePage() {
       result = result.filter(
         (t) =>
           t.title.toLowerCase().includes(query) ||
-          t.description?.toLowerCase().includes(query)
+          t.description?.toLowerCase().includes(query) ||
+          t.tags?.some(tag => tag.name.toLowerCase().includes(query))
+      );
+    }
+
+    // Filter by selected tags
+    if (selectedTagIds.length > 0) {
+      result = result.filter((t) =>
+        selectedTagIds.some(tagId => t.tags?.some(tt => tt.tagId === tagId))
       );
     }
 
@@ -297,7 +364,7 @@ export default function WorkspacePage() {
     });
 
     return result;
-  }, [tasks, searchQuery, sortField, sortOrder, activeSectionId, getTaskSection]);
+  }, [tasks, searchQuery, selectedTagIds, sortField, sortOrder, activeSectionId, getTaskSection]);
 
   // Counts for tabs (using helper that handles legacy flags)
   const sectionCounts = useMemo(() => {
@@ -315,18 +382,33 @@ export default function WorkspacePage() {
     return counts;
   }, [tasks, sections, getTaskSection]);
 
+  // Derive unique workspace tags from all tasks (for filter UI)
+  const availableTags: TagFilterItem[] = useMemo(() => {
+    const seen = new Map<string, TagFilterItem>();
+    for (const task of tasks) {
+      if (task.tags) {
+        for (const tag of task.tags) {
+          if (!seen.has(tag.tagId)) {
+            seen.set(tag.tagId, { id: tag.tagId, name: tag.name, color: tag.color });
+          }
+        }
+      }
+    }
+    return Array.from(seen.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [tasks]);
+
   // Handler for changing task section (drag and drop or menu)
   // Función optimizada para re-fetch de tasks
   const refetchTasks = useCallback(async () => {
     try {
       const res = await fetch(`/api/tasks?workspaceId=${workspaceId}`);
       if (!res.ok) return;
-      const data = await res.json();
-      setTasks(data);
+      const data = await res.json() as Task[];
+      setTasks(applyNewTaskFlags(data));
     } catch {
       // Silently fail on refetch
     }
-  }, [workspaceId]);
+  }, [workspaceId, applyNewTaskFlags]);
 
   // Función optimizada para re-fetch de sections
   const refetchSections = useCallback(async () => {
@@ -796,6 +878,12 @@ export default function WorkspacePage() {
     );
   }, []);
 
+  const handleTagsChange = useCallback((taskId: string, tags: import("@/lib/types").TaskTag[]) => {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, tags } : t))
+    );
+  }, []);
+
   const handleRemoveRecurrence = useCallback(async (taskId: string) => {
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
@@ -1016,6 +1104,9 @@ export default function WorkspacePage() {
             setSortField(field);
             setSortOrder(order);
           }}
+          availableTags={availableTags}
+          selectedTagIds={selectedTagIds}
+          onSelectedTagsChange={setSelectedTagIds}
         />
 
         {isLoadingTasks || isLoadingSections ? (
@@ -1039,12 +1130,14 @@ export default function WorkspacePage() {
               onAssigneesChange={handleAssigneesChange}
               onDueDateChange={handleDueDateChange}
               onImportanceChange={handleImportanceChange}
+              onTagsChange={handleTagsChange}
               onQuickDelete={handleQuickDelete}
               onAddSection={() => {
                 setEditingSection(null);
                 setSectionDialogOpen(true);
               }}
               searchQuery={searchQuery}
+              selectedTagIds={selectedTagIds}
               sortField={sortField}
               sortOrder={sortOrder}
             />
@@ -1089,6 +1182,7 @@ export default function WorkspacePage() {
                 onDueDateChange={handleDueDateChange}
                 onImportanceChange={handleImportanceChange}
                 onSubtasksChange={handleSubtasksChange}
+                onTagsChange={handleTagsChange}
                 onQuickDelete={handleQuickDelete}
               />
             ))}
