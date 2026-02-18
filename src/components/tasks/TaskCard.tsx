@@ -386,10 +386,11 @@ export function TaskCard({
             <RecurrenceBadge recurrence={task.recurrence} compact />
           )}
 
-          {/* Fecha límite - en móvil siempre visible (solo icono), en desktop hover si vacío */}
+          {/* Fecha límite - siempre en flujo; w-0/overflow-hidden cuando vacío para no romper línea */}
           {!task.completed && onDueDateChange && (
             <div className={cn(
-              hasDueDate ? "opacity-100" : "md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+              "shrink-0 overflow-hidden",
+              hasDueDate ? "w-auto" : "w-0 md:group-hover:w-auto"
             )}>
               <DatePicker
                 value={task.dueDate}
@@ -403,27 +404,11 @@ export function TaskCard({
             </div>
           )}
 
-          {/* Asignados - en móvil solo si hay asignados, en desktop hover si vacío */}
-          {!task.completed && onAssigneesChange && (
-            <div className={cn(
-              hasAssignees ? "opacity-100" : "hidden md:block md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-            )}>
-              <TaskAssignees
-                taskId={task.id}
-                workspaceId={workspaceId}
-                assignees={task.assignees || []}
-                onAssigneesChange={(assignees) => onAssigneesChange(task.id, assignees)}
-                compact
-                externalOpen={assigneesOpen}
-                onExternalOpenChange={setAssigneesOpen}
-              />
-            </div>
-          )}
-
-          {/* Etiquetas - en móvil solo si hay tags, en desktop hover si vacío */}
+          {/* Etiquetas - siempre en flujo; w-0/overflow-hidden cuando vacío */}
           {!task.completed && onTagsChange && (
             <div className={cn(
-              hasTags ? "opacity-100" : "hidden md:block md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+              "shrink-0 overflow-hidden",
+              hasTags ? "w-auto" : "w-0 md:group-hover:w-auto"
             )}>
               <TagSelector
                 taskId={task.id}
@@ -433,6 +418,24 @@ export function TaskCard({
                 compact
                 externalOpen={tagSelectorOpen}
                 onExternalOpenChange={setTagSelectorOpen}
+              />
+            </div>
+          )}
+
+          {/* Asignados - siempre en flujo; w-0/overflow-hidden cuando vacío */}
+          {!task.completed && onAssigneesChange && (
+            <div className={cn(
+              "shrink-0 overflow-hidden",
+              hasAssignees ? "w-auto" : "w-0 md:group-hover:w-auto"
+            )}>
+              <TaskAssignees
+                taskId={task.id}
+                workspaceId={workspaceId}
+                assignees={task.assignees || []}
+                onAssigneesChange={(assignees) => onAssigneesChange(task.id, assignees)}
+                compact
+                externalOpen={assigneesOpen}
+                onExternalOpenChange={setAssigneesOpen}
               />
             </div>
           )}

@@ -306,13 +306,46 @@ export async function createNote(input: CreateNoteInput): Promise<Note> {
   return mapNoteFromDB(data as unknown as NoteRow);
 }
 
+/**
+ * Elimina los datos base64 del contenido TipTap antes de guardar en la BD.
+ * Los nodos image/pdf/officedoc con src "data:..." se convierten en nodos
+ * de texto indicando que el adjunto debe volver a subirse.
+ * Esto evita timeouts por payloads enormes en la columna content_json.
+ */
+function sanitizeContentJson(content: Record<string, unknown>): Record<string, unknown> {
+  const sanitizeNode = (node: Record<string, unknown>): Record<string, unknown> => {
+    const type = node.type as string | undefined;
+    const attrs = node.attrs as Record<string, unknown> | undefined;
+
+    // Eliminar base64 de imágenes
+    if (type === 'image' && attrs?.src && typeof attrs.src === 'string' && attrs.src.startsWith('data:')) {
+      return { type: 'paragraph', content: [{ type: 'text', text: '[Imagen eliminada: vuelve a subir el archivo]' }] };
+    }
+
+    // Eliminar base64 de PDFs y documentos Office
+    if ((type === 'pdf' || type === 'officedoc') && attrs?.src && typeof attrs.src === 'string' && attrs.src.startsWith('data:')) {
+      const label = attrs.fileName ?? 'Archivo';
+      return { type: 'paragraph', content: [{ type: 'text', text: `[${label}: archivo no guardado, vuelve a subir]` }] };
+    }
+
+    // Recursión sobre los hijos
+    if (Array.isArray(node.content)) {
+      return { ...node, content: (node.content as Record<string, unknown>[]).map(sanitizeNode) };
+    }
+
+    return node;
+  };
+
+  return sanitizeNode(content);
+}
+
 export async function updateNote(id: string, input: UpdateNoteInput): Promise<Note | null> {
   const supabase = await createClient();
   const updates: Record<string, unknown> = {};
 
   if (input.title !== undefined) updates.title = input.title;
   if (input.folderId !== undefined) updates.folder_id = input.folderId;
-  if (input.contentJson !== undefined) updates.content_json = input.contentJson;
+  if (input.contentJson !== undefined) updates.content_json = sanitizeContentJson(input.contentJson);
   if (input.contentText !== undefined) updates.content_text = input.contentText;
   if (input.isPinned !== undefined) updates.is_pinned = input.isPinned;
   if (input.isFavorite !== undefined) updates.is_favorite = input.isFavorite;

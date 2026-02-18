@@ -533,8 +533,7 @@ export function KanbanCardDraggable({
               {!task.completed && onDueDateChange && (
                 <div 
                   className={cn(
-                    "transition-opacity duration-200",
-                    !hasDueDate && "sm:opacity-0 sm:group-hover:opacity-100"
+                    hasDueDate ? "block" : "hidden sm:group-hover:block"
                   )}
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
@@ -551,12 +550,32 @@ export function KanbanCardDraggable({
                 </div>
               )}
 
+              {/* Tags - en móvil solo si hay tags, en desktop hover si vacío */}
+              {!task.completed && onTagsChange && (
+                <div 
+                  className={cn(
+                    hasTags ? "block" : "hidden sm:group-hover:block"
+                  )}
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <TagSelector
+                    taskId={task.id}
+                    workspaceId={workspaceId}
+                    tags={task.tags || []}
+                    onTagsChange={(tags) => onTagsChange(task.id, tags)}
+                    compact
+                    externalOpen={tagSelectorOpen}
+                    onExternalOpenChange={setTagSelectorOpen}
+                  />
+                </div>
+              )}
+
               {/* Assignees - en móvil solo si hay asignados, en desktop hover si vacío */}
               {onAssigneesChange ? (
                 <div 
                   className={cn(
-                    "transition-opacity duration-200",
-                    !hasAssignees && "hidden sm:block sm:opacity-0 sm:group-hover:opacity-100"
+                    hasAssignees ? "block" : "hidden sm:group-hover:block"
                   )}
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
@@ -574,28 +593,6 @@ export function KanbanCardDraggable({
               ) : hasAssignees ? (
                 <AssigneesAvatars assignees={task.assignees || []} />
               ) : null}
-
-              {/* Tags - en móvil solo si hay tags, en desktop hover si vacío */}
-              {!task.completed && onTagsChange && (
-                <div 
-                  className={cn(
-                    "transition-opacity duration-200",
-                    !hasTags && "hidden sm:block sm:opacity-0 sm:group-hover:opacity-100"
-                  )}
-                  onClick={(e) => e.stopPropagation()}
-                  onPointerDown={(e) => e.stopPropagation()}
-                >
-                  <TagSelector
-                    taskId={task.id}
-                    workspaceId={workspaceId}
-                    tags={task.tags || []}
-                    onTagsChange={(tags) => onTagsChange(task.id, tags)}
-                    compact
-                    externalOpen={tagSelectorOpen}
-                    onExternalOpenChange={setTagSelectorOpen}
-                  />
-                </div>
-              )}
 
               {/* Subtasks indicator */}
               {task.subtasks && task.subtasks.length > 0 && (

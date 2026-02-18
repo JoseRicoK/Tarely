@@ -741,7 +741,7 @@ export function NotesPageClient() {
             {/* Editor - Touch optimized */}
             <div className="flex-1 flex overflow-hidden">
               <div className="flex-1 overflow-y-auto bg-background/60 backdrop-blur-sm overscroll-contain">
-                <NoteEditor ref={editorRef} key={selectedNote.id} content={selectedNote.contentJson} onUpdate={handleUpdateNote} />
+                <NoteEditor ref={editorRef} key={selectedNote.id} content={selectedNote.contentJson} onUpdate={handleUpdateNote} noteId={selectedNote.id} />
               </div>
             </div>
           </>
