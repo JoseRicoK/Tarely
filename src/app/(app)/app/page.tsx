@@ -14,6 +14,7 @@ import {
   useSensor,
   useSensors,
   DragEndEvent,
+  MeasuringStrategy,
 } from "@dnd-kit/core";
 import {
   arrayMove,
@@ -59,13 +60,19 @@ export default function AppHomePage() {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 5,
       },
     }),
     useSensor(KeyboardSensor, {
       coordinateGetter: sortableKeyboardCoordinates,
     })
   );
+
+  const measuringConfig = {
+    droppable: {
+      strategy: MeasuringStrategy.Always,
+    },
+  };
 
   // Verificar si es primera vez (desde Supabase)
   useEffect(() => {
@@ -311,6 +318,7 @@ export default function AppHomePage() {
           sensors={sensors}
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
+          measuring={measuringConfig}
         >
           <SortableContext
             items={workspaces.map((w) => w.id)}
