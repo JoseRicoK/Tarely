@@ -40,10 +40,11 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
+  Tag,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { NoteFolder, Note, NoteTemplate, Workspace } from "@/lib/types";
+import type { NoteFolder, Note, NoteTemplate, Workspace, WorkspaceTag } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -82,6 +83,12 @@ interface NotesSidebarProps {
   onOpenTemplates: () => void;
   onCreateNoteFromTemplate: (template: NoteTemplate) => void;
   onMoveNote?: (noteId: string, targetFolderId: string | null) => void;
+  onDeleteNote?: (note: Note) => void;
+  // Tags
+  workspaceTags?: WorkspaceTag[];
+  selectedTagFilter?: string | null;
+  onTagFilterChange?: (tagId: string | null) => void;
+  noteTagCounts?: Record<string, number>;
 }
 
 function getIcon(iconName: string, className?: string) {
@@ -126,6 +133,7 @@ function FolderItem({
   onMoveNote,
   dragOverFolderId,
   onDragOverFolder,
+  onDeleteNote,
 }: {
   folder: NoteFolder & { children: NoteFolder[] };
   depth?: number;
@@ -144,6 +152,7 @@ function FolderItem({
   onMoveNote?: (noteId: string, targetFolderId: string | null) => void;
   dragOverFolderId: string | null;
   onDragOverFolder: (folderId: string | null) => void;
+  onDeleteNote?: (note: Note) => void;
 }) {
   const isSelected = selectedFolderId === folder.id;
   const allFolderNotes = notes.filter((n) => n.folderId === folder.id);
@@ -247,6 +256,7 @@ function FolderItem({
               onMoveNote={onMoveNote}
               dragOverFolderId={dragOverFolderId}
               onDragOverFolder={onDragOverFolder}
+              onDeleteNote={onDeleteNote}
             />
           ))}
           {folderNotes.map((note) => (
@@ -258,7 +268,7 @@ function FolderItem({
                 e.dataTransfer.effectAllowed = 'move';
               }}
               className={cn(
-                "flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
+                "group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
                 selectedNoteId === note.id
                   ? "bg-accent text-accent-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
@@ -277,6 +287,15 @@ function FolderItem({
               )}>{note.title || "Sin título"}</span>
               {note.isPinned && <Pin className="h-3 w-3 shrink-0 text-muted-foreground/40" />}
               {note.isFavorite && <Star className="h-3 w-3 shrink-0 text-yellow-500 fill-yellow-500" />}
+              {onDeleteNote && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDeleteNote(note); }}
+                  className="shrink-0 p-0.5 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                  title="Eliminar nota"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
+              )}
             </div>
           ))}
         </div>
@@ -306,8 +325,14 @@ export function NotesSidebar({
   onOpenTemplates,
   onCreateNoteFromTemplate,
   onMoveNote,
+  onDeleteNote,
+  workspaceTags = [],
+  selectedTagFilter,
+  onTagFilterChange,
+  noteTagCounts = {},
 }: NotesSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [tagsCollapsed, setTagsCollapsed] = useState(false);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   // Folder open/close state managed at sidebar level for persistence
   const [closedFolders, setClosedFolders] = useState<Set<string>>(new Set());
@@ -542,7 +567,7 @@ export function NotesSidebar({
                   <div
                     key={note.id}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
+                      "group flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
                       selectedNoteId === note.id
                         ? "bg-accent text-accent-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
@@ -550,7 +575,16 @@ export function NotesSidebar({
                     onClick={() => onSelectNote(note.id)}
                   >
                     <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500 shrink-0" />
-                    <span className="truncate">{note.title || "Sin título"}</span>
+                    <span className="truncate flex-1">{note.title || "Sin título"}</span>
+                    {onDeleteNote && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onDeleteNote(note); }}
+                        className="shrink-0 p-0.5 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                        title="Eliminar nota"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
                 ))}
             </div>
@@ -582,6 +616,7 @@ export function NotesSidebar({
               onMoveNote={onMoveNote}
               dragOverFolderId={dragOverFolderId}
               onDragOverFolder={setDragOverFolderId}
+              onDeleteNote={onDeleteNote}
             />
           ))}
           {folderTree.length === 0 && (
@@ -622,7 +657,7 @@ export function NotesSidebar({
                     e.dataTransfer.effectAllowed = 'move';
                   }}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
+                    "group flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
                     selectedNoteId === note.id
                       ? "bg-accent text-accent-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
@@ -639,6 +674,15 @@ export function NotesSidebar({
                     note.completed && "line-through opacity-70"
                   )}>{note.title || "Sin título"}</span>
                   {note.isPinned && <Pin className="h-3 w-3 shrink-0 text-muted-foreground/40" />}
+                  {onDeleteNote && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDeleteNote(note); }}
+                      className="shrink-0 p-0.5 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
+                      title="Eliminar nota"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -647,6 +691,63 @@ export function NotesSidebar({
 
         {/* Separator */}
         <div className="mx-4 my-2 border-t border-border/20" />
+
+        {/* Tags section */}
+        {workspaceTags.length > 0 && (
+          <div className="px-3 pb-1">
+            <button
+              className="w-full flex items-center gap-2 px-2 py-1 mb-1 hover:bg-accent/40 rounded-md transition-colors group"
+              onClick={() => setTagsCollapsed(c => !c)}
+            >
+              <Tag className="h-3.5 w-3.5 text-muted-foreground/50" />
+              <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em] flex-1 text-left">
+                Etiquetas
+              </span>
+              <ChevronDown className={cn(
+                "h-3.5 w-3.5 text-muted-foreground/40 transition-transform",
+                tagsCollapsed && "-rotate-90"
+              )} />
+            </button>
+
+            {!tagsCollapsed && (
+              <div className="space-y-0.5">
+                {workspaceTags.map(tag => {
+                  const count = noteTagCounts[tag.id] ?? 0;
+                  const isActive = selectedTagFilter === tag.id;
+                  return (
+                    <button
+                      key={tag.id}
+                      onClick={() => onTagFilterChange?.(isActive ? null : tag.id)}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer text-sm transition-colors text-left",
+                        isActive
+                          ? "bg-accent text-accent-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
+                      )}
+                    >
+                      <span
+                        className="inline-flex items-center shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border"
+                        style={{
+                          backgroundColor: `${tag.color}18`,
+                          color: tag.color,
+                          borderColor: `${tag.color}30`,
+                        }}
+                      >
+                        {tag.name}
+                      </span>
+                      <span className="flex-1" />
+                      {count > 0 && (
+                        <span className="text-[11px] text-muted-foreground/50 tabular-nums bg-muted/40 px-1.5 py-0.5 rounded-md">
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Templates section — always visible, visual only */}
         <div className="px-3 pb-4">

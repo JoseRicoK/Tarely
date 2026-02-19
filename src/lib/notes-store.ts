@@ -7,6 +7,7 @@ import type {
   Note,
   NoteFolder,
   NoteTemplate,
+  TaskTag,
   CreateNoteInput,
   UpdateNoteInput,
   CreateNoteFolderInput,
@@ -98,6 +99,34 @@ function mapNoteFromDB(row: NoteRow): Note {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+// ============== NOTE TAGS ==============
+
+async function loadNoteTags(supabase: Awaited<ReturnType<typeof createClient>>, noteIds: string[]): Promise<Map<string, TaskTag[]>> {
+  if (noteIds.length === 0) return new Map();
+  const { data, error } = await supabase
+    .from('note_tags')
+    .select('note_id, tag_id, workspace_tags(id, name, color)')
+    .in('note_id', noteIds);
+
+  if (error) {
+    console.error('Error loading note tags:', error);
+    return new Map();
+  }
+
+  const map = new Map<string, TaskTag[]>();
+  for (const row of (data ?? []) as unknown as Array<{ note_id: string; tag_id: string; workspace_tags: { id: string; name: string; color: string } }>) {
+    const tag: TaskTag = {
+      id: row.tag_id,
+      tagId: row.workspace_tags.id,
+      name: row.workspace_tags.name,
+      color: row.workspace_tags.color,
+    };
+    if (!map.has(row.note_id)) map.set(row.note_id, []);
+    map.get(row.note_id)!.push(tag);
+  }
+  return map;
 }
 
 function mapTemplateFromDB(row: NoteTemplateRow): NoteTemplate {
@@ -227,7 +256,9 @@ export async function listNotes(workspaceId: string, folderId?: string | null): 
   const { data, error } = await query;
 
   if (error) throw new Error(`Error listing notes: ${error.message}`);
-  return ((data ?? []) as unknown as NoteRow[]).map(mapNoteFromDB);
+  const notes = ((data ?? []) as unknown as NoteRow[]).map(mapNoteFromDB);
+  const tagMap = await loadNoteTags(supabase, notes.map(n => n.id));
+  return notes.map(n => ({ ...n, tags: tagMap.get(n.id) ?? [] }));
 }
 
 export async function listAllNotes(workspaceId: string): Promise<Note[]> {
@@ -239,7 +270,9 @@ export async function listAllNotes(workspaceId: string): Promise<Note[]> {
     .order('updated_at', { ascending: false });
 
   if (error) throw new Error(`Error listing all notes: ${error.message}`);
-  return ((data ?? []) as unknown as NoteRow[]).map(mapNoteFromDB);
+  const notes = ((data ?? []) as unknown as NoteRow[]).map(mapNoteFromDB);
+  const tagMap = await loadNoteTags(supabase, notes.map(n => n.id));
+  return notes.map(n => ({ ...n, tags: tagMap.get(n.id) ?? [] }));
 }
 
 export async function searchNotes(workspaceId: string, query: string): Promise<Note[]> {
@@ -253,7 +286,9 @@ export async function searchNotes(workspaceId: string, query: string): Promise<N
     .limit(20);
 
   if (error) throw new Error(`Error searching notes: ${error.message}`);
-  return ((data ?? []) as unknown as NoteRow[]).map(mapNoteFromDB);
+  const notes = ((data ?? []) as unknown as NoteRow[]).map(mapNoteFromDB);
+  const tagMap = await loadNoteTags(supabase, notes.map(n => n.id));
+  return notes.map(n => ({ ...n, tags: tagMap.get(n.id) ?? [] }));
 }
 
 export async function getNote(id: string): Promise<Note | null> {
@@ -269,7 +304,9 @@ export async function getNote(id: string): Promise<Note | null> {
     throw new Error(`Error getting note: ${error.message}`);
   }
 
-  return mapNoteFromDB(data as unknown as NoteRow);
+  const note = mapNoteFromDB(data as unknown as NoteRow);
+  const tagMap = await loadNoteTags(supabase, [note.id]);
+  return { ...note, tags: tagMap.get(note.id) ?? [] };
 }
 
 export async function createNote(input: CreateNoteInput): Promise<Note> {
@@ -279,7 +316,7 @@ export async function createNote(input: CreateNoteInput): Promise<Note> {
 
   // If templateId provided, get template content
   let contentJson = input.contentJson || {};
-  let contentText = input.contentText || '';
+  const contentText = input.contentText || '';
 
   if (input.templateId) {
     const template = await getTemplate(input.templateId);

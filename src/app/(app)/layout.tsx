@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Toaster } from "@/components/ui/sonner";
 import { UserMenu, UserProvider } from "@/components/auth";
 import { AppNavLinks } from "@/components/app-nav-links";
+import { QueryProvider } from "@/components/query-provider";
 
 export const metadata: Metadata = {
   title: "Tarely - Gestión de Tareas con IA",
@@ -20,6 +21,7 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
+    <QueryProvider>
     <UserProvider>
       {/* Fondo global sutil */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
@@ -58,5 +60,6 @@ export default function AppLayout({
       </div>
       <Toaster position="bottom-right" richColors closeButton />
     </UserProvider>
+    </QueryProvider>
   );
 }

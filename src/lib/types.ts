@@ -297,6 +297,7 @@ export interface Note {
   workspaceName?: string;
   workspaceColor?: string;
   workspaceIcon?: string;
+  tags?: TaskTag[];
 }
 
 export interface NoteTemplate {

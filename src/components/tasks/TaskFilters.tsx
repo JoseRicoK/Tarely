@@ -146,10 +146,13 @@ export function TaskFilters({
                       onClick={() => toggleTag(tag.id)}
                       className={cn(
                         "inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold border transition-all",
-                        isSelected && "shadow-sm"
+                        isSelected
+                          ? "ring-2 ring-offset-1 ring-offset-background shadow-sm"
+                          : "opacity-70 hover:opacity-100"
                       )}
                       style={isSelected ? getTagStyleActive(tag.color) : getTagStyle(tag.color)}
                     >
+                      {isSelected && <span className="h-1.5 w-1.5 rounded-full bg-current" />}
                       {tag.name}
                     </button>
                   );

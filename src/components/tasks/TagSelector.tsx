@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useTags, queryKeys } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -85,34 +87,16 @@ export function TagSelector({
     rawSetIsOpen(val);
   };
 
-  const [workspaceTags, setWorkspaceTags] = useState<WorkspaceTag[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [assigningTagId, setAssigningTagId] = useState<string | null>(null);
   const [removingTagId, setRemovingTagId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  const fetchWorkspaceTags = async () => {
-    setIsLoading(true);
-    try {
-      const res = await fetch(`/api/tags?workspaceId=${workspaceId}`);
-      if (res.ok) {
-        const data = await res.json();
-        setWorkspaceTags(data);
-      }
-    } catch {
-      toast.error("Error al cargar etiquetas");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const qc = useQueryClient();
+  const { data: workspaceTags = [], isPending: isLoading } = useTags(workspaceId);
 
   useEffect(() => {
-    if (isOpen) {
-      fetchWorkspaceTags();
-      setShowCreateForm(false);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, workspaceId]);
+    if (isOpen) setShowCreateForm(false);
+  }, [isOpen]);
 
   const handleAssignTag = async (tagId: string) => {
     // Check if already assigned
@@ -159,7 +143,7 @@ export function TagSelector({
   };
 
   const handleTagCreated = (newTag: WorkspaceTag) => {
-    setWorkspaceTags(prev => [...prev, newTag]);
+    void qc.invalidateQueries({ queryKey: queryKeys.tags(workspaceId) });
     setShowCreateForm(false);
     // Auto-assign the new tag
     handleAssignTag(newTag.id);
@@ -170,7 +154,7 @@ export function TagSelector({
       const res = await fetch(`/api/tags/${tagId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Error al eliminar etiqueta");
 
-      setWorkspaceTags(prev => prev.filter(t => t.id !== tagId));
+      void qc.invalidateQueries({ queryKey: queryKeys.tags(workspaceId) });
       // Also remove from task if assigned
       if (tags.some(t => t.tagId === tagId)) {
         onTagsChange(tags.filter(t => t.tagId !== tagId));

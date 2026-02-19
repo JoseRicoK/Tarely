@@ -293,7 +293,16 @@ export function KanbanCardDraggable({
   // Track if we're dragging to prevent click navigation
   const wasDragging = React.useRef(false);
 
-  // Update ref when dragging state changes
+  // Prevent navigation for 300ms after any popup closes.
+  const popupJustClosed = React.useRef(false);
+  const popupJustClosedTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const setPopupCloseGuard = () => {
+    if (popupJustClosedTimer.current) clearTimeout(popupJustClosedTimer.current);
+    popupJustClosed.current = true;
+    popupJustClosedTimer.current = setTimeout(() => { popupJustClosed.current = false; }, 300);
+  };
+
+  // Update wasDragging ref when dragging state changes
   React.useEffect(() => {
     if (isDragging) {
       wasDragging.current = true;
@@ -310,9 +319,24 @@ export function KanbanCardDraggable({
   const hasDueDate = !!task.dueDate;
   const hasTags = task.tags && task.tags.length > 0;
 
+  const [dropdownOpen, setDropdownOpen] = React.useState(false);
   const [assigneesOpen, setAssigneesOpen] = React.useState(false);
   const [datePickerOpen, setDatePickerOpen] = React.useState(false);
   const [tagSelectorOpen, setTagSelectorOpen] = React.useState(false);
+
+  const guardedSetDropdownOpen = (open: boolean) => { if (!open) setPopupCloseGuard(); setDropdownOpen(open); };
+  const guardedSetAssigneesOpen = (open: boolean) => { if (!open) setPopupCloseGuard(); setAssigneesOpen(open); };
+  const guardedSetDatePickerOpen = (open: boolean) => { if (!open) setPopupCloseGuard(); setDatePickerOpen(open); };
+  const guardedSetTagSelectorOpen = (open: boolean) => { if (!open) setPopupCloseGuard(); setTagSelectorOpen(open); };
+
+  // Called on pointerdown on the card root.
+  // Fires BEFORE Radix's document listener closes the popup, so state is still "open".
+  // preventDefault cancels the subsequent click event entirely.
+  const handleCardPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (datePickerOpen || assigneesOpen || tagSelectorOpen || dropdownOpen) {
+      e.preventDefault();
+    }
+  };
 
   const handleNavigateToTask = () => {
     const params = new URLSearchParams({ view: "kanban" });
@@ -328,7 +352,18 @@ export function KanbanCardDraggable({
       wasDragging.current = false;
       return;
     }
+    // Don't navigate if a popup is open or just closed
+    if (datePickerOpen || assigneesOpen || tagSelectorOpen || dropdownOpen) return;
+    if (popupJustClosed.current) return;
     handleNavigateToTask();
+  };
+
+  // Merge our popup guard with dnd-kit's drag listener (both need onPointerDown)
+  const mergedPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    handleCardPointerDown(e);
+    if (!e.defaultPrevented && listeners?.onPointerDown) {
+      (listeners.onPointerDown as React.PointerEventHandler<HTMLDivElement>)(e);
+    }
   };
 
   return (
@@ -337,6 +372,7 @@ export function KanbanCardDraggable({
       {...attributes}
       {...listeners}
       onClick={handleCardClick}
+      onPointerDown={mergedPointerDown}
       className={cn(
         "group relative rounded-lg border bg-card p-3 shadow-sm cursor-grab active:cursor-grabbing touch-none",
         "hover:shadow-md hover:border-ta/20 transition-shadow",
@@ -394,7 +430,7 @@ export function KanbanCardDraggable({
                 {task.title}
               </h3>
             </div>
-            <DropdownMenu>
+            <DropdownMenu onOpenChange={guardedSetDropdownOpen}>
               <DropdownMenuTrigger asChild>
                 <Button 
                   variant="ghost" 
@@ -545,7 +581,7 @@ export function KanbanCardDraggable({
                     showTime
                     iconOnly
                     externalOpen={datePickerOpen}
-                    onExternalOpenChange={setDatePickerOpen}
+                    onExternalOpenChange={guardedSetDatePickerOpen}
                   />
                 </div>
               )}
@@ -566,7 +602,7 @@ export function KanbanCardDraggable({
                     onTagsChange={(tags) => onTagsChange(task.id, tags)}
                     compact
                     externalOpen={tagSelectorOpen}
-                    onExternalOpenChange={setTagSelectorOpen}
+                    onExternalOpenChange={guardedSetTagSelectorOpen}
                   />
                 </div>
               )}
@@ -587,7 +623,7 @@ export function KanbanCardDraggable({
                     onAssigneesChange={(assignees) => onAssigneesChange(task.id, assignees)}
                     compact
                     externalOpen={assigneesOpen}
-                    onExternalOpenChange={setAssigneesOpen}
+                    onExternalOpenChange={guardedSetAssigneesOpen}
                   />
                 </div>
               ) : hasAssignees ? (

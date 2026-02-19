@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -131,9 +131,35 @@ export function TaskCard({
 }: TaskCardProps) {
   const router = useRouter();
   const [isGeneratingSubtasks, setIsGeneratingSubtasks] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [assigneesOpen, setAssigneesOpen] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [tagSelectorOpen, setTagSelectorOpen] = useState(false);
+
+  // Prevent navigation for 300ms after any popup closes.
+  // This is reliable regardless of event ordering: when a popup closes (for any reason),
+  // we set a ref guard; any click that fires within the window is blocked.
+  const popupJustClosed = React.useRef(false);
+  const popupJustClosedTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const setPopupCloseGuard = () => {
+    if (popupJustClosedTimer.current) clearTimeout(popupJustClosedTimer.current);
+    popupJustClosed.current = true;
+    popupJustClosedTimer.current = setTimeout(() => { popupJustClosed.current = false; }, 300);
+  };
+
+  const guardedSetDropdownOpen = (open: boolean) => { if (!open) setPopupCloseGuard(); setDropdownOpen(open); };
+  const guardedSetAssigneesOpen = (open: boolean) => { if (!open) setPopupCloseGuard(); setAssigneesOpen(open); };
+  const guardedSetDatePickerOpen = (open: boolean) => { if (!open) setPopupCloseGuard(); setDatePickerOpen(open); };
+  const guardedSetTagSelectorOpen = (open: boolean) => { if (!open) setPopupCloseGuard(); setTagSelectorOpen(open); };
+
+  // Called on pointerdown on the card root.
+  // Fires BEFORE Radix's document listener closes the popup, so state is still "open".
+  // preventDefault cancels the subsequent click event entirely.
+  const handleCardPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (datePickerOpen || assigneesOpen || tagSelectorOpen || dropdownOpen) {
+      e.preventDefault();
+    }
+  };
   
   const timeAgo = formatDistanceToNow(new Date(task.createdAt), {
     addSuffix: true,
@@ -145,6 +171,9 @@ export function TaskCard({
 
   // Navegar a la página de detalle de la tarea
   const handleNavigateToTask = () => {
+    // Block if any popup is currently open (same render cycle = stale closure has old open=true state)
+    if (datePickerOpen || assigneesOpen || tagSelectorOpen || dropdownOpen) return;
+    if (popupJustClosed.current) return;
     const params = new URLSearchParams({ view: "list" });
     if (currentSectionId) {
       params.set("section", currentSectionId);
@@ -190,6 +219,7 @@ export function TaskCard({
         task.completed && "opacity-70 bg-muted/30"
       )}
       onClick={handleNavigateToTask}
+      onPointerDown={handleCardPointerDown}
     >
       {/* Importance indicator bar */}
       <div
@@ -388,10 +418,14 @@ export function TaskCard({
 
           {/* Fecha límite - siempre en flujo; w-0/overflow-hidden cuando vacío para no romper línea */}
           {!task.completed && onDueDateChange && (
-            <div className={cn(
-              "shrink-0 overflow-hidden",
-              hasDueDate ? "w-auto" : "w-0 md:group-hover:w-auto"
-            )}>
+            <div
+              className={cn(
+                "shrink-0 overflow-hidden",
+                hasDueDate ? "w-auto" : "w-0 md:group-hover:w-auto"
+              )}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
               <DatePicker
                 value={task.dueDate}
                 onChange={(date) => onDueDateChange(task.id, date)}
@@ -399,17 +433,21 @@ export function TaskCard({
                 showTime
                 iconOnly
                 externalOpen={datePickerOpen}
-                onExternalOpenChange={setDatePickerOpen}
+                onExternalOpenChange={guardedSetDatePickerOpen}
               />
             </div>
           )}
 
           {/* Etiquetas - siempre en flujo; w-0/overflow-hidden cuando vacío */}
           {!task.completed && onTagsChange && (
-            <div className={cn(
-              "shrink-0 overflow-hidden",
-              hasTags ? "w-auto" : "w-0 md:group-hover:w-auto"
-            )}>
+            <div
+              className={cn(
+                "shrink-0 overflow-hidden",
+                hasTags ? "w-auto" : "w-0 md:group-hover:w-auto"
+              )}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
               <TagSelector
                 taskId={task.id}
                 workspaceId={workspaceId}
@@ -417,17 +455,21 @@ export function TaskCard({
                 onTagsChange={(tags) => onTagsChange(task.id, tags)}
                 compact
                 externalOpen={tagSelectorOpen}
-                onExternalOpenChange={setTagSelectorOpen}
+                onExternalOpenChange={guardedSetTagSelectorOpen}
               />
             </div>
           )}
 
           {/* Asignados - siempre en flujo; w-0/overflow-hidden cuando vacío */}
           {!task.completed && onAssigneesChange && (
-            <div className={cn(
-              "shrink-0 overflow-hidden",
-              hasAssignees ? "w-auto" : "w-0 md:group-hover:w-auto"
-            )}>
+            <div
+              className={cn(
+                "shrink-0 overflow-hidden",
+                hasAssignees ? "w-auto" : "w-0 md:group-hover:w-auto"
+              )}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
               <TaskAssignees
                 taskId={task.id}
                 workspaceId={workspaceId}
@@ -435,7 +477,7 @@ export function TaskCard({
                 onAssigneesChange={(assignees) => onAssigneesChange(task.id, assignees)}
                 compact
                 externalOpen={assigneesOpen}
-                onExternalOpenChange={setAssigneesOpen}
+                onExternalOpenChange={guardedSetAssigneesOpen}
               />
             </div>
           )}
@@ -540,12 +582,14 @@ export function TaskCard({
         )}
 
         {/* Dropdown menu - en móvil siempre visible, en desktop solo en hover */}
-        <DropdownMenu>
+        <DropdownMenu onOpenChange={guardedSetDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
               className="h-7 w-7 md:h-8 md:w-8 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
             >
               <MoreVertical className="h-4 w-4" />
               <span className="sr-only">Opciones</span>

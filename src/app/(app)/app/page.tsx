@@ -2,26 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useWorkspacesOverview, useInvalidators, queryKeys } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, FolderPlus, AlertTriangle, Circle, Calendar } from "lucide-react";
 import { toast } from "sonner";
-import {
-  DndContext,
-  closestCenter,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  DragEndEvent,
-  MeasuringStrategy,
-} from "@dnd-kit/core";
-import {
-  arrayMove,
-  SortableContext,
-  sortableKeyboardCoordinates,
-  rectSortingStrategy,
-} from "@dnd-kit/sortable";
+import { arrayMove } from "@dnd-kit/sortable";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -39,16 +26,13 @@ interface OverdueTask extends Task {
   workspaceId: string;
 }
 
-interface WorkspacesOverviewResponse {
-  workspaces: Workspace[];
-  overdueTasks: OverdueTask[];
-}
-
 export default function AppHomePage() {
   const router = useRouter();
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [overdueTasks, setOverdueTasks] = useState<OverdueTask[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const qc = useQueryClient();
+  const { invalidateWorkspacesOverview } = useInvalidators();
+  const { data, isLoading } = useWorkspacesOverview();
+  const workspaces = data?.workspaces ?? [];
+  const overdueTasks = data?.overdueTasks ?? [];
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
   const [editingWorkspace, setEditingWorkspace] = useState<Workspace | null>(null);
@@ -57,22 +41,30 @@ export default function AppHomePage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  const reorderWorkspaces = useCallback((newOrder: typeof workspaces) => {
+    const current = qc.getQueryData<typeof data>(queryKeys.workspacesOverview);
+    if (!current) return;
+    qc.setQueryData(queryKeys.workspacesOverview, { ...current, workspaces: newOrder });
+    const workspaceIds = newOrder.map((w) => w.id);
+    fetch("/api/workspaces/reorder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ workspaceIds }),
+    }).catch(() => {
+      toast.error("Error al guardar el orden");
+      void invalidateWorkspacesOverview();
+    });
+  }, [qc, data, invalidateWorkspacesOverview]);
 
-  const measuringConfig = {
-    droppable: {
-      strategy: MeasuringStrategy.Always,
-    },
-  };
+  const handleMoveWorkspace = useCallback((workspace: Workspace, direction: "left" | "right") => {
+    const current = qc.getQueryData<typeof data>(queryKeys.workspacesOverview);
+    if (!current) return;
+    const idx = current.workspaces.findIndex((w) => w.id === workspace.id);
+    if (idx === -1) return;
+    const newIndex = direction === "left" ? idx - 1 : idx + 1;
+    if (newIndex < 0 || newIndex >= current.workspaces.length) return;
+    reorderWorkspaces(arrayMove(current.workspaces, idx, newIndex));
+  }, [qc, data, reorderWorkspaces]);
 
   // Verificar si es primera vez (desde Supabase)
   useEffect(() => {
@@ -106,40 +98,6 @@ export default function AppHomePage() {
     }
   }, []);
 
-  const fetchWorkspaces = useCallback(async () => {
-    try {
-      const res = await fetch("/api/workspaces/overview");
-      if (!res.ok) {
-        if (res.status !== 404) {
-          throw new Error("Error al cargar resumen de workspaces");
-        }
-        setWorkspaces([]);
-        setOverdueTasks([]);
-        return { workspaces: [], overdueTasks: [] };
-      }
-      const data: Partial<WorkspacesOverviewResponse> = await res.json();
-      const workspaceList = Array.isArray(data.workspaces) ? data.workspaces : [];
-      const overdueList = Array.isArray(data.overdueTasks) ? data.overdueTasks : [];
-
-      setWorkspaces(workspaceList);
-      setOverdueTasks(overdueList);
-      return { workspaces: workspaceList, overdueTasks: overdueList };
-    } catch {
-      setWorkspaces([]);
-      setOverdueTasks([]);
-      return { workspaces: [], overdueTasks: [] };
-    }
-  }, []);
-
-  useEffect(() => {
-    async function loadData() {
-      setIsLoading(true);
-      await fetchWorkspaces();
-      setIsLoading(false);
-    }
-    loadData();
-  }, [fetchWorkspaces]);
-
   const handleToggleComplete = async (task: OverdueTask) => {
     try {
       let completedSectionId = null;
@@ -166,14 +124,18 @@ export default function AppHomePage() {
       
       if (!res.ok) throw new Error("Error al actualizar tarea");
       
-      setOverdueTasks((prev) => prev.filter((t) => t.id !== task.id));
-      setWorkspaces((prev) =>
-        prev.map((workspace) => {
-          if (workspace.id !== task.workspaceId) return workspace;
-          const current = workspace.pendingTasksCount ?? 0;
-          return { ...workspace, pendingTasksCount: Math.max(0, current - 1) };
-        })
-      );
+      // Optimistic update
+      qc.setQueryData(queryKeys.workspacesOverview, (prev: typeof data) => {
+        if (!prev) return prev;
+        return {
+          workspaces: prev.workspaces.map((w) => {
+            if (w.id !== task.workspaceId) return w;
+            const current = w.pendingTasksCount ?? 0;
+            return { ...w, pendingTasksCount: Math.max(0, current - 1) };
+          }),
+          overdueTasks: prev.overdueTasks.filter((t) => t.id !== task.id),
+        };
+      });
       
       toast.success("Tarea completada");
     } catch {
@@ -224,8 +186,7 @@ export default function AppHomePage() {
         toast.success("Workspace actualizado correctamente");
       }
       setDialogOpen(false);
-      // Recargar datos
-      await fetchWorkspaces();
+      await invalidateWorkspacesOverview();
     } catch {
       toast.error(
         dialogMode === "create"
@@ -245,37 +206,12 @@ export default function AppHomePage() {
       if (!res.ok) throw new Error("Error al eliminar workspace");
       toast.success("Workspace eliminado correctamente");
       setDeleteDialogOpen(false);
-      fetchWorkspaces();
+      void invalidateWorkspacesOverview();
     } catch {
       toast.error("Error al eliminar el workspace");
     } finally {
       setIsDeleting(false);
     }
-  };
-
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-
-    if (!over || active.id === over.id) return;
-
-    setWorkspaces((items) => {
-      const oldIndex = items.findIndex((item) => item.id === active.id);
-      const newIndex = items.findIndex((item) => item.id === over.id);
-
-      const newOrder = arrayMove(items, oldIndex, newIndex);
-      
-      const workspaceIds = newOrder.map((w) => w.id);
-      fetch("/api/workspaces/reorder", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ workspaceIds }),
-      }).catch(() => {
-        toast.error("Error al guardar el orden");
-        fetchWorkspaces();
-      });
-
-      return newOrder;
-    });
   };
 
   return (
@@ -314,28 +250,20 @@ export default function AppHomePage() {
           </Button>
         </div>
       ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-          measuring={measuringConfig}
-        >
-          <SortableContext
-            items={workspaces.map((w) => w.id)}
-            strategy={rectSortingStrategy}
-          >
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {workspaces.map((workspace) => (
-                <WorkspaceCard
-                  key={workspace.id}
-                  workspace={workspace}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                />
-              ))}
-            </div>
-          </SortableContext>
-        </DndContext>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {workspaces.map((workspace, index) => (
+            <WorkspaceCard
+              key={workspace.id}
+              workspace={workspace}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onMoveLeft={(w) => handleMoveWorkspace(w, "left")}
+              onMoveRight={(w) => handleMoveWorkspace(w, "right")}
+              isFirst={index === 0}
+              isLast={index === workspaces.length - 1}
+            />
+          ))}
+        </div>
       )}
 
       {/* Separador visual */}

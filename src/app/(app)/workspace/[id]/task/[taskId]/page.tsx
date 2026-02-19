@@ -2,6 +2,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queries";
+import type { Task as TaskType } from "@/lib/types";
 import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -98,6 +101,7 @@ export default function TaskDetailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { profile } = useUser();
+  const qc = useQueryClient();
   
   const workspaceId = params.id as string;
   const taskId = params.taskId as string;
@@ -378,8 +382,19 @@ export default function TaskDetailPage() {
       const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Error eliminando tarea");
 
+      // Actualizar caché para que la lista refleje el borrado inmediatamente
+      qc.setQueryData<TaskType[]>(queryKeys.tasks(workspaceId), (prev) =>
+        (prev ?? []).filter((t) => t.id !== taskId)
+      );
+      // También rascar el overview cache
+      qc.setQueryData(
+        queryKeys.workspaceOverview(workspaceId),
+        (prev: { tasks?: TaskType[]; workspace?: unknown; sections?: unknown[] } | undefined) =>
+          prev ? { ...prev, tasks: (prev.tasks ?? []).filter((t: TaskType) => t.id !== taskId) } : prev
+      );
+
       toast.success("Tarea eliminada");
-      router.push(`/workspace/${workspaceId}`);
+      router.push(returnWorkspaceHref);
     } catch (error) {
       console.error("Error:", error);
       toast.error("Error eliminando tarea");

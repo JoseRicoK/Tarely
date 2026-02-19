@@ -13,6 +13,7 @@ import {
   FolderInput,
   CheckCircle2,
   Circle,
+  Printer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Note, NoteFolder, Workspace } from "@/lib/types";
@@ -153,6 +154,74 @@ export function NotesToolbar({
           editor={editor}
           noteContent={note.contentText || ""}
         />
+
+        {/* Print button */}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-9 w-9 md:h-8 md:w-8 p-0 hover:bg-accent/50 active:scale-95 transition-transform"
+              onClick={() => {
+                const html = editor?.getHTML() ?? "";
+                const title = note.title || "Nota";
+                const printWindow = window.open("", "_blank");
+                if (!printWindow) return;
+                printWindow.document.write(`
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>${title}</title>
+  <style>
+    @page { size: A4; margin: 20mm; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 11pt;
+      line-height: 1.6;
+      color: #111;
+      background: white;
+    }
+    h1 { font-size: 24pt; margin: 0 0 6pt; font-weight: 700; }
+    .note-title { font-size: 20pt; font-weight: 700; margin-bottom: 16pt; padding-bottom: 8pt; border-bottom: 1px solid #ddd; }
+    .content { margin-top: 12pt; }
+    h1, h2, h3, h4 { margin: 14pt 0 6pt; font-weight: 600; }
+    h1 { font-size: 18pt; } h2 { font-size: 15pt; } h3 { font-size: 13pt; }
+    p { margin: 0 0 8pt; }
+    ul, ol { padding-left: 18pt; margin: 0 0 8pt; }
+    li { margin-bottom: 3pt; }
+    blockquote { border-left: 3px solid #bbb; padding-left: 12pt; color: #555; margin: 8pt 0; }
+    code { background: #f3f3f3; padding: 1pt 4pt; border-radius: 3px; font-family: monospace; font-size: 9.5pt; }
+    pre { background: #f3f3f3; padding: 10pt; border-radius: 4px; overflow: hidden; margin: 8pt 0; font-size: 9pt; }
+    table { width: 100%; border-collapse: collapse; margin: 8pt 0; }
+    th, td { border: 1px solid #ccc; padding: 5pt 8pt; text-align: left; font-size: 10pt; }
+    th { background: #f5f5f5; font-weight: 600; }
+    img { max-width: 100%; height: auto; }
+    hr { border: none; border-top: 1px solid #ddd; margin: 14pt 0; }
+    mark { background: #fff3b0; padding: 0 2pt; }
+    a { color: #0066cc; text-decoration: underline; }
+    input[type="checkbox"] { margin-right: 5pt; }
+    .task-list-item { list-style: none; display: flex; align-items: flex-start; gap: 6pt; }
+  </style>
+</head>
+<body>
+  <div class="note-title">${title}</div>
+  <div class="content">${html}</div>
+  <script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; }<\/script>
+</body>
+</html>
+                `);
+                printWindow.document.close();
+              }}
+            >
+              <Printer className="h-4 w-4 md:h-3.5 md:w-3.5" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Imprimir nota</p>
+          </TooltipContent>
+        </Tooltip>
 
         {note.taskId ? (
           <>

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCalendarData, queryKeys } from "@/lib/queries";
 import Link from "next/link";
 import {
   format,
@@ -46,7 +48,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import type { Task, Workspace } from "@/lib/types";
+import type { Task } from "@/lib/types";
 
 interface CalendarTask extends Task {
   workspaceName: string;
@@ -63,51 +65,17 @@ function getImportanceColor(importance: number): string {
 
 export default function CalendarPage() {
   const router = useRouter();
+  const qc = useQueryClient();
+  const { data: calendarData, isLoading } = useCalendarData();
+  const tasks: CalendarTask[] = (calendarData ?? []) as CalendarTask[];
+  const workspaces = useMemo(() => {
+    const seen = new Map<string, { id: string; name: string }>();
+    tasks.forEach((t) => seen.set(t.workspaceId, { id: t.workspaceId, name: t.workspaceName }));
+    return Array.from(seen.values());
+  }, [tasks]);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [tasks, setTasks] = useState<CalendarTask[]>([]);
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [selectedWorkspace, setSelectedWorkspace] = useState<string>("all");
-  const [isLoading, setIsLoading] = useState(true);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-
-  // Fetch all workspaces and their tasks
-  useEffect(() => {
-    async function fetchData() {
-      setIsLoading(true);
-      try {
-        // Fetch workspaces
-        const wsRes = await fetch("/api/workspaces");
-        if (!wsRes.ok) throw new Error("Error loading workspaces");
-        const wsData = await wsRes.json();
-        // El API devuelve el array directamente, no { workspaces: [...] }
-        const workspacesList = Array.isArray(wsData) ? wsData : (wsData.workspaces || []);
-        setWorkspaces(workspacesList);
-
-        // Fetch tasks for all workspaces
-        const allTasks: CalendarTask[] = [];
-        for (const ws of workspacesList) {
-          const tasksRes = await fetch(`/api/tasks?workspaceId=${ws.id}`);
-          if (tasksRes.ok) {
-            const tasksData = await tasksRes.json();
-            // El API devuelve el array directamente, no { tasks: [...] }
-            const tasksList = Array.isArray(tasksData) ? tasksData : (tasksData.tasks || []);
-            const tasksWithWorkspace = tasksList.map((t: Task) => ({
-              ...t,
-              workspaceName: ws.name,
-              workspaceId: ws.id,
-            }));
-            allTasks.push(...tasksWithWorkspace);
-          }
-        }
-        setTasks(allTasks);
-      } catch (error) {
-        console.error("Error fetching calendar data:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchData();
-  }, []);
 
   // Filter tasks by workspace
   const filteredTasks = useMemo(() => {
@@ -208,10 +176,12 @@ export default function CalendarPage() {
       
       if (!res.ok) throw new Error("Error al actualizar tarea");
       
-      // Actualizar estado local
-      setTasks(prev => prev.map(t => 
-        t.id === task.id ? { ...t, completed: !t.completed, sectionId: targetSectionId } : t
-      ));
+      // Actualizar cache de calendario optimistamente
+      qc.setQueryData<CalendarTask[]>(queryKeys.calendarData, (prev) =>
+        (prev ?? []).map((t) =>
+          t.id === task.id ? { ...t, completed: !t.completed, sectionId: targetSectionId } : t
+        )
+      );
       
       toast.success(task.completed ? "Tarea marcada como pendiente" : "Tarea completada");
     } catch {

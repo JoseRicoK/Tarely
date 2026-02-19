@@ -16,25 +16,32 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { MoreVertical, Pencil, Trash2, Users, Clock, CheckCircle2 } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, Users, Clock, CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
 import { getIconComponent } from "@/components/ui/icon-color-picker";
 import type { Workspace } from "@/lib/types";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
 
 interface WorkspaceCardProps {
   workspace: Workspace;
   onEdit: (workspace: Workspace) => void;
   onDelete: (workspace: Workspace) => void;
+  onMoveLeft?: (workspace: Workspace) => void;
+  onMoveRight?: (workspace: Workspace) => void;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
 export function WorkspaceCard({
   workspace,
   onEdit,
   onDelete,
+  onMoveLeft,
+  onMoveRight,
+  isFirst,
+  isLast,
 }: WorkspaceCardProps) {
   const router = useRouter();
   const timeAgo = formatDistanceToNow(new Date(workspace.updatedAt), {
@@ -45,40 +52,14 @@ export function WorkspaceCard({
   const WorkspaceIcon = getIconComponent(workspace.icon || "Folder");
   const workspaceColor = workspace.color || "#6366f1";
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id: workspace.id });
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition: isDragging ? undefined : transition,
-    opacity: isDragging ? 0.5 : 1,
-  };
-
   const handleCardClick = (e: React.MouseEvent) => {
-    // No navegar si se hizo clic en el menú
-    if ((e.target as HTMLElement).closest('[data-menu]')) {
-      return;
-    }
-    // No navegar si se está arrastrando
-    if (isDragging) {
-      return;
-    }
+    if ((e.target as HTMLElement).closest('[data-menu]')) return;
     router.push(`/workspace/${workspace.id}`);
   };
 
   return (
     <Card 
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      className="group relative flex flex-col gap-2 xl:gap-6 py-3 xl:py-6 transition-all duration-200 hover:shadow-xl hover:shadow-ta/10 hover:border-ta/30 cursor-grab active:cursor-grabbing overflow-hidden touch-none"
+      className="group relative flex flex-col gap-2 xl:gap-6 py-3 xl:py-6 transition-all duration-200 hover:shadow-xl hover:shadow-ta/10 hover:border-ta/30 cursor-pointer overflow-hidden"
       onClick={handleCardClick}
     >
       {/* Barra superior de color */}
@@ -137,6 +118,25 @@ export function WorkspaceCard({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {(onMoveLeft || onMoveRight) && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={(e) => { e.stopPropagation(); onMoveLeft?.(workspace); }}
+                        disabled={isFirst}
+                      >
+                        <ChevronLeft className="mr-2 h-4 w-4" />
+                        Mover a la izquierda
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => { e.stopPropagation(); onMoveRight?.(workspace); }}
+                        disabled={isLast}
+                      >
+                        <ChevronRight className="mr-2 h-4 w-4" />
+                        Mover a la derecha
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(workspace); }}>
                     <Pencil className="mr-2 h-4 w-4" />
                     Editar

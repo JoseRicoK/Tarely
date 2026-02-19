@@ -74,6 +74,25 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   }
 
   const row = data as unknown as { id: string; tag_id: string; workspace_tags: { id: string; name: string; color: string } };
+
+  // Bidirectional sync: if task has a linked note, also add tag to that note
+  const { data: taskData } = await supabase
+    .from("tasks")
+    .select("note_id")
+    .eq("id", taskId)
+    .single();
+
+  const td = taskData as { note_id: string | null } | null;
+  if (td?.note_id) {
+    try {
+      await supabase
+        .from("note_tags")
+        .insert({ note_id: td.note_id, tag_id: tagId } as never);
+    } catch {
+      // duplicate or error – not critical
+    }
+  }
+
   return NextResponse.json({
     id: row.id,
     tagId: row.tag_id,
@@ -108,6 +127,22 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   if (error) {
     console.error("Error removing tag:", error);
     return NextResponse.json({ error: "Error al quitar etiqueta" }, { status: 500 });
+  }
+
+  // Bidirectional sync: if task has a linked note, also remove tag from that note
+  const { data: taskData } = await supabase
+    .from("tasks")
+    .select("note_id")
+    .eq("id", taskId)
+    .single();
+
+  const td = taskData as { note_id: string | null } | null;
+  if (td?.note_id) {
+    await supabase
+      .from("note_tags")
+      .delete()
+      .eq("note_id", td.note_id)
+      .eq("tag_id", tagId);
   }
 
   return NextResponse.json({ success: true });

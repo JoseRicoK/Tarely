@@ -13,7 +13,6 @@ import {
   closestCenter,
   UniqueIdentifier,
 } from "@dnd-kit/core";
-//ewer
 import {
   SortableContext,
   horizontalListSortingStrategy,
@@ -180,7 +179,6 @@ export function KanbanBoard({
   const handleDragStart = (event: DragStartEvent) => {
     const id = event.active.id as string;
     setActiveId(id);
-    
     // Determine if dragging a section or a task
     const isSection = sections.some(s => s.id === id);
     setActiveType(isSection ? "section" : "task");
@@ -201,10 +199,8 @@ export function KanbanBoard({
       if (activeItemId !== overId) {
         const oldIndex = sections.findIndex(s => s.id === activeItemId);
         const newIndex = sections.findIndex(s => s.id === overId);
-        
         if (oldIndex !== -1 && newIndex !== -1 && onSectionsReorder) {
-          const reordered = arrayMove(sections, oldIndex, newIndex);
-          onSectionsReorder(reordered);
+          onSectionsReorder(arrayMove(sections, oldIndex, newIndex));
         }
       }
       return;
@@ -235,6 +231,15 @@ export function KanbanBoard({
     }
   };
 
+  const handleMoveSection = useCallback((section: WorkspaceSection, direction: "left" | "right") => {
+    if (!onSectionsReorder) return;
+    const idx = sections.findIndex(s => s.id === section.id);
+    if (idx === -1) return;
+    const newIndex = direction === "left" ? idx - 1 : idx + 1;
+    if (newIndex < 0 || newIndex >= sections.length) return;
+    onSectionsReorder(arrayMove(sections, idx, newIndex));
+  }, [sections, onSectionsReorder]);
+
   return (
     <DndContext
       sensors={sensors}
@@ -245,13 +250,17 @@ export function KanbanBoard({
       <ScrollArea className="w-full pb-4">
         <SortableContext items={sectionIds} strategy={horizontalListSortingStrategy}>
           <div className="flex gap-4 min-h-[500px] pb-4">
-            {sections.map((section) => (
+            {sections.map((section, index) => (
               <KanbanColumn
                 key={section.id}
                 section={section}
                 count={tasksBySection[section.id]?.length || 0}
                 onEditSection={onEditSection}
                 onDeleteSection={onDeleteSection}
+                onMoveLeft={onSectionsReorder ? (s) => handleMoveSection(s, "left") : undefined}
+                onMoveRight={onSectionsReorder ? (s) => handleMoveSection(s, "right") : undefined}
+                isFirst={index === 0}
+                isLast={index === sections.length - 1}
               >
                 {(tasksBySection[section.id] || []).map((task) => (
                   <KanbanCardDraggable

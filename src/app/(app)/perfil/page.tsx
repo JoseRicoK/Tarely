@@ -1,6 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, lazy, Suspense, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useProfile, queryKeys } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,42 +15,27 @@ import { getAvatarUrl, getDiceBearUrl, generateRandomAvatarSeed } from "@/lib/ut
 
 const InvitationsPanel = lazy(() => import("@/components/workspace").then(m => ({ default: m.InvitationsPanel })));
 
-interface UserProfile {
-  id: string;
-  name: string;
-  email: string;
-  avatar: string;
-  avatar_version?: number;
-}
-
 export default function PerfilPage() {
   const router = useRouter();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+
+  const qc = useQueryClient();
+  const { data: profile, isPending: isLoading } = useProfile();
+
+  const initializedRef = useRef(false);
   const [name, setName] = useState("");
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [customAvatarPreview, setCustomAvatarPreview] = useState<string | null>(null);
 
-  const fetchProfile = useCallback(async () => {
-    try {
-      const res = await fetch("/api/auth/perfil");
-      if (!res.ok) throw new Error("Error al cargar perfil");
-      const data = await res.json();
-      setProfile(data);
-      setName(data.name);
-      setSelectedAvatar(data.avatar);
-    } catch {
-      toast.error("Error al cargar el perfil");
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
+  // Sync form state from profile on first load
   useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
+    if (profile && !initializedRef.current) {
+      setName(profile.name);
+      setSelectedAvatar(profile.avatar);
+      initializedRef.current = true;
+    }
+  }, [profile]);
 
   const handleSave = useCallback(async () => {
     if (!name.trim()) {
@@ -68,6 +55,7 @@ export default function PerfilPage() {
       if (!res.ok) throw new Error("Error al guardar");
 
       toast.success("Perfil actualizado correctamente");
+      void qc.invalidateQueries({ queryKey: queryKeys.profile });
       // Refrescar el perfil en el header
       window.dispatchEvent(new Event('profile-updated'));
     } catch {
@@ -75,7 +63,7 @@ export default function PerfilPage() {
     } finally {
       setIsSaving(false);
     }
-  }, [name, selectedAvatar]);
+  }, [name, selectedAvatar, qc]);
 
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -121,7 +109,7 @@ export default function PerfilPage() {
       toast.success('¡Avatar actualizado!');
       
       // Refrescar perfil para obtener nueva versión
-      fetchProfile();
+      void qc.invalidateQueries({ queryKey: queryKeys.profile });
       window.dispatchEvent(new Event('profile-updated'));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Error al subir avatar');
@@ -129,7 +117,7 @@ export default function PerfilPage() {
     } finally {
       setIsUploadingAvatar(false);
     }
-  }, [fetchProfile]);
+  }, [qc]);
 
   // Generar un nuevo avatar aleatorio de DiceBear
   const handleShuffleAvatar = useCallback(() => {

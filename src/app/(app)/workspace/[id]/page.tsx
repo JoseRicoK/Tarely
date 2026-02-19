@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, useRef, lazy, Suspense } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef, useTransition, lazy, Suspense } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useWorkspaceOverview, useTasks, queryKeys } from "@/lib/queries";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -128,12 +130,6 @@ function getIconComponent(iconName: string): LucideIcon {
   return iconMap[iconName] || Folder;
 }
 
-interface WorkspaceOverviewResponse {
-  workspace: Workspace;
-  tasks: Task[];
-  sections: WorkspaceSection[];
-}
-
 export default function WorkspacePage() {
   const params = useParams();
   const router = useRouter();
@@ -142,13 +138,67 @@ export default function WorkspacePage() {
   const viewModeFromQuery = searchParams.get("view");
   const sectionIdFromQuery = searchParams.get("section");
 
-  // State
+  // React Query
+  const qc = useQueryClient();
+  const overviewQuery = useWorkspaceOverview(workspaceId);
+  const tasksQuery = useTasks(workspaceId);
+
+  // Derived tasks: prefer full tasks (with assignees/subtasks), fall back to lite
+  const tasks: Task[] = tasksQuery.data ?? overviewQuery.data?.tasks ?? [];
+
+  // Local state (workspace + sections seeded from query)
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [sections, setSections] = useState<WorkspaceSection[]>([]);
-  const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true);
-  const [isLoadingTasks, setIsLoadingTasks] = useState(true);
-  const [isLoadingSections, setIsLoadingSections] = useState(true);
+  const isLoadingWorkspace = overviewQuery.isLoading;
+  const isLoadingSections = overviewQuery.isLoading;
+  const isLoadingTasks = tasksQuery.isLoading && !overviewQuery.data;
+
+  // Shim: update tasks in query cache (same signature as old setTasks setState)
+  const setTasks = useCallback(
+    (updater: Task[] | ((prev: Task[]) => Task[])) => {
+      qc.setQueryData<Task[]>(queryKeys.tasks(workspaceId), (prev) => {
+        const current = prev ?? overviewQuery.data?.tasks ?? [];
+        return typeof updater === "function" ? updater(current) : updater;
+      });
+    },
+    [qc, workspaceId, overviewQuery.data]
+  );
+
+  // Redirect if workspace not found
+  useEffect(() => {
+    if (overviewQuery.error) {
+      const msg = overviewQuery.error instanceof Error ? overviewQuery.error.message : "";
+      if (msg === "404") {
+        toast.error("Workspace no encontrado");
+        router.push("/app");
+      } else {
+        toast.error("Error al cargar los datos");
+      }
+    }
+  }, [overviewQuery.error, router]);
+
+  // Seed local workspace + sections from query (and re-sync on background refetch)
+  useEffect(() => {
+    if (overviewQuery.data) {
+      setWorkspace(overviewQuery.data.workspace);
+      setSections(overviewQuery.data.sections);
+    }
+  }, [overviewQuery.data]);
+
+  // hydrate tasks with full detail once they arrive from the tasks query
+  const lastHydratedRef = useRef("");
+  useEffect(() => {
+    if (!tasksQuery.data || lastHydratedRef.current === workspaceId) return;
+    lastHydratedRef.current = workspaceId;
+    const fullById = new Map(tasksQuery.data.map((t) => [t.id, t]));
+    qc.setQueryData<Task[]>(queryKeys.tasks(workspaceId), (prev) =>
+      (prev ?? []).map((task) => {
+        const full = fullById.get(task.id);
+        if (!full) return task;
+        return { ...task, assignees: full.assignees, subtasks: full.subtasks, tags: full.tags };
+      })
+    );
+  }, [tasksQuery.data, workspaceId, qc]);
 
   // AI Generation state
   const [aiText, setAiText] = useState("");
@@ -180,103 +230,10 @@ export default function WorkspacePage() {
   const [viewMode, setViewMode] = useState<"list" | "kanban">(
     viewModeFromQuery === "kanban" ? "kanban" : "list"
   );
-  const taskDetailsHydrationRef = useRef(0);
-
-  const applyNewTaskFlags = useCallback((taskList: Task[]): Task[] => {
-    try {
-      const storedData = sessionStorage.getItem("newTasksData");
-      let newTaskIds: string[] = [];
-
-      if (storedData) {
-        const parsed = JSON.parse(storedData) as { tasks?: string[]; timestamp?: number };
-        const timestamp = typeof parsed.timestamp === "number" ? parsed.timestamp : 0;
-        const elapsed = Date.now() - timestamp;
-
-        if (elapsed > 20000) {
-          sessionStorage.removeItem("newTasksData");
-        } else if (Array.isArray(parsed.tasks)) {
-          newTaskIds = parsed.tasks;
-        }
-      }
-
-      return taskList.map((task) => ({
-        ...task,
-        isNew: newTaskIds.includes(task.id),
-      }));
-    } catch {
-      return taskList;
-    }
-  }, []);
+  const [, startTransition] = useTransition();
 
   // Fast initial load: one request for critical data + non-blocking hydration
-  const fetchAllData = useCallback(async () => {
-    setIsLoadingWorkspace(true);
-    setIsLoadingTasks(true);
-    setIsLoadingSections(true);
-
-    try {
-      const overviewRes = await fetch(`/api/workspaces/${workspaceId}/overview`);
-
-      if (!overviewRes.ok) {
-        if (overviewRes.status === 404) {
-          toast.error("Workspace no encontrado");
-          router.push("/app");
-          return;
-        }
-        throw new Error("Error al cargar datos del workspace");
-      }
-
-      const overview = await overviewRes.json() as Partial<WorkspaceOverviewResponse>;
-      const tasksLite = applyNewTaskFlags(Array.isArray(overview.tasks) ? overview.tasks : []);
-
-      setWorkspace(overview.workspace ?? null);
-      setTasks(tasksLite);
-      setSections(Array.isArray(overview.sections) ? overview.sections : []);
-
-      if (tasksLite.length > 0) {
-        // Do not block first paint with assignees/subtasks hydration
-        const hydrateRequestId = ++taskDetailsHydrationRef.current;
-        void (async () => {
-          try {
-            const fullTasksRes = await fetch(`/api/tasks?workspaceId=${workspaceId}`);
-            if (!fullTasksRes.ok || hydrateRequestId !== taskDetailsHydrationRef.current) return;
-
-            const fullTasks = applyNewTaskFlags(await fullTasksRes.json() as Task[]);
-            const fullById = new Map(fullTasks.map((task) => [task.id, task]));
-
-            setTasks((prev) =>
-              prev.map((task) => {
-                const full = fullById.get(task.id);
-                if (!full) return task;
-                return {
-                  ...task,
-                  assignees: full.assignees,
-                  subtasks: full.subtasks,
-                  tags: full.tags,
-                };
-              })
-            );
-          } catch {
-            // Silent fail for background hydration
-          }
-        })();
-      }
-
-      setIsLoadingWorkspace(false);
-      setIsLoadingTasks(false);
-      setIsLoadingSections(false);
-    } catch {
-      toast.error("Error al cargar los datos");
-      setIsLoadingWorkspace(false);
-      setIsLoadingTasks(false);
-      setIsLoadingSections(false);
-    }
-  }, [workspaceId, router, applyNewTaskFlags]);
-
-
-  useEffect(() => {
-    fetchAllData();
-  }, [fetchAllData]);
+  // (now handled by useWorkspaceOverview + useTasks hooks above)
 
   useEffect(() => {
     if (sections.length === 0) return;
@@ -399,28 +356,14 @@ export default function WorkspacePage() {
 
   // Handler for changing task section (drag and drop or menu)
   // Función optimizada para re-fetch de tasks
-  const refetchTasks = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/tasks?workspaceId=${workspaceId}`);
-      if (!res.ok) return;
-      const data = await res.json() as Task[];
-      setTasks(applyNewTaskFlags(data));
-    } catch {
-      // Silently fail on refetch
-    }
-  }, [workspaceId, applyNewTaskFlags]);
+  const refetchTasks = useCallback(() => {
+    void qc.invalidateQueries({ queryKey: queryKeys.tasks(workspaceId) });
+  }, [qc, workspaceId]);
 
   // Función optimizada para re-fetch de sections
-  const refetchSections = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/sections?workspaceId=${workspaceId}`);
-      if (!res.ok) return;
-      const data = await res.json();
-      setSections(data);
-    } catch {
-      // Silently fail on refetch
-    }
-  }, [workspaceId]);
+  const refetchSections = useCallback(() => {
+    void qc.invalidateQueries({ queryKey: queryKeys.workspaceOverview(workspaceId) });
+  }, [qc, workspaceId]);
 
   const handleTaskSectionChange = useCallback(async (taskId: string, sectionId: string) => {
     try {
@@ -599,24 +542,26 @@ export default function WorkspacePage() {
 
       const data = await res.json();
       
-      // Marcar las tareas nuevas en sessionStorage con timestamp
-      const newTaskIds = data.tasks.map((t: Task) => t.id);
-      const existingData = JSON.parse(sessionStorage.getItem('newTasksData') || '{"tasks": [], "timestamp": 0}');
-      const newData = {
-        tasks: [...existingData.tasks, ...newTaskIds],
-        timestamp: Date.now()
-      };
-      sessionStorage.setItem('newTasksData', JSON.stringify(newData));
-      
-      // Auto-limpiar después de 20 segundos
+      // Add new tasks to cache immediately marked as isNew
+      const newTaskIds = new Set<string>(data.tasks.map((t: Task) => t.id as string));
+      qc.setQueryData<Task[]>(queryKeys.tasks(workspaceId), (prev) => {
+        const merged = [...(prev ?? [])];
+        for (const t of data.tasks as Task[]) {
+          if (!merged.find((x) => x.id === t.id)) merged.push({ ...t, isNew: true });
+        }
+        return merged.map((t) => newTaskIds.has(t.id) ? { ...t, isNew: true } : t);
+      });
+
+      // After 20s remove the isNew highlight and sync with server
       setTimeout(() => {
-        sessionStorage.removeItem('newTasksData');
-        refetchTasks(); // Refrescar para quitar el indicador visual
+        qc.setQueryData<Task[]>(queryKeys.tasks(workspaceId), (prev) =>
+          (prev ?? []).map((t) => ({ ...t, isNew: false }))
+        );
+        void qc.invalidateQueries({ queryKey: queryKeys.tasks(workspaceId) });
       }, 20000);
       
       toast.success(`${data.count} tareas generadas correctamente`);
       setAiText("");
-      refetchTasks();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Error al generar tareas";
@@ -624,7 +569,7 @@ export default function WorkspacePage() {
     } finally {
       setIsGenerating(false);
     }
-  }, [aiText, workspaceId, refetchTasks]);
+  }, [aiText, workspaceId, qc]);
 
   const handleCreateTask = useCallback(() => {
     setTaskDialogMode("create");
@@ -990,26 +935,35 @@ export default function WorkspacePage() {
             <h2 className="font-semibold text-sm md:text-base">Tareas</h2>
           </div>
           <div className="flex items-center gap-1.5 md:gap-2">
-            {/* View mode toggle */}
-            <div className="flex items-center border rounded-lg p-0.5 md:p-1 bg-background/95 backdrop-blur-sm border-border/50">
-              <Button
-                variant={viewMode === "list" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("list")}
-                className="gap-1.5 h-9 md:h-9 px-2.5 md:px-3"
+            {/* View mode toggle - animated pill */}
+            <div className="relative flex items-center border rounded-lg p-0.5 md:p-1 bg-background/95 backdrop-blur-sm border-border/50">
+              {/* Sliding active background: sized to match each button accounting for container padding */}
+              <div
+                className={cn(
+                  "absolute inset-0.5 md:inset-1 w-[calc(50%-2px)] md:w-[calc(50%-4px)] rounded-md bg-primary shadow-sm transition-transform duration-200 ease-in-out",
+                  viewMode === "kanban" && "translate-x-full"
+                )}
+              />
+              <button
+                onClick={() => startTransition(() => setViewMode("list"))}
+                className={cn(
+                  "relative z-10 flex flex-1 items-center justify-center gap-1.5 h-9 px-2.5 md:px-3 rounded-md text-xs md:text-sm font-medium transition-colors duration-200",
+                  viewMode === "list" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
               >
-                <List className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs md:text-sm">Lista</span>
-              </Button>
-              <Button
-                variant={viewMode === "kanban" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("kanban")}
-                className="gap-1.5 h-9 md:h-9 px-2.5 md:px-3"
+                <List className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Lista</span>
+              </button>
+              <button
+                onClick={() => startTransition(() => setViewMode("kanban"))}
+                className={cn(
+                  "relative z-10 flex flex-1 items-center justify-center gap-1.5 h-9 px-2.5 md:px-3 rounded-md text-xs md:text-sm font-medium transition-colors duration-200",
+                  viewMode === "kanban" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
               >
-                <LayoutGrid className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs md:text-sm">Kanban</span>
-              </Button>
+                <LayoutGrid className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Kanban</span>
+              </button>
             </div>
             <Button onClick={handleCreateTask} size="sm" className="gap-1.5 h-9 md:h-10 px-3 md:px-4 text-sm md:text-base btn-accent-gradient text-white font-semibold">
               <Plus className="h-4 w-4" />
