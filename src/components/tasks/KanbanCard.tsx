@@ -268,6 +268,22 @@ export function KanbanCardStatic({
   );
 }
 
+// --------------------------------------------------------------------------
+// Module-level popup state — shared across ALL KanbanCard instances on screen.
+// This lets a click on Card B be blocked while Card A's popup is open.
+// --------------------------------------------------------------------------
+let _kanbanCardPopupCount = 0;
+let _kanbanCardJustClosed = false;
+let _kanbanCardJustClosedTimer: ReturnType<typeof setTimeout> | null = null;
+const _kanbanPopupOpened = () => { _kanbanCardPopupCount++; };
+const _kanbanPopupClosed = () => {
+  _kanbanCardPopupCount = Math.max(0, _kanbanCardPopupCount - 1);
+  if (_kanbanCardJustClosedTimer) clearTimeout(_kanbanCardJustClosedTimer);
+  _kanbanCardJustClosed = true;
+  _kanbanCardJustClosedTimer = setTimeout(() => { _kanbanCardJustClosed = false; }, 300);
+};
+// --------------------------------------------------------------------------
+
 // Draggable card component with hooks
 export function KanbanCardDraggable({
   task,
@@ -293,15 +309,6 @@ export function KanbanCardDraggable({
   // Track if we're dragging to prevent click navigation
   const wasDragging = React.useRef(false);
 
-  // Prevent navigation for 300ms after any popup closes.
-  const popupJustClosed = React.useRef(false);
-  const popupJustClosedTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const setPopupCloseGuard = () => {
-    if (popupJustClosedTimer.current) clearTimeout(popupJustClosedTimer.current);
-    popupJustClosed.current = true;
-    popupJustClosedTimer.current = setTimeout(() => { popupJustClosed.current = false; }, 300);
-  };
-
   // Update wasDragging ref when dragging state changes
   React.useEffect(() => {
     if (isDragging) {
@@ -324,16 +331,15 @@ export function KanbanCardDraggable({
   const [datePickerOpen, setDatePickerOpen] = React.useState(false);
   const [tagSelectorOpen, setTagSelectorOpen] = React.useState(false);
 
-  const guardedSetDropdownOpen = (open: boolean) => { if (!open) setPopupCloseGuard(); setDropdownOpen(open); };
-  const guardedSetAssigneesOpen = (open: boolean) => { if (!open) setPopupCloseGuard(); setAssigneesOpen(open); };
-  const guardedSetDatePickerOpen = (open: boolean) => { if (!open) setPopupCloseGuard(); setDatePickerOpen(open); };
-  const guardedSetTagSelectorOpen = (open: boolean) => { if (!open) setPopupCloseGuard(); setTagSelectorOpen(open); };
+  // Guarded setters: notify the module-level counter on open/close
+  const guardedSetDropdownOpen = (open: boolean) => { open ? _kanbanPopupOpened() : _kanbanPopupClosed(); setDropdownOpen(open); };
+  const guardedSetAssigneesOpen = (open: boolean) => { open ? _kanbanPopupOpened() : _kanbanPopupClosed(); setAssigneesOpen(open); };
+  const guardedSetDatePickerOpen = (open: boolean) => { open ? _kanbanPopupOpened() : _kanbanPopupClosed(); setDatePickerOpen(open); };
+  const guardedSetTagSelectorOpen = (open: boolean) => { open ? _kanbanPopupOpened() : _kanbanPopupClosed(); setTagSelectorOpen(open); };
 
-  // Called on pointerdown on the card root.
-  // Fires BEFORE Radix's document listener closes the popup, so state is still "open".
-  // preventDefault cancels the subsequent click event entirely.
+  // pointerdown on card root: if ANY card's popup is open, cancel the click.
   const handleCardPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (datePickerOpen || assigneesOpen || tagSelectorOpen || dropdownOpen) {
+    if (_kanbanCardPopupCount > 0) {
       e.preventDefault();
     }
   };
@@ -352,9 +358,7 @@ export function KanbanCardDraggable({
       wasDragging.current = false;
       return;
     }
-    // Don't navigate if a popup is open or just closed
-    if (datePickerOpen || assigneesOpen || tagSelectorOpen || dropdownOpen) return;
-    if (popupJustClosed.current) return;
+    if (_kanbanCardPopupCount > 0 || _kanbanCardJustClosed) return;
     handleNavigateToTask();
   };
 
@@ -569,7 +573,7 @@ export function KanbanCardDraggable({
               {!task.completed && onDueDateChange && (
                 <div 
                   className={cn(
-                    hasDueDate ? "block" : "hidden sm:group-hover:block"
+                    (hasDueDate || datePickerOpen) ? "block" : "hidden sm:group-hover:block"
                   )}
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
@@ -590,7 +594,7 @@ export function KanbanCardDraggable({
               {!task.completed && onTagsChange && (
                 <div 
                   className={cn(
-                    hasTags ? "block" : "hidden sm:group-hover:block"
+                    (hasTags || tagSelectorOpen) ? "block" : "hidden sm:group-hover:block"
                   )}
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}
@@ -611,7 +615,7 @@ export function KanbanCardDraggable({
               {onAssigneesChange ? (
                 <div 
                   className={cn(
-                    hasAssignees ? "block" : "hidden sm:group-hover:block"
+                    (hasAssignees || assigneesOpen) ? "block" : "hidden sm:group-hover:block"
                   )}
                   onClick={(e) => e.stopPropagation()}
                   onPointerDown={(e) => e.stopPropagation()}

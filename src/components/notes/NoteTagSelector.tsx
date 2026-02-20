@@ -1,8 +1,6 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useTags, queryKeys } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -51,16 +49,31 @@ export function NoteTagSelector({
   onTagsChange,
 }: NoteTagSelectorProps) {
   const [open, setOpen] = useState(false);
+  const [workspaceTags, setWorkspaceTags] = useState<WorkspaceTag[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
   const [assigningTagId, setAssigningTagId] = useState<string | null>(null);
   const [removingTagId, setRemovingTagId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  const qc = useQueryClient();
-  const { data: workspaceTags = [], isPending: isLoading } = useTags(workspaceId);
+  const fetchWorkspaceTags = async () => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/tags?workspaceId=${workspaceId}`);
+      if (res.ok) setWorkspaceTags(await res.json());
+    } catch {
+      toast.error("Error al cargar etiquetas");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    if (open) setShowCreateForm(false);
-  }, [open]);
+    if (open) {
+      fetchWorkspaceTags();
+      setShowCreateForm(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, workspaceId]);
 
   const handleAssignTag = async (tagId: string) => {
     if (tags.some(t => t.tagId === tagId)) return;
@@ -98,7 +111,7 @@ export function NoteTagSelector({
   };
 
   const handleTagCreated = (newTag: WorkspaceTag) => {
-    void qc.invalidateQueries({ queryKey: queryKeys.tags(workspaceId) });
+    setWorkspaceTags(prev => [...prev, newTag]);
     setShowCreateForm(false);
     handleAssignTag(newTag.id);
   };
@@ -107,7 +120,7 @@ export function NoteTagSelector({
     try {
       const res = await fetch(`/api/tags/${tagId}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
-      void qc.invalidateQueries({ queryKey: queryKeys.tags(workspaceId) });
+      setWorkspaceTags(prev => prev.filter(t => t.id !== tagId));
       if (tags.some(t => t.tagId === tagId)) {
         onTagsChange(tags.filter(t => t.tagId !== tagId));
       }

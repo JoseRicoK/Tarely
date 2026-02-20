@@ -47,7 +47,6 @@ import { cn } from "@/lib/utils";
 import type { NoteFolder, Note, NoteTemplate, Workspace, WorkspaceTag } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -83,7 +82,7 @@ interface NotesSidebarProps {
   onOpenTemplates: () => void;
   onCreateNoteFromTemplate: (template: NoteTemplate) => void;
   onMoveNote?: (noteId: string, targetFolderId: string | null) => void;
-  onDeleteNote?: (note: Note) => void;
+  onDeleteNote?: (noteId: string) => void;
   // Tags
   workspaceTags?: WorkspaceTag[];
   selectedTagFilter?: string | null;
@@ -152,7 +151,7 @@ function FolderItem({
   onMoveNote?: (noteId: string, targetFolderId: string | null) => void;
   dragOverFolderId: string | null;
   onDragOverFolder: (folderId: string | null) => void;
-  onDeleteNote?: (note: Note) => void;
+  onDeleteNote?: (noteId: string) => void;
 }) {
   const isSelected = selectedFolderId === folder.id;
   const allFolderNotes = notes.filter((n) => n.folderId === folder.id);
@@ -256,7 +255,6 @@ function FolderItem({
               onMoveNote={onMoveNote}
               dragOverFolderId={dragOverFolderId}
               onDragOverFolder={onDragOverFolder}
-              onDeleteNote={onDeleteNote}
             />
           ))}
           {folderNotes.map((note) => (
@@ -268,7 +266,7 @@ function FolderItem({
                 e.dataTransfer.effectAllowed = 'move';
               }}
               className={cn(
-                "group flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
+                "group flex items-center gap-2 min-w-0 px-2 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
                 selectedNoteId === note.id
                   ? "bg-accent text-accent-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
@@ -282,20 +280,18 @@ function FolderItem({
                 <span className="shrink-0 text-base leading-none">{note.icon}</span>
               )}
               <span className={cn(
-                "truncate flex-1",
+                "truncate flex-1 min-w-0",
                 note.completed && "line-through opacity-70"
               )}>{note.title || "Sin título"}</span>
               {note.isPinned && <Pin className="h-3 w-3 shrink-0 text-muted-foreground/40" />}
               {note.isFavorite && <Star className="h-3 w-3 shrink-0 text-yellow-500 fill-yellow-500" />}
-              {onDeleteNote && (
-                <button
-                  onClick={(e) => { e.stopPropagation(); onDeleteNote(note); }}
-                  className="shrink-0 p-0.5 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
-                  title="Eliminar nota"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </button>
-              )}
+              <button
+                onClick={(e) => { e.stopPropagation(); onDeleteNote?.(note.id); }}
+                className="shrink-0 opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground/40 hover:text-destructive transition-all"
+                title="Eliminar nota"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
             </div>
           ))}
         </div>
@@ -432,7 +428,7 @@ export function NotesSidebar({
   }, []);
 
   return (
-    <div className="flex flex-col h-full border-r border-border/40 bg-muted/25">
+    <div className="flex flex-col h-full w-full overflow-hidden border-r border-border/40 bg-muted/25">
       {/* Workspace selector - Fijo arriba */}
       <div className="shrink-0 p-4 pb-3 border-b border-border/30">
         <div className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em] mb-2 px-0.5">
@@ -555,8 +551,8 @@ export function NotesSidebar({
       </div>
 
       {/* Contenido scrolleable */}
-      <ScrollArea className="flex-1 overflow-y-auto">
-        <div className="px-3 pb-2">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="px-3 pb-2 w-full">
           {/* Favorites */}
           {favoriteNotes.length > 0 && (
             <div className="mb-1">
@@ -567,7 +563,7 @@ export function NotesSidebar({
                   <div
                     key={note.id}
                     className={cn(
-                      "group flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
+                      "group flex items-center gap-2 min-w-0 px-3 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
                       selectedNoteId === note.id
                         ? "bg-accent text-accent-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
@@ -575,16 +571,14 @@ export function NotesSidebar({
                     onClick={() => onSelectNote(note.id)}
                   >
                     <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500 shrink-0" />
-                    <span className="truncate flex-1">{note.title || "Sin título"}</span>
-                    {onDeleteNote && (
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onDeleteNote(note); }}
-                        className="shrink-0 p-0.5 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
-                        title="Eliminar nota"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    )}
+                    <span className="truncate flex-1 min-w-0">{note.title || "Sin título"}</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDeleteNote?.(note.id); }}
+                      className="shrink-0 opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground/40 hover:text-destructive transition-all"
+                      title="Eliminar nota"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
                   </div>
                 ))}
             </div>
@@ -657,7 +651,7 @@ export function NotesSidebar({
                     e.dataTransfer.effectAllowed = 'move';
                   }}
                   className={cn(
-                    "group flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
+                    "group flex items-center gap-2 min-w-0 px-3 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
                     selectedNoteId === note.id
                       ? "bg-accent text-accent-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
@@ -670,19 +664,17 @@ export function NotesSidebar({
                     <FileText className="h-3.5 w-3.5 shrink-0" />
                   )}
                   <span className={cn(
-                    "truncate flex-1",
+                    "truncate flex-1 min-w-0",
                     note.completed && "line-through opacity-70"
                   )}>{note.title || "Sin título"}</span>
                   {note.isPinned && <Pin className="h-3 w-3 shrink-0 text-muted-foreground/40" />}
-                  {onDeleteNote && (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); onDeleteNote(note); }}
-                      className="shrink-0 p-0.5 opacity-0 group-hover:opacity-100 hover:text-destructive transition-opacity"
-                      title="Eliminar nota"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  )}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDeleteNote?.(note.id); }}
+                    className="shrink-0 opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground/40 hover:text-destructive transition-all"
+                    title="Eliminar nota"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -800,7 +792,7 @@ export function NotesSidebar({
             </button>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

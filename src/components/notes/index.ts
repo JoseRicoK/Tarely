@@ -9,3 +9,4 @@ export { NoteAIPanel } from './NoteAIPanel';
 export { TemplateDialog } from './TemplateDialog';
 export { EmptyNotes } from './EmptyNotes';
 export { NoteTagSelector } from './NoteTagSelector';
+export { NoteTaskPanel } from './NoteTaskPanel';

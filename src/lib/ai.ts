@@ -1,7 +1,7 @@
 // Cliente de OpenAI y funciones de generación de tareas (GPT-5.2 Responses API)
 import OpenAI from "openai";
 import { z } from "zod";
-import type { AIGeneratedTask, Workspace, Task } from "./types";
+import type { AIGeneratedTask, Workspace, WorkspaceTag, Task } from "./types";
 
 // Schema de validación para la respuesta de la IA
 const AIRecurrenceSchema = z.object({
@@ -17,6 +17,7 @@ const AITaskSchema = z.object({
   importance: z.number().int().min(1).max(10),
   dueDate: z.string().optional(), // ISO 8601 date string
   recurrence: AIRecurrenceSchema.optional(),
+  tagIds: z.array(z.string()).optional(), // IDs de etiquetas a aplicar
 });
 
 const AIResponseSchema = z.object({
@@ -61,7 +62,7 @@ function getSpainDate(): { date: string; dayOfWeek: string } {
 }
 
 // Prompt para generación de tareas (GPT-5.2)
-function buildPrompt(workspace: Workspace, userText: string): string {
+function buildPrompt(workspace: Workspace, userText: string, tags: WorkspaceTag[] = []): string {
   const { date: today, dayOfWeek } = getSpainDate();
   
   return `Eres un asistente que extrae y estructura tareas a partir de lo que describe el usuario.
@@ -113,6 +114,16 @@ TAREAS RECURRENTES:
 - Si hay recurrence, SIEMPRE incluye dueDate con la primera ocurrencia (la próxima fecha que toque).
 - Si NO hay patrón de repetición, NO incluyas el campo recurrence.
 
+${tags.length > 0 ? `
+ETIQUETAS DISPONIBLES EN ESTE WORKSPACE:
+${tags.map(t => `- ID: "${t.id}" | Nombre: "${t.name}"`).join('\n')}
+
+ETIQUETAS - REGLAS:
+- El campo "tagIds" es OPCIONAL. Solo inclúyelo si estás MUY SEGURO de que la etiqueta aplica.
+- Si tienes dudas, NO incluyas etiquetas.
+- Puedes asignar 0, 1 o varias etiquetas por tarea.
+- Usa únicamente los IDs de la lista anterior. NUNCA inventes IDs.
+` : ''}
 TEXTO DEL USUARIO:
 ${userText}
 
@@ -128,24 +139,27 @@ FORMATO DE RESPUESTA (JSON estricto, sin markdown):
         "frequency": "weekly",
         "interval": 1,
         "daysOfWeek": [1, 4]
-      }
+      },
+      "tagIds": ["id-de-etiqueta-1"]
     }
   ]
 }
 
 NOTA: El campo "dueDate" es OPCIONAL. Solo inclúyelo si el usuario menciona una fecha.
-NOTA: El campo "recurrence" es OPCIONAL. Solo inclúyelo si el usuario indica que la tarea se repite.`;
+NOTA: El campo "recurrence" es OPCIONAL. Solo inclúyelo si el usuario indica que la tarea se repite.
+NOTA: El campo "tagIds" es OPCIONAL. Solo inclúyelo si estás muy seguro de qué etiqueta aplica.`;
 }
 
 // Función principal para generar tareas con IA (GPT-5.2 Responses API)
 export async function generateTasksWithAI(
   workspace: Workspace,
-  userText: string
+  userText: string,
+  tags: WorkspaceTag[] = []
 ): Promise<AIGeneratedTask[]> {
   const client = getOpenAIClient();
   const model = getModel();
 
-  const prompt = buildPrompt(workspace, userText);
+  const prompt = buildPrompt(workspace, userText, tags);
 
   let attempts = 0;
   const maxAttempts = 2;

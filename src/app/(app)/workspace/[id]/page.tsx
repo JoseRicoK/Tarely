@@ -56,6 +56,10 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  Mic,
+  Square,
+  ChevronLeft,
+  ChevronRight,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -81,6 +85,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Workspace, Task, TaskAssignee, WorkspaceSection, Subtask } from "@/lib/types";
@@ -203,6 +208,12 @@ export default function WorkspacePage() {
   // AI Generation state
   const [aiText, setAiText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   // Dialogs state
   const [instructionsOpen, setInstructionsOpen] = useState(false);
@@ -496,6 +507,17 @@ export default function WorkspacePage() {
     }
   }, [refetchSections]);
 
+  // Move a section left/right in the list view tabs
+  const handleMoveSectionInList = useCallback((section: WorkspaceSection, direction: "left" | "right") => {
+    const idx = sections.findIndex(s => s.id === section.id);
+    if (idx === -1) return;
+    const newIndex = direction === "left" ? idx - 1 : idx + 1;
+    if (newIndex < 0 || newIndex >= sections.length) return;
+    const reordered = [...sections];
+    [reordered[idx], reordered[newIndex]] = [reordered[newIndex], reordered[idx]];
+    handleSectionsReorder(reordered);
+  }, [sections, handleSectionsReorder]);
+
   // Handlers
   const handleSaveInstructions = useCallback(async (instructions: string) => {
     if (!workspace) return;
@@ -570,6 +592,75 @@ export default function WorkspacePage() {
       setIsGenerating(false);
     }
   }, [aiText, workspaceId, qc]);
+
+  const handleToggleRecording = useCallback(async () => {
+    if (isRecording) {
+      // Stop recording
+      mediaRecorderRef.current?.stop();
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+
+      // Prefer webm if supported, fallback to default
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+        ? "audio/webm"
+        : "";
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        // Stop all tracks to release the mic
+        stream.getTracks().forEach((t) => t.stop());
+        setIsRecording(false);
+
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: mimeType || "audio/webm",
+        });
+
+        if (audioBlob.size === 0) return;
+
+        setIsTranscribing(true);
+        try {
+          const formData = new FormData();
+          formData.append("audio", audioBlob, "recording.webm");
+
+          const res = await fetch("/api/ai/transcribe", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || "Error al transcribir");
+          }
+
+          const { text } = await res.json();
+          if (text?.trim()) {
+            setAiText((prev) => (prev.trim() ? `${prev.trim()} ${text.trim()}` : text.trim()));
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Error al transcribir el audio";
+          toast.error(message);
+        } finally {
+          setIsTranscribing(false);
+        }
+      };
+
+      recorder.start();
+      setIsRecording(true);
+    } catch {
+      toast.error("No se pudo acceder al micrófono. Comprueba los permisos.");
+    }
+  }, [isRecording]);
 
   const handleCreateTask = useCallback(() => {
     setTaskDialogMode("create");
@@ -934,30 +1025,30 @@ export default function WorkspacePage() {
             <ListTodo className="h-4 w-4 md:h-5 md:w-5" />
             <h2 className="font-semibold text-sm md:text-base">Tareas</h2>
           </div>
-          <div className="flex items-center gap-1.5 md:gap-2">
-            {/* View mode toggle - animated pill */}
-            <div className="relative flex items-center border rounded-lg p-0.5 md:p-1 bg-background/95 backdrop-blur-sm border-border/50">
+          <div className="flex items-center gap-3 md:gap-3.5">
+            {/* View mode toggle - animated pill (slightly smaller) */}
+            <div className="relative grid grid-cols-2 items-center border rounded-lg p-0.5 md:p-0.5 bg-background/95 backdrop-blur-sm border-border/50">
               {/* Sliding active background: sized to match each button accounting for container padding */}
               <div
                 className={cn(
-                  "absolute inset-0.5 md:inset-1 w-[calc(50%-2px)] md:w-[calc(50%-4px)] rounded-md bg-primary shadow-sm transition-transform duration-200 ease-in-out",
-                  viewMode === "kanban" && "translate-x-full"
+                  "absolute inset-0.5 md:inset-0.5 w-[calc(50%-2px)] md:w-[calc(50%-3px)] rounded-md bg-primary shadow-sm transition-transform duration-200 ease-in-out",
+                  viewMode === "kanban" ? "translate-x-full" : "translate-x-0"
                 )}
               />
               <button
                 onClick={() => startTransition(() => setViewMode("list"))}
                 className={cn(
-                  "relative z-10 flex flex-1 items-center justify-center gap-1.5 h-9 px-2.5 md:px-3 rounded-md text-xs md:text-sm font-medium transition-colors duration-200",
+                  "relative z-10 flex items-center justify-center gap-1 h-8 px-2 md:px-2.5 rounded-md text-xs md:text-sm font-medium transition-colors duration-200",
                   viewMode === "list" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <List className="h-4 w-4 shrink-0" />
+                <List className="h-3.5 w-3.5 shrink-0" />
                 <span className="hidden sm:inline">Lista</span>
               </button>
               <button
                 onClick={() => startTransition(() => setViewMode("kanban"))}
                 className={cn(
-                  "relative z-10 flex flex-1 items-center justify-center gap-1.5 h-9 px-2.5 md:px-3 rounded-md text-xs md:text-sm font-medium transition-colors duration-200",
+                  "relative z-10 flex items-center justify-center gap-1 h-8 px-2 md:px-2.5 rounded-md text-xs md:text-sm font-medium transition-colors duration-200",
                   viewMode === "kanban" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -1013,6 +1104,21 @@ export default function WorkspacePage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => handleMoveSectionInList(section, "left")}
+                          disabled={sections.indexOf(section) === 0}
+                        >
+                          <ChevronLeft className="h-4 w-4 mr-2" />
+                          Mover a la izquierda
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleMoveSectionInList(section, "right")}
+                          disabled={sections.indexOf(section) === sections.length - 1}
+                        >
+                          <ChevronRight className="h-4 w-4 mr-2" />
+                          Mover a la derecha
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleEditSection(section)}>
                           <Pencil className="h-4 w-4 mr-2" />
                           Editar sección
@@ -1253,12 +1359,35 @@ export default function WorkspacePage() {
                   onChange={(e) => setAiText(e.target.value)}
                   onKeyDown={handleKeyDown}
                   rows={1}
-                  className="resize-none bg-transparent !border-0 !shadow-none !ring-0 !outline-none focus-visible:!ring-0 focus-visible:!border-0 transition-all w-full min-h-[48px] md:min-h-[52px] text-base md:text-base rounded-2xl pr-[120px] md:pr-[140px] pl-4 py-3 md:py-3.5"
+                  className="resize-none bg-transparent !border-0 !shadow-none !ring-0 !outline-none focus-visible:!ring-0 focus-visible:!border-0 transition-all w-full min-h-[48px] md:min-h-[52px] text-base md:text-base rounded-2xl pr-[140px] md:pr-[160px] pl-4 py-3 md:py-3.5"
                   disabled={isGenerating}
                   style={{ fontSize: '16px' }}
                 />
                 
-                {/* Button positioned inside input */}
+                {/* Mic button */}
+                <button
+                  type="button"
+                  onClick={handleToggleRecording}
+                  disabled={isGenerating || isTranscribing}
+                  title={isRecording ? "Detener grabación" : "Hablar"}
+                  className={`absolute right-[100px] md:right-[122px] top-1/2 -translate-y-1/2 flex items-center justify-center h-[40px] w-[40px] rounded-full transition-all disabled:opacity-40 ${
+                    isRecording
+                      ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 animate-pulse"
+                      : isTranscribing
+                      ? "text-muted-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                  }`}
+                >
+                  {isTranscribing ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : isRecording ? (
+                    <Square className="h-5 w-5 fill-current" />
+                  ) : (
+                    <Mic className="h-5 w-5" />
+                  )}
+                </button>
+
+                {/* Organizar button positioned inside input */}
                 <Button
                   onClick={handleGenerateTasks}
                   disabled={isGenerating || !aiText.trim()}

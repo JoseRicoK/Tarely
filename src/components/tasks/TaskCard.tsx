@@ -112,6 +112,22 @@ function getImportanceLabel(importance: number): string {
   return "Muy baja";
 }
 
+// --------------------------------------------------------------------------
+// Module-level popup state — shared across ALL TaskCard instances on screen.
+// This lets a click on Card B be blocked while Card A's popup is open.
+// --------------------------------------------------------------------------
+let _taskCardPopupCount = 0;
+let _taskCardJustClosed = false;
+let _taskCardJustClosedTimer: ReturnType<typeof setTimeout> | null = null;
+const _popupOpened = () => { _taskCardPopupCount++; };
+const _popupClosed = () => {
+  _taskCardPopupCount = Math.max(0, _taskCardPopupCount - 1);
+  if (_taskCardJustClosedTimer) clearTimeout(_taskCardJustClosedTimer);
+  _taskCardJustClosed = true;
+  _taskCardJustClosedTimer = setTimeout(() => { _taskCardJustClosed = false; }, 300);
+};
+// --------------------------------------------------------------------------
+
 export function TaskCard({
   task,
   workspaceId,
@@ -136,27 +152,15 @@ export function TaskCard({
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [tagSelectorOpen, setTagSelectorOpen] = useState(false);
 
-  // Prevent navigation for 300ms after any popup closes.
-  // This is reliable regardless of event ordering: when a popup closes (for any reason),
-  // we set a ref guard; any click that fires within the window is blocked.
-  const popupJustClosed = React.useRef(false);
-  const popupJustClosedTimer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-  const setPopupCloseGuard = () => {
-    if (popupJustClosedTimer.current) clearTimeout(popupJustClosedTimer.current);
-    popupJustClosed.current = true;
-    popupJustClosedTimer.current = setTimeout(() => { popupJustClosed.current = false; }, 300);
-  };
+  // Guarded setters: notify the module-level counter on open/close
+  const guardedSetDropdownOpen = (open: boolean) => { open ? _popupOpened() : _popupClosed(); setDropdownOpen(open); };
+  const guardedSetAssigneesOpen = (open: boolean) => { open ? _popupOpened() : _popupClosed(); setAssigneesOpen(open); };
+  const guardedSetDatePickerOpen = (open: boolean) => { open ? _popupOpened() : _popupClosed(); setDatePickerOpen(open); };
+  const guardedSetTagSelectorOpen = (open: boolean) => { open ? _popupOpened() : _popupClosed(); setTagSelectorOpen(open); };
 
-  const guardedSetDropdownOpen = (open: boolean) => { if (!open) setPopupCloseGuard(); setDropdownOpen(open); };
-  const guardedSetAssigneesOpen = (open: boolean) => { if (!open) setPopupCloseGuard(); setAssigneesOpen(open); };
-  const guardedSetDatePickerOpen = (open: boolean) => { if (!open) setPopupCloseGuard(); setDatePickerOpen(open); };
-  const guardedSetTagSelectorOpen = (open: boolean) => { if (!open) setPopupCloseGuard(); setTagSelectorOpen(open); };
-
-  // Called on pointerdown on the card root.
-  // Fires BEFORE Radix's document listener closes the popup, so state is still "open".
-  // preventDefault cancels the subsequent click event entirely.
+  // pointerdown on card root: if ANY card's popup is open, cancel the click.
   const handleCardPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (datePickerOpen || assigneesOpen || tagSelectorOpen || dropdownOpen) {
+    if (_taskCardPopupCount > 0) {
       e.preventDefault();
     }
   };
@@ -171,9 +175,7 @@ export function TaskCard({
 
   // Navegar a la página de detalle de la tarea
   const handleNavigateToTask = () => {
-    // Block if any popup is currently open (same render cycle = stale closure has old open=true state)
-    if (datePickerOpen || assigneesOpen || tagSelectorOpen || dropdownOpen) return;
-    if (popupJustClosed.current) return;
+    if (_taskCardPopupCount > 0 || _taskCardJustClosed) return;
     const params = new URLSearchParams({ view: "list" });
     if (currentSectionId) {
       params.set("section", currentSectionId);

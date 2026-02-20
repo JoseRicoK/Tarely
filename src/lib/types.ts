@@ -179,6 +179,7 @@ export interface AIGeneratedTask {
   importance: number;
   dueDate?: string; // ISO 8601 date string opcional
   recurrence?: RecurrenceRule; // Regla de recurrencia detectada por la IA
+  tagIds?: string[]; // IDs de etiquetas a aplicar (opcionales)
 }
 
 export interface AIGenerateResponse {

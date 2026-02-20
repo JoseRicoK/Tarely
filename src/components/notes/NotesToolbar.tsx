@@ -5,14 +5,9 @@ import {
   Pin,
   Trash2,
   MoreHorizontal,
-  LinkIcon,
-  Unlink,
-  Sparkles,
   Copy,
   Download,
   FolderInput,
-  CheckCircle2,
-  Circle,
   Printer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -40,9 +35,6 @@ interface NotesToolbarProps {
   onTogglePin: () => void;
   onToggleFavorite: () => void;
   onDelete: () => void;
-  onLinkTask: () => void;
-  onUnlinkTask: () => void;
-  onToggleComplete: () => void;
   onMoveToFolder: (folderId: string | null) => void;
   onSaveAsTemplate: () => void;
   onDuplicate: () => void;
@@ -57,9 +49,6 @@ export function NotesToolbar({
   onTogglePin,
   onToggleFavorite,
   onDelete,
-  onLinkTask,
-  onUnlinkTask,
-  onToggleComplete,
   onMoveToFolder,
   onSaveAsTemplate,
   onDuplicate,
@@ -155,13 +144,13 @@ export function NotesToolbar({
           noteContent={note.contentText || ""}
         />
 
-        {/* Print button */}
+        {/* Print button (slightly larger) */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
               variant="ghost"
               size="sm"
-              className="h-9 w-9 md:h-8 md:w-8 p-0 hover:bg-accent/50 active:scale-95 transition-transform"
+              className="h-10 w-10 md:h-9 md:w-9 p-0 hover:bg-accent/50 active:scale-95 transition-transform"
               onClick={() => {
                 const html = editor?.getHTML() ?? "";
                 const title = note.title || "Nota";
@@ -215,65 +204,13 @@ export function NotesToolbar({
                 printWindow.document.close();
               }}
             >
-              <Printer className="h-4 w-4 md:h-3.5 md:w-3.5" />
+              <Printer className="h-5 w-5 md:h-4 md:w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>
             <p>Imprimir nota</p>
           </TooltipContent>
         </Tooltip>
-
-        {note.taskId ? (
-          <>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className={cn(
-                    "h-9 w-9 p-0 rounded-lg",
-                    note.completed ? "text-green-500 bg-green-500/10" : "text-muted-foreground"
-                  )}
-                  onClick={onToggleComplete}
-                >
-                  {note.completed ? (
-                    <CheckCircle2 className="h-[18px] w-[18px]" />
-                  ) : (
-                    <Circle className="h-[18px] w-[18px]" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>{note.completed ? "Marcar como pendiente" : "Completar tarea"}</TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-9 w-9 p-0 rounded-lg text-[var(--color-ta)]"
-                  onClick={onUnlinkTask}
-                >
-                  <Unlink className="h-[18px] w-[18px]" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Desvincular tarea</TooltipContent>
-            </Tooltip>
-          </>
-        ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-9 w-9 p-0 rounded-lg"
-                onClick={onLinkTask}
-              >
-                <LinkIcon className="h-[18px] w-[18px]" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Crear tarea vinculada</TooltipContent>
-          </Tooltip>
-        )}
 
         {/* More actions - Touch optimized */}
         <DropdownMenu>
