@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import {
   ChevronLeft,
@@ -130,12 +130,6 @@ export function NotionCalendar({
     checkGoogleConnection();
   }, []);
 
-  useEffect(() => {
-    if (isGoogleConnected) {
-      fetchGoogleEvents();
-    }
-  }, [currentDate, isGoogleConnected, viewMode]);
-
   async function checkGoogleConnection() {
     try {
       const res = await fetch('/api/google-calendar/status');
@@ -161,6 +155,14 @@ export function NotionCalendar({
     }
   }
 
+  const [googleEventsCache, setGoogleEventsCache] = useState<Record<string, any[]>>({});
+
+  useEffect(() => {
+    if (isGoogleConnected) {
+      fetchGoogleEvents();
+    }
+  }, [currentDate, isGoogleConnected, viewMode]);
+
   async function fetchGoogleEvents() {
     try {
       const start = viewMode === 'week'
@@ -170,29 +172,69 @@ export function NotionCalendar({
         ? endOfWeek(currentDate, { weekStartsOn: 1 })
         : new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
 
+      const cacheKey = `${start.toISOString()}_${end.toISOString()}`;
+
+      if (googleEventsCache[cacheKey]) {
+        setGoogleEvents(googleEventsCache[cacheKey]);
+        return;
+      }
+
       const res = await fetch(
         `/api/google-calendar/events?timeMin=${start.toISOString()}&timeMax=${end.toISOString()}`
       );
       if (res.ok) {
         const data = await res.json();
-        setGoogleEvents(data.events || []);
+        const events = data.events || [];
+        setGoogleEvents(events);
+        setGoogleEventsCache(prev => ({ ...prev, [cacheKey]: events }));
       }
     } catch (error) {
       console.error('Error fetching Google events:', error);
     }
   }
 
-  const handlePrev = () => {
+  const handlePrev = useCallback(() => {
     if (viewMode === 'week') setCurrentDate(prev => subWeeks(prev, 1));
     else setCurrentDate(prev => subMonths(prev, 1));
-  };
+  }, [viewMode]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (viewMode === 'week') setCurrentDate(prev => addWeeks(prev, 1));
     else setCurrentDate(prev => addMonths(prev, 1));
-  };
+  }, [viewMode]);
 
   const handleToday = () => setCurrentDate(new Date());
+
+  // Lógica de arrastre con trackpad (horizontal scroll)
+  const isScrollingRef = useRef(false);
+  const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    // Solo responder a scroll horizontal dominante
+    if (Math.abs(e.deltaX) > Math.abs(e.deltaY) && Math.abs(e.deltaX) > 20) {
+      if (!isScrollingRef.current) {
+        isScrollingRef.current = true;
+        if (e.deltaX > 0) {
+          handleNext();
+        } else {
+          handlePrev();
+        }
+        
+        // Bloquear nuevos eventos de scroll por 500ms para evitar saltos múltiples rápidos
+        if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+        scrollTimeoutRef.current = setTimeout(() => {
+          isScrollingRef.current = false;
+        }, 500);
+      }
+    }
+  }, [handleNext, handlePrev]);
+
+  // Limpiar timeout al desmontar
+  useEffect(() => {
+    return () => {
+      if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
+    };
+  }, []);
 
   const handleDateSelect = useCallback((date: Date) => {
     setCurrentDate(date);
@@ -347,14 +389,6 @@ export function NotionCalendar({
           </div>
 
           <div className="flex items-center gap-2">
-            <div className="relative hidden sm:block">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
-              <Input
-                placeholder="Buscar..."
-                className="pl-8 h-7 w-36 md:w-48 bg-muted/30 text-xs border-border/30"
-              />
-            </div>
-
             <div className="flex gap-0.5 bg-muted/30 rounded-md p-0.5">
               <Button
                 variant={viewMode === 'week' ? 'secondary' : 'ghost'}
@@ -373,11 +407,22 @@ export function NotionCalendar({
                 Mes
               </Button>
             </div>
+
+            <div className="relative hidden sm:block">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
+              <Input
+                placeholder="Buscar..."
+                className="pl-8 h-7 w-36 md:w-48 bg-muted/30 text-xs border-border/30"
+              />
+            </div>
           </div>
         </div>
 
         {/* Calendar grid */}
-        <div className="flex-1 overflow-hidden flex">
+        <div 
+          className="flex-1 overflow-hidden flex"
+          onWheel={handleWheel}
+        >
           <div className="flex-1 overflow-auto">
             {viewMode === 'week' ? (
               <WeekView
@@ -404,7 +449,7 @@ export function NotionCalendar({
           </div>
 
           {/* Desktop Right panel */}
-          <div className="hidden lg:block">
+          <div className="hidden lg:block w-80 border-l border-border/20 bg-background/50">
             <EventDetailPanel
               event={selectedEvent}
               upcomingTasks={upcomingTasks}
