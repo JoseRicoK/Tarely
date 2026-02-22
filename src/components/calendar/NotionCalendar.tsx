@@ -7,6 +7,8 @@ import {
   ChevronRight,
   ListTodo,
   Search,
+  PanelRight,
+  PanelRightClose
 } from 'lucide-react';
 import {
   format,
@@ -66,7 +68,18 @@ export function NotionCalendar({
   const [selectedEvent, setSelectedEvent] = useState<SelectedCalendarEvent | null>(null);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [isRightPanelOpen, setIsRightPanelOpen] = useState(true);
   const [newTaskInitialData, setNewTaskInitialData] = useState<{ dueDate?: string | null; workspaceId?: string } | undefined>(undefined);
+  const [isDesktop, setIsDesktop] = useState(true);
+
+  useEffect(() => {
+    const mql = window.matchMedia('(min-width: 1024px)');
+    setIsDesktop(mql.matches);
+    
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
 
   const handleTimeSlotClick = useCallback((date: Date) => {
     setNewTaskInitialData({
@@ -415,6 +428,18 @@ export function NotionCalendar({
                 className="pl-8 h-7 w-36 md:w-48 bg-muted/30 text-xs border-border/30"
               />
             </div>
+
+            <div className="w-px h-4 bg-border/40 mx-1 hidden lg:block" />
+
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsRightPanelOpen(prev => !prev)}
+              className="h-7 w-7 hidden lg:flex text-muted-foreground"
+              title={isRightPanelOpen ? "Ocultar panel" : "Mostrar panel"}
+            >
+              {isRightPanelOpen ? <PanelRightClose className="h-4 w-4" /> : <PanelRight className="h-4 w-4" />}
+            </Button>
           </div>
         </div>
 
@@ -448,19 +473,21 @@ export function NotionCalendar({
           </div>
 
           {/* Desktop Right panel */}
-          <div className="hidden lg:block w-80 border-l border-border/20 bg-background/50 flex-shrink-0 h-full overflow-hidden">
-            <EventDetailPanel
-              event={selectedEvent}
-              upcomingTasks={upcomingTasks}
-              workspaces={workspaces}
-              onClose={() => setSelectedEvent(null)}
-              onTaskToggle={handleTaskToggle}
-            />
-          </div>
+          {isRightPanelOpen && (
+            <div className="hidden lg:block w-80 border-l border-border/20 bg-background/50 flex-shrink-0 h-full overflow-hidden transition-all duration-300">
+              <EventDetailPanel
+                event={selectedEvent}
+                upcomingTasks={upcomingTasks}
+                workspaces={workspaces}
+                onClose={() => setSelectedEvent(null)}
+                onTaskToggle={handleTaskToggle}
+              />
+            </div>
+          )}
 
           {/* Mobile Right panel (Sheet) */}
           <div className="block lg:hidden">
-            <Sheet open={selectedEvent !== null} onOpenChange={(open) => !open && setSelectedEvent(null)}>
+            <Sheet open={!isDesktop && selectedEvent !== null} onOpenChange={(open) => !open && setSelectedEvent(null)}>
               <SheetContent side="right" className="p-0 w-[85vw] sm:w-96">
                 <SheetTitle className="sr-only">Detalles del evento</SheetTitle>
                 <div className="h-full pt-6">
