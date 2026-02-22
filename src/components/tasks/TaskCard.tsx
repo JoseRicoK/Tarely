@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -54,7 +54,7 @@ import {
   FileText,
   type LucideIcon,
 } from "lucide-react";
-import type { Task, TaskAssignee, WorkspaceSection, Subtask } from "@/lib/types";
+import type { Task, TaskAssignee, TaskTag, WorkspaceSection, Subtask } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -76,6 +76,7 @@ const iconMap: Record<string, LucideIcon> = {
 import { TaskAssignees } from "./TaskAssignees";
 import { SubtaskList } from "./SubtaskList";
 import { RecurrenceBadge } from "./RecurrenceSelector";
+import { TagSelector } from "./TagSelector";
 
 interface TaskCardProps {
   task: Task;
@@ -91,6 +92,7 @@ interface TaskCardProps {
   onDueDateChange?: (taskId: string, dueDate: string | null) => void;
   onImportanceChange?: (taskId: string, importance: number) => void;
   onSubtasksChange?: (taskId: string, subtasks: Subtask[]) => void;
+  onTagsChange?: (taskId: string, tags: TaskTag[]) => void;
   onQuickDelete?: (task: Task) => void; // Para eliminar directamente sin confirmación (vista completadas)
 }
 
@@ -110,6 +112,22 @@ function getImportanceLabel(importance: number): string {
   return "Muy baja";
 }
 
+// --------------------------------------------------------------------------
+// Module-level popup state — shared across ALL TaskCard instances on screen.
+// This lets a click on Card B be blocked while Card A's popup is open.
+// --------------------------------------------------------------------------
+let _taskCardPopupCount = 0;
+let _taskCardJustClosed = false;
+let _taskCardJustClosedTimer: ReturnType<typeof setTimeout> | null = null;
+const _popupOpened = () => { _taskCardPopupCount++; };
+const _popupClosed = () => {
+  _taskCardPopupCount = Math.max(0, _taskCardPopupCount - 1);
+  if (_taskCardJustClosedTimer) clearTimeout(_taskCardJustClosedTimer);
+  _taskCardJustClosed = true;
+  _taskCardJustClosedTimer = setTimeout(() => { _taskCardJustClosed = false; }, 300);
+};
+// --------------------------------------------------------------------------
+
 export function TaskCard({
   task,
   workspaceId,
@@ -124,12 +142,28 @@ export function TaskCard({
   onDueDateChange,
   onImportanceChange,
   onSubtasksChange,
+  onTagsChange,
   onQuickDelete,
 }: TaskCardProps) {
   const router = useRouter();
   const [isGeneratingSubtasks, setIsGeneratingSubtasks] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const [assigneesOpen, setAssigneesOpen] = useState(false);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [tagSelectorOpen, setTagSelectorOpen] = useState(false);
+
+  // Guarded setters: notify the module-level counter on open/close
+  const guardedSetDropdownOpen = (open: boolean) => { open ? _popupOpened() : _popupClosed(); setDropdownOpen(open); };
+  const guardedSetAssigneesOpen = (open: boolean) => { open ? _popupOpened() : _popupClosed(); setAssigneesOpen(open); };
+  const guardedSetDatePickerOpen = (open: boolean) => { open ? _popupOpened() : _popupClosed(); setDatePickerOpen(open); };
+  const guardedSetTagSelectorOpen = (open: boolean) => { open ? _popupOpened() : _popupClosed(); setTagSelectorOpen(open); };
+
+  // pointerdown on card root: if ANY card's popup is open, cancel the click.
+  const handleCardPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (_taskCardPopupCount > 0) {
+      e.preventDefault();
+    }
+  };
   
   const timeAgo = formatDistanceToNow(new Date(task.createdAt), {
     addSuffix: true,
@@ -141,12 +175,18 @@ export function TaskCard({
 
   // Navegar a la página de detalle de la tarea
   const handleNavigateToTask = () => {
-    router.push(`/workspace/${workspaceId}/task/${task.id}`);
+    if (_taskCardPopupCount > 0 || _taskCardJustClosed) return;
+    const params = new URLSearchParams({ view: "list" });
+    if (currentSectionId) {
+      params.set("section", currentSectionId);
+    }
+    router.push(`/workspace/${workspaceId}/task/${task.id}?${params.toString()}`);
   };
 
   const hasAssignees = task.assignees && task.assignees.length > 0;
   const hasDueDate = !!task.dueDate;
   const hasSubtasks = task.subtasks && task.subtasks.length > 0;
+  const hasTags = task.tags && task.tags.length > 0;
 
   // Función para generar subtareas con IA
   const handleGenerateSubtasks = async () => {
@@ -181,6 +221,7 @@ export function TaskCard({
         task.completed && "opacity-70 bg-muted/30"
       )}
       onClick={handleNavigateToTask}
+      onPointerDown={handleCardPointerDown}
     >
       {/* Importance indicator bar */}
       <div
@@ -377,11 +418,16 @@ export function TaskCard({
             <RecurrenceBadge recurrence={task.recurrence} compact />
           )}
 
-          {/* Fecha límite - en móvil siempre visible (solo icono), en desktop hover si vacío */}
+          {/* Fecha límite - siempre en flujo; w-0/overflow-hidden cuando vacío para no romper línea */}
           {!task.completed && onDueDateChange && (
-            <div className={cn(
-              hasDueDate ? "opacity-100" : "md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-            )}>
+            <div
+              className={cn(
+                "shrink-0 overflow-hidden",
+                hasDueDate ? "w-auto" : "w-0 md:group-hover:w-auto"
+              )}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
               <DatePicker
                 value={task.dueDate}
                 onChange={(date) => onDueDateChange(task.id, date)}
@@ -389,16 +435,43 @@ export function TaskCard({
                 showTime
                 iconOnly
                 externalOpen={datePickerOpen}
-                onExternalOpenChange={setDatePickerOpen}
+                onExternalOpenChange={guardedSetDatePickerOpen}
               />
             </div>
           )}
 
-          {/* Asignados - en móvil solo si hay asignados, en desktop hover si vacío */}
+          {/* Etiquetas - siempre en flujo; w-0/overflow-hidden cuando vacío */}
+          {!task.completed && onTagsChange && (
+            <div
+              className={cn(
+                "shrink-0 overflow-hidden",
+                hasTags ? "w-auto" : "w-0 md:group-hover:w-auto"
+              )}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
+              <TagSelector
+                taskId={task.id}
+                workspaceId={workspaceId}
+                tags={task.tags || []}
+                onTagsChange={(tags) => onTagsChange(task.id, tags)}
+                compact
+                externalOpen={tagSelectorOpen}
+                onExternalOpenChange={guardedSetTagSelectorOpen}
+              />
+            </div>
+          )}
+
+          {/* Asignados - siempre en flujo; w-0/overflow-hidden cuando vacío */}
           {!task.completed && onAssigneesChange && (
-            <div className={cn(
-              hasAssignees ? "opacity-100" : "hidden md:block md:opacity-0 md:group-hover:opacity-100 transition-opacity"
-            )}>
+            <div
+              className={cn(
+                "shrink-0 overflow-hidden",
+                hasAssignees ? "w-auto" : "w-0 md:group-hover:w-auto"
+              )}
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
+            >
               <TaskAssignees
                 taskId={task.id}
                 workspaceId={workspaceId}
@@ -406,7 +479,7 @@ export function TaskCard({
                 onAssigneesChange={(assignees) => onAssigneesChange(task.id, assignees)}
                 compact
                 externalOpen={assigneesOpen}
-                onExternalOpenChange={setAssigneesOpen}
+                onExternalOpenChange={guardedSetAssigneesOpen}
               />
             </div>
           )}
@@ -511,12 +584,14 @@ export function TaskCard({
         )}
 
         {/* Dropdown menu - en móvil siempre visible, en desktop solo en hover */}
-        <DropdownMenu>
+        <DropdownMenu onOpenChange={guardedSetDropdownOpen}>
           <DropdownMenuTrigger asChild>
             <Button
               variant="ghost"
               size="icon"
               className="h-7 w-7 md:h-8 md:w-8 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
+              onClick={(e) => e.stopPropagation()}
+              onPointerDown={(e) => e.stopPropagation()}
             >
               <MoreVertical className="h-4 w-4" />
               <span className="sr-only">Opciones</span>
@@ -557,6 +632,16 @@ export function TaskCard({
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
                 Fecha límite
+              </DropdownMenuItem>
+            )}
+            {/* Etiquetas - visible solo en móvil */}
+            {!task.completed && onTagsChange && (
+              <DropdownMenuItem
+                onClick={() => setTimeout(() => setTagSelectorOpen(true), 100)}
+                className="md:hidden"
+              >
+                <Tag className="mr-2 h-4 w-4" />
+                Etiquetas
               </DropdownMenuItem>
             )}
             {/* Generar subtareas - visible en dropdown en móvil */}

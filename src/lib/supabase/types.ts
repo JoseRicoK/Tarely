@@ -26,6 +26,7 @@ export interface Database {
           instructions: string;
           icon: string;
           color: string;
+          sort_order: number;
           user_id: string | null;
           created_at: string;
           updated_at: string;
@@ -37,6 +38,7 @@ export interface Database {
           instructions?: string;
           icon?: string;
           color?: string;
+          sort_order?: number;
           user_id?: string;
           created_at?: string;
           updated_at?: string;
@@ -48,6 +50,7 @@ export interface Database {
           instructions?: string;
           icon?: string;
           color?: string;
+          sort_order?: number;
           user_id?: string;
           created_at?: string;
           updated_at?: string;

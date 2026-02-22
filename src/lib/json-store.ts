@@ -79,9 +79,7 @@ export async function writeDataAtomic(data: TareAIData): Promise<void> {
 
 export async function listWorkspaces(): Promise<Workspace[]> {
   const data = await readData();
-  return data.workspaces.sort(
-    (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
-  );
+  return data.workspaces.sort((a, b) => a.sortOrder - b.sortOrder);
 }
 
 export async function getWorkspace(id: string): Promise<Workspace | null> {
@@ -94,6 +92,9 @@ export async function createWorkspace(
 ): Promise<Workspace> {
   const data = await readData();
   const now = new Date().toISOString();
+  const maxSortOrder = data.workspaces.length > 0 
+    ? Math.max(...data.workspaces.map(w => w.sortOrder))
+    : -1;
   const workspace: Workspace = {
     id: uuidv4(),
     name: input.name,
@@ -101,6 +102,7 @@ export async function createWorkspace(
     instructions: input.instructions,
     icon: input.icon || "Folder",
     color: input.color || "#6366f1",
+    sortOrder: maxSortOrder + 1,
     createdAt: now,
     updatedAt: now,
   };
@@ -149,6 +151,14 @@ export async function deleteWorkspace(id: string): Promise<boolean> {
 export async function listTasks(workspaceId: string): Promise<Task[]> {
   const data = await readData();
   return data.tasks.filter((t) => t.workspaceId === workspaceId);
+}
+
+export async function listTasksLite(workspaceId: string): Promise<Task[]> {
+  return listTasks(workspaceId);
+}
+
+export async function listTasksWithTags(workspaceId: string): Promise<Task[]> {
+  return listTasks(workspaceId);
 }
 
 export async function getTask(id: string): Promise<Task | null> {

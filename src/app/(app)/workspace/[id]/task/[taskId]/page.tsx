@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/queries";
+import type { Task as TaskType } from "@/lib/types";
 import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
 import { es } from "date-fns/locale";
@@ -64,9 +67,10 @@ import {
   TaskAssignees,
   RecurrenceSelector,
   RecurrenceBadge,
+  TagSelector,
 } from "@/components/tasks";
 import { useUser } from "@/components/auth/UserContext";
-import type { Task, Workspace, WorkspaceSection, Subtask, TaskAssignee, RecurrenceRule } from "@/lib/types";
+import type { Task, Workspace, WorkspaceSection, Subtask, TaskAssignee, TaskTag, RecurrenceRule } from "@/lib/types";
 import { cn, getAvatarUrl } from "@/lib/utils";
 import { getRecurrenceLabel, calculateNextOccurrence } from "@/lib/recurrence";
 
@@ -95,10 +99,32 @@ function getImportanceBarColor(importance: number): string {
 export default function TaskDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { profile } = useUser();
+  const qc = useQueryClient();
   
   const workspaceId = params.id as string;
   const taskId = params.taskId as string;
+
+  const returnWorkspaceHref = useMemo(() => {
+    const returnParams = new URLSearchParams();
+    const view = searchParams.get("view");
+    const section = searchParams.get("section");
+
+    if (view === "list" || view === "kanban") {
+      returnParams.set("view", view);
+    }
+    if (section) {
+      returnParams.set("section", section);
+    }
+
+    const query = returnParams.toString();
+    return query ? `/workspace/${workspaceId}?${query}` : `/workspace/${workspaceId}`;
+  }, [searchParams, workspaceId]);
+
+  const handleBackToWorkspace = useCallback(() => {
+    router.push(returnWorkspaceHref);
+  }, [router, returnWorkspaceHref]);
 
   const [task, setTask] = useState<Task | null>(null);
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
@@ -113,6 +139,23 @@ export default function TaskDetailPage() {
   const [editDescription, setEditDescription] = useState("");
   const [isAddingSubtask, setIsAddingSubtask] = useState(false);
   const [isSubtasksExpanded, setIsSubtasksExpanded] = useState(true);
+
+  const sectionLabel = useMemo(() => {
+    if (!task) return "Pendientes";
+
+    if (task.sectionId) {
+      const currentSection = sections.find((section) => section.id === task.sectionId);
+      if (currentSection) return currentSection.name;
+    }
+
+    if (task.completed) {
+      const completedSection = sections.find((section) => section.name === "Completadas");
+      return completedSection?.name || "Completadas";
+    }
+
+    const pendingSection = sections.find((section) => section.name === "Pendientes");
+    return pendingSection?.name || sections[0]?.name || "Pendientes";
+  }, [task, sections]);
 
   // Cargar datos
   const loadData = useCallback(async () => {
@@ -339,8 +382,19 @@ export default function TaskDetailPage() {
       const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Error eliminando tarea");
 
+      // Actualizar caché para que la lista refleje el borrado inmediatamente
+      qc.setQueryData<TaskType[]>(queryKeys.tasks(workspaceId), (prev) =>
+        (prev ?? []).filter((t) => t.id !== taskId)
+      );
+      // También rascar el overview cache
+      qc.setQueryData(
+        queryKeys.workspaceOverview(workspaceId),
+        (prev: { tasks?: TaskType[]; workspace?: unknown; sections?: unknown[] } | undefined) =>
+          prev ? { ...prev, tasks: (prev.tasks ?? []).filter((t: TaskType) => t.id !== taskId) } : prev
+      );
+
       toast.success("Tarea eliminada");
-      router.push(`/workspace/${workspaceId}`);
+      router.push(returnWorkspaceHref);
     } catch (error) {
       console.error("Error:", error);
       toast.error("Error eliminando tarea");
@@ -355,6 +409,11 @@ export default function TaskDetailPage() {
   // Actualizar asignados
   const handleAssigneesChange = (assignees: TaskAssignee[]) => {
     setTask((prev) => prev ? { ...prev, assignees } : null);
+  };
+
+  // Actualizar tags
+  const handleTagsChange = (tags: TaskTag[]) => {
+    setTask((prev) => prev ? { ...prev, tags } : null);
   };
 
   // Copiar título al portapapeles
@@ -407,7 +466,7 @@ export default function TaskDetailPage() {
       <div className="flex items-center justify-between mb-6">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 min-w-0">
-          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => router.back()}>
+          <Button variant="ghost" size="icon" className="shrink-0" onClick={handleBackToWorkspace}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           
@@ -417,7 +476,7 @@ export default function TaskDetailPage() {
               style={{ backgroundColor: workspace.color }}
             />
             <Link
-              href={`/workspace/${workspaceId}`}
+              href={returnWorkspaceHref}
               className="hover:text-foreground transition-colors truncate max-w-[150px] sm:max-w-[200px]"
             >
               {workspace.name}
@@ -710,9 +769,9 @@ export default function TaskDetailPage() {
               </div>
               
               <div className="p-4 space-y-4">
-                {/* Estado */}
+                {/* Sección */}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Estado</span>
+                  <span className="text-sm text-muted-foreground">Sección</span>
                   <Badge
                     variant={task.completed ? "default" : "secondary"}
                     className={cn(
@@ -721,13 +780,8 @@ export default function TaskDetailPage() {
                         ? "bg-green-500 hover:bg-green-600"
                         : "hover:bg-primary/20"
                     )}
-                    onClick={toggleComplete}
                   >
-                    {task.completed ? (
-                      <><CheckCircle2 className="h-3 w-3 mr-1" /> Completada</>
-                    ) : (
-                      <><Circle className="h-3 w-3 mr-1" /> Pendiente</>
-                    )}
+                    {sectionLabel}
                   </Badge>
                 </div>
 
@@ -771,6 +825,17 @@ export default function TaskDetailPage() {
                     value={task.recurrence || null}
                     onChange={updateRecurrence}
                     compact
+                  />
+                </div>
+
+                {/* Etiquetas */}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Etiquetas</span>
+                  <TagSelector
+                    taskId={task.id}
+                    workspaceId={workspaceId}
+                    tags={task.tags || []}
+                    onTagsChange={handleTagsChange}
                   />
                 </div>
               </div>

@@ -16,10 +16,11 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { MoreVertical, Pencil, Trash2, Users, Clock, CheckCircle2 } from "lucide-react";
+import { MoreVertical, Pencil, Trash2, Users, Clock, CheckCircle2, ChevronLeft, ChevronRight } from "lucide-react";
 import { getIconComponent } from "@/components/ui/icon-color-picker";
 import type { Workspace } from "@/lib/types";
 
@@ -27,12 +28,20 @@ interface WorkspaceCardProps {
   workspace: Workspace;
   onEdit: (workspace: Workspace) => void;
   onDelete: (workspace: Workspace) => void;
+  onMoveLeft?: (workspace: Workspace) => void;
+  onMoveRight?: (workspace: Workspace) => void;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
 export function WorkspaceCard({
   workspace,
   onEdit,
   onDelete,
+  onMoveLeft,
+  onMoveRight,
+  isFirst,
+  isLast,
 }: WorkspaceCardProps) {
   const router = useRouter();
   const timeAgo = formatDistanceToNow(new Date(workspace.updatedAt), {
@@ -44,10 +53,7 @@ export function WorkspaceCard({
   const workspaceColor = workspace.color || "#6366f1";
 
   const handleCardClick = (e: React.MouseEvent) => {
-    // No navegar si se hizo clic en el menú
-    if ((e.target as HTMLElement).closest('[data-menu]')) {
-      return;
-    }
+    if ((e.target as HTMLElement).closest('[data-menu]')) return;
     router.push(`/workspace/${workspace.id}`);
   };
 
@@ -112,6 +118,25 @@ export function WorkspaceCard({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  {(onMoveLeft || onMoveRight) && (
+                    <>
+                      <DropdownMenuItem
+                        onClick={(e) => { e.stopPropagation(); onMoveLeft?.(workspace); }}
+                        disabled={isFirst}
+                      >
+                        <ChevronLeft className="mr-2 h-4 w-4" />
+                        Mover a la izquierda
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={(e) => { e.stopPropagation(); onMoveRight?.(workspace); }}
+                        disabled={isLast}
+                      >
+                        <ChevronRight className="mr-2 h-4 w-4" />
+                        Mover a la derecha
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem onClick={(e) => { e.stopPropagation(); onEdit(workspace); }}>
                     <Pencil className="mr-2 h-4 w-4" />
                     Editar

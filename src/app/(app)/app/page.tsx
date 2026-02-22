@@ -2,11 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useWorkspacesOverview, useInvalidators, queryKeys } from "@/lib/queries";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus, FolderPlus, AlertTriangle, Circle, Calendar } from "lucide-react";
 import { toast } from "sonner";
-import { format, parseISO, isValid, isPast, isToday } from "date-fns";
+import { arrayMove } from "@dnd-kit/sortable";
+import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import {
   WorkspaceCard,
@@ -23,17 +26,13 @@ interface OverdueTask extends Task {
   workspaceId: string;
 }
 
-interface WorkspaceData {
-  workspace: Workspace;
-  sections: any[];
-  tasks: Task[];
-}
-
 export default function AppHomePage() {
   const router = useRouter();
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [overdueTasks, setOverdueTasks] = useState<OverdueTask[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const qc = useQueryClient();
+  const { invalidateWorkspacesOverview } = useInvalidators();
+  const { data, isLoading } = useWorkspacesOverview();
+  const workspaces = data?.workspaces ?? [];
+  const overdueTasks = data?.overdueTasks ?? [];
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogMode, setDialogMode] = useState<"create" | "edit">("create");
   const [editingWorkspace, setEditingWorkspace] = useState<Workspace | null>(null);
@@ -42,8 +41,30 @@ export default function AppHomePage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
 
-  // Cachear secciones para evitar múltiples llamadas
-  const [sectionsCache, setSectionsCache] = useState<Map<string, any[]>>(new Map());
+  const reorderWorkspaces = useCallback((newOrder: typeof workspaces) => {
+    const current = qc.getQueryData<typeof data>(queryKeys.workspacesOverview);
+    if (!current) return;
+    qc.setQueryData(queryKeys.workspacesOverview, { ...current, workspaces: newOrder });
+    const workspaceIds = newOrder.map((w) => w.id);
+    fetch("/api/workspaces/reorder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ workspaceIds }),
+    }).catch(() => {
+      toast.error("Error al guardar el orden");
+      void invalidateWorkspacesOverview();
+    });
+  }, [qc, data, invalidateWorkspacesOverview]);
+
+  const handleMoveWorkspace = useCallback((workspace: Workspace, direction: "left" | "right") => {
+    const current = qc.getQueryData<typeof data>(queryKeys.workspacesOverview);
+    if (!current) return;
+    const idx = current.workspaces.findIndex((w) => w.id === workspace.id);
+    if (idx === -1) return;
+    const newIndex = direction === "left" ? idx - 1 : idx + 1;
+    if (newIndex < 0 || newIndex >= current.workspaces.length) return;
+    reorderWorkspaces(arrayMove(current.workspaces, idx, newIndex));
+  }, [qc, data, reorderWorkspaces]);
 
   // Verificar si es primera vez (desde Supabase)
   useEffect(() => {
@@ -77,131 +98,20 @@ export default function AppHomePage() {
     }
   }, []);
 
-  const fetchWorkspaces = useCallback(async () => {
-    try {
-      const res = await fetch("/api/workspaces");
-      if (!res.ok) {
-        if (res.status !== 404) {
-          throw new Error("Error al cargar workspaces");
-        }
-        setWorkspaces([]);
-        return { workspaces: [], allTasks: [] };
-      }
-      const data = await res.json();
-      const workspaceList = data || [];
-      
-      // Cargar TODAS las secciones y tareas en paralelo para TODOS los workspaces
-      const workspaceDataPromises = workspaceList.map(async (ws: Workspace) => {
-        const [sectionsRes, tasksRes] = await Promise.all([
-          fetch(`/api/sections?workspaceId=${ws.id}`),
-          fetch(`/api/tasks?workspaceId=${ws.id}`)
-        ]);
-        
-        let sections: any[] = [];
-        let tasks: Task[] = [];
-        
-        if (sectionsRes.ok) {
-          const sectionsData = await sectionsRes.json();
-          sections = Array.isArray(sectionsData) ? sectionsData : (sectionsData.sections || []);
-        }
-        
-        if (tasksRes.ok) {
-          const tasksData = await tasksRes.json();
-          tasks = Array.isArray(tasksData) ? tasksData : (tasksData.tasks || []);
-        }
-        
-        return { workspace: ws, sections, tasks };
-      });
-      
-      const allWorkspaceData: WorkspaceData[] = await Promise.all(workspaceDataPromises);
-      
-      // Actualizar cache de secciones
-      const newSectionsCache = new Map<string, any[]>();
-      allWorkspaceData.forEach(({ workspace, sections }) => {
-        newSectionsCache.set(workspace.id, sections);
-      });
-      setSectionsCache(newSectionsCache);
-      
-      // Procesar workspaces con contadores
-      const workspacesWithCounts = allWorkspaceData.map(({ workspace, sections, tasks }) => {
-        const pendingSection = sections.find((s: any) => s.name === 'Pendientes');
-        const pendingSectionId = pendingSection?.id;
-        
-        const pendingCount = tasks.filter((task: Task) => {
-          if (task.sectionId) {
-            return task.sectionId === pendingSectionId;
-          }
-          return !task.completed;
-        }).length;
-        
-        return { ...workspace, pendingTasksCount: pendingCount };
-      });
-      
-      // Recopilar todas las tareas para procesarlas de una vez
-      const allTasks = allWorkspaceData.flatMap(({ workspace, tasks }) => 
-        tasks.map(task => ({ ...task, workspaceName: workspace.name, workspaceId: workspace.id }))
-      );
-      
-      setWorkspaces(workspacesWithCounts);
-      return { workspaces: workspacesWithCounts, allTasks };
-    } catch {
-      setWorkspaces([]);
-      return { workspaces: [], allTasks: [] };
-    }
-  }, []);
-
-  useEffect(() => {
-    async function loadData() {
-      setIsLoading(true);
-      const { allTasks } = await fetchWorkspaces();
-      
-      // Filtrar tareas vencidas de todas las tareas ya cargadas
-      const overdue = allTasks
-        .filter((task: any) => {
-          if (!task.dueDate || task.completed) return false;
-          try {
-            const date = parseISO(task.dueDate);
-            return isValid(date) && isPast(date) && !isToday(date);
-          } catch {
-            return false;
-          }
-        })
-        .sort((a: any, b: any) => {
-          const dateA = a.dueDate ? parseISO(a.dueDate).getTime() : 0;
-          const dateB = b.dueDate ? parseISO(b.dueDate).getTime() : 0;
-          return dateA - dateB;
-        });
-      
-      setOverdueTasks(overdue);
-      setIsLoading(false);
-    }
-    loadData();
-  }, [fetchWorkspaces]);
-
   const handleToggleComplete = async (task: OverdueTask) => {
     try {
-      // Usar cache de secciones si está disponible
       let completedSectionId = null;
-      const cachedSections = sectionsCache.get(task.workspaceId);
-      
-      if (cachedSections) {
-        const completedSection = cachedSections.find((s: any) => s.name === 'Completadas');
+
+      const sectionsRes = await fetch(`/api/sections?workspaceId=${task.workspaceId}`);
+      if (sectionsRes.ok) {
+        const sectionsData = await sectionsRes.json();
+        const sections = (Array.isArray(sectionsData)
+          ? sectionsData
+          : sectionsData.sections || []) as Array<{ id?: string; name?: string }>;
+        const completedSection = sections.find((section) => section.name === "Completadas");
         completedSectionId = completedSection?.id;
-      } else {
-        // Si no está en cache, hacer la llamada
-        const sectionsRes = await fetch(`/api/sections?workspaceId=${task.workspaceId}`);
-        if (sectionsRes.ok) {
-          const sectionsData = await sectionsRes.json();
-          const sections = Array.isArray(sectionsData) ? sectionsData : (sectionsData.sections || []);
-          const completedSection = sections.find((s: any) => s.name === 'Completadas');
-          completedSectionId = completedSection?.id;
-          
-          // Actualizar cache
-          setSectionsCache(prev => new Map(prev).set(task.workspaceId, sections));
-        }
       }
       
-      // Actualizar tarea como completada y moverla a la sección correspondiente
       const res = await fetch(`/api/tasks/${task.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -214,11 +124,18 @@ export default function AppHomePage() {
       
       if (!res.ok) throw new Error("Error al actualizar tarea");
       
-      // Remover de la lista local
-      setOverdueTasks(prev => prev.filter(t => t.id !== task.id));
-      
-      // Actualizar contador de tareas pendientes del workspace
-      await fetchWorkspaces();
+      // Optimistic update
+      qc.setQueryData(queryKeys.workspacesOverview, (prev: typeof data) => {
+        if (!prev) return prev;
+        return {
+          workspaces: prev.workspaces.map((w) => {
+            if (w.id !== task.workspaceId) return w;
+            const current = w.pendingTasksCount ?? 0;
+            return { ...w, pendingTasksCount: Math.max(0, current - 1) };
+          }),
+          overdueTasks: prev.overdueTasks.filter((t) => t.id !== task.id),
+        };
+      });
       
       toast.success("Tarea completada");
     } catch {
@@ -269,8 +186,7 @@ export default function AppHomePage() {
         toast.success("Workspace actualizado correctamente");
       }
       setDialogOpen(false);
-      // Recargar datos
-      await fetchWorkspaces();
+      await invalidateWorkspacesOverview();
     } catch {
       toast.error(
         dialogMode === "create"
@@ -290,7 +206,7 @@ export default function AppHomePage() {
       if (!res.ok) throw new Error("Error al eliminar workspace");
       toast.success("Workspace eliminado correctamente");
       setDeleteDialogOpen(false);
-      fetchWorkspaces();
+      void invalidateWorkspacesOverview();
     } catch {
       toast.error("Error al eliminar el workspace");
     } finally {
@@ -335,12 +251,16 @@ export default function AppHomePage() {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {workspaces.map((workspace) => (
+          {workspaces.map((workspace, index) => (
             <WorkspaceCard
               key={workspace.id}
               workspace={workspace}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onMoveLeft={(w) => handleMoveWorkspace(w, "left")}
+              onMoveRight={(w) => handleMoveWorkspace(w, "right")}
+              isFirst={index === 0}
+              isLast={index === workspaces.length - 1}
             />
           ))}
         </div>

@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useMemo, useRef, useTransition, lazy, Suspense } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { useWorkspaceOverview, useTasks, queryKeys } from "@/lib/queries";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -54,6 +56,10 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  Mic,
+  Square,
+  ChevronLeft,
+  ChevronRight,
   type LucideIcon,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -63,6 +69,7 @@ import {
   TaskFilters,
   type SortField,
   type SortOrder,
+  type TagFilterItem,
 } from "@/components/tasks";
 import { DeleteDialog } from "@/components/ui/delete-dialog";
 
@@ -78,6 +85,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { Workspace, Task, TaskAssignee, WorkspaceSection, Subtask } from "@/lib/types";
@@ -130,19 +138,82 @@ function getIconComponent(iconName: string): LucideIcon {
 export default function WorkspacePage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const workspaceId = params.id as string;
+  const viewModeFromQuery = searchParams.get("view");
+  const sectionIdFromQuery = searchParams.get("section");
 
-  // State
+  // React Query
+  const qc = useQueryClient();
+  const overviewQuery = useWorkspaceOverview(workspaceId);
+  const tasksQuery = useTasks(workspaceId);
+
+  // Derived tasks: prefer full tasks (with assignees/subtasks), fall back to lite
+  const tasks: Task[] = tasksQuery.data ?? overviewQuery.data?.tasks ?? [];
+
+  // Local state (workspace + sections seeded from query)
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
   const [sections, setSections] = useState<WorkspaceSection[]>([]);
-  const [isLoadingWorkspace, setIsLoadingWorkspace] = useState(true);
-  const [isLoadingTasks, setIsLoadingTasks] = useState(true);
-  const [isLoadingSections, setIsLoadingSections] = useState(true);
+  const isLoadingWorkspace = overviewQuery.isLoading;
+  const isLoadingSections = overviewQuery.isLoading;
+  const isLoadingTasks = tasksQuery.isLoading && !overviewQuery.data;
+
+  // Shim: update tasks in query cache (same signature as old setTasks setState)
+  const setTasks = useCallback(
+    (updater: Task[] | ((prev: Task[]) => Task[])) => {
+      qc.setQueryData<Task[]>(queryKeys.tasks(workspaceId), (prev) => {
+        const current = prev ?? overviewQuery.data?.tasks ?? [];
+        return typeof updater === "function" ? updater(current) : updater;
+      });
+    },
+    [qc, workspaceId, overviewQuery.data]
+  );
+
+  // Redirect if workspace not found
+  useEffect(() => {
+    if (overviewQuery.error) {
+      const msg = overviewQuery.error instanceof Error ? overviewQuery.error.message : "";
+      if (msg === "404") {
+        toast.error("Workspace no encontrado");
+        router.push("/app");
+      } else {
+        toast.error("Error al cargar los datos");
+      }
+    }
+  }, [overviewQuery.error, router]);
+
+  // Seed local workspace + sections from query (and re-sync on background refetch)
+  useEffect(() => {
+    if (overviewQuery.data) {
+      setWorkspace(overviewQuery.data.workspace);
+      setSections(overviewQuery.data.sections);
+    }
+  }, [overviewQuery.data]);
+
+  // hydrate tasks with full detail once they arrive from the tasks query
+  const lastHydratedRef = useRef("");
+  useEffect(() => {
+    if (!tasksQuery.data || lastHydratedRef.current === workspaceId) return;
+    lastHydratedRef.current = workspaceId;
+    const fullById = new Map(tasksQuery.data.map((t) => [t.id, t]));
+    qc.setQueryData<Task[]>(queryKeys.tasks(workspaceId), (prev) =>
+      (prev ?? []).map((task) => {
+        const full = fullById.get(task.id);
+        if (!full) return task;
+        return { ...task, assignees: full.assignees, subtasks: full.subtasks, tags: full.tags };
+      })
+    );
+  }, [tasksQuery.data, workspaceId, qc]);
 
   // AI Generation state
   const [aiText, setAiText] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+
+  // Voice recording state
+  const [isRecording, setIsRecording] = useState(false);
+  const [isTranscribing, setIsTranscribing] = useState(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
 
   // Dialogs state
   const [instructionsOpen, setInstructionsOpen] = useState(false);
@@ -166,80 +237,36 @@ export default function WorkspacePage() {
   const [sortField, setSortField] = useState<SortField>("importance");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<"list" | "kanban">("list");
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [viewMode, setViewMode] = useState<"list" | "kanban">(
+    viewModeFromQuery === "kanban" ? "kanban" : "list"
+  );
+  const [, startTransition] = useTransition();
 
-  // Fetch all data in parallel - Mucho más rápido
-  const fetchAllData = useCallback(async () => {
-    try {
-      // Ejecutar las 3 llamadas en paralelo en lugar de secuencialmente
-      const [workspaceRes, tasksRes, sectionsRes] = await Promise.all([
-        fetch(`/api/workspaces/${workspaceId}`),
-        fetch(`/api/tasks?workspaceId=${workspaceId}`),
-        fetch(`/api/sections?workspaceId=${workspaceId}`),
-      ]);
-
-      // Workspace
-      if (!workspaceRes.ok) {
-        if (workspaceRes.status === 404) {
-          toast.error("Workspace no encontrado");
-          router.push("/app");
-          return;
-        }
-        throw new Error("Error al cargar workspace");
-      }
-      const workspaceData = await workspaceRes.json();
-      setWorkspace(workspaceData);
-      setIsLoadingWorkspace(false);
-
-      // Tasks
-      if (tasksRes.ok) {
-        const tasksData = await tasksRes.json();
-        
-        // Verificar si las tareas "nuevas" aún son válidas
-        const storedData = sessionStorage.getItem('newTasksData');
-        let newTaskIds: string[] = [];
-        
-        if (storedData) {
-          const { tasks, timestamp } = JSON.parse(storedData);
-          const elapsed = Date.now() - timestamp;
-          
-          if (elapsed > 20000) {
-            sessionStorage.removeItem('newTasksData');
-          } else {
-            newTaskIds = tasks;
-          }
-        }
-        
-        const tasksWithNewFlag = tasksData.map((task: Task) => ({
-          ...task,
-          isNew: newTaskIds.includes(task.id)
-        }));
-        
-        setTasks(tasksWithNewFlag);
-      }
-      setIsLoadingTasks(false);
-
-      // Sections
-      if (sectionsRes.ok) {
-        const sectionsData = await sectionsRes.json();
-        setSections(sectionsData);
-        // Set first section as active if none selected
-        if (sectionsData.length > 0 && !activeSectionId) {
-          setActiveSectionId(sectionsData[0].id);
-        }
-      }
-      setIsLoadingSections(false);
-    } catch (error) {
-      toast.error("Error al cargar los datos");
-      setIsLoadingWorkspace(false);
-      setIsLoadingTasks(false);
-      setIsLoadingSections(false);
-    }
-  }, [workspaceId, router, activeSectionId]);
+  // Fast initial load: one request for critical data + non-blocking hydration
+  // (now handled by useWorkspaceOverview + useTasks hooks above)
 
   useEffect(() => {
-    fetchAllData();
-  }, [fetchAllData]);
+    if (sections.length === 0) return;
+
+    if (!activeSectionId) {
+      if (sectionIdFromQuery && sections.some((section) => section.id === sectionIdFromQuery)) {
+        setActiveSectionId(sectionIdFromQuery);
+        return;
+      }
+      setActiveSectionId(sections[0].id);
+      return;
+    }
+
+    const activeSectionExists = sections.some((section) => section.id === activeSectionId);
+    if (!activeSectionExists) {
+      if (sectionIdFromQuery && sections.some((section) => section.id === sectionIdFromQuery)) {
+        setActiveSectionId(sectionIdFromQuery);
+        return;
+      }
+      setActiveSectionId(sections[0].id);
+    }
+  }, [sections, activeSectionId, sectionIdFromQuery]);
 
   // Helper to determine which section a task belongs to
   // Uses sectionId if available, otherwise falls back to legacy completed flag
@@ -279,7 +306,15 @@ export default function WorkspacePage() {
       result = result.filter(
         (t) =>
           t.title.toLowerCase().includes(query) ||
-          t.description?.toLowerCase().includes(query)
+          t.description?.toLowerCase().includes(query) ||
+          t.tags?.some(tag => tag.name.toLowerCase().includes(query))
+      );
+    }
+
+    // Filter by selected tags
+    if (selectedTagIds.length > 0) {
+      result = result.filter((t) =>
+        selectedTagIds.some(tagId => t.tags?.some(tt => tt.tagId === tagId))
       );
     }
 
@@ -297,7 +332,7 @@ export default function WorkspacePage() {
     });
 
     return result;
-  }, [tasks, searchQuery, sortField, sortOrder, activeSectionId, getTaskSection]);
+  }, [tasks, searchQuery, selectedTagIds, sortField, sortOrder, activeSectionId, getTaskSection]);
 
   // Counts for tabs (using helper that handles legacy flags)
   const sectionCounts = useMemo(() => {
@@ -315,30 +350,31 @@ export default function WorkspacePage() {
     return counts;
   }, [tasks, sections, getTaskSection]);
 
+  // Derive unique workspace tags from all tasks (for filter UI)
+  const availableTags: TagFilterItem[] = useMemo(() => {
+    const seen = new Map<string, TagFilterItem>();
+    for (const task of tasks) {
+      if (task.tags) {
+        for (const tag of task.tags) {
+          if (!seen.has(tag.tagId)) {
+            seen.set(tag.tagId, { id: tag.tagId, name: tag.name, color: tag.color });
+          }
+        }
+      }
+    }
+    return Array.from(seen.values()).sort((a, b) => a.name.localeCompare(b.name));
+  }, [tasks]);
+
   // Handler for changing task section (drag and drop or menu)
   // Función optimizada para re-fetch de tasks
-  const refetchTasks = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/tasks?workspaceId=${workspaceId}`);
-      if (!res.ok) return;
-      const data = await res.json();
-      setTasks(data);
-    } catch {
-      // Silently fail on refetch
-    }
-  }, [workspaceId]);
+  const refetchTasks = useCallback(() => {
+    void qc.invalidateQueries({ queryKey: queryKeys.tasks(workspaceId) });
+  }, [qc, workspaceId]);
 
   // Función optimizada para re-fetch de sections
-  const refetchSections = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/sections?workspaceId=${workspaceId}`);
-      if (!res.ok) return;
-      const data = await res.json();
-      setSections(data);
-    } catch {
-      // Silently fail on refetch
-    }
-  }, [workspaceId]);
+  const refetchSections = useCallback(() => {
+    void qc.invalidateQueries({ queryKey: queryKeys.workspaceOverview(workspaceId) });
+  }, [qc, workspaceId]);
 
   const handleTaskSectionChange = useCallback(async (taskId: string, sectionId: string) => {
     try {
@@ -471,6 +507,17 @@ export default function WorkspacePage() {
     }
   }, [refetchSections]);
 
+  // Move a section left/right in the list view tabs
+  const handleMoveSectionInList = useCallback((section: WorkspaceSection, direction: "left" | "right") => {
+    const idx = sections.findIndex(s => s.id === section.id);
+    if (idx === -1) return;
+    const newIndex = direction === "left" ? idx - 1 : idx + 1;
+    if (newIndex < 0 || newIndex >= sections.length) return;
+    const reordered = [...sections];
+    [reordered[idx], reordered[newIndex]] = [reordered[newIndex], reordered[idx]];
+    handleSectionsReorder(reordered);
+  }, [sections, handleSectionsReorder]);
+
   // Handlers
   const handleSaveInstructions = useCallback(async (instructions: string) => {
     if (!workspace) return;
@@ -517,24 +564,26 @@ export default function WorkspacePage() {
 
       const data = await res.json();
       
-      // Marcar las tareas nuevas en sessionStorage con timestamp
-      const newTaskIds = data.tasks.map((t: Task) => t.id);
-      const existingData = JSON.parse(sessionStorage.getItem('newTasksData') || '{"tasks": [], "timestamp": 0}');
-      const newData = {
-        tasks: [...existingData.tasks, ...newTaskIds],
-        timestamp: Date.now()
-      };
-      sessionStorage.setItem('newTasksData', JSON.stringify(newData));
-      
-      // Auto-limpiar después de 20 segundos
+      // Add new tasks to cache immediately marked as isNew
+      const newTaskIds = new Set<string>(data.tasks.map((t: Task) => t.id as string));
+      qc.setQueryData<Task[]>(queryKeys.tasks(workspaceId), (prev) => {
+        const merged = [...(prev ?? [])];
+        for (const t of data.tasks as Task[]) {
+          if (!merged.find((x) => x.id === t.id)) merged.push({ ...t, isNew: true });
+        }
+        return merged.map((t) => newTaskIds.has(t.id) ? { ...t, isNew: true } : t);
+      });
+
+      // After 20s remove the isNew highlight and sync with server
       setTimeout(() => {
-        sessionStorage.removeItem('newTasksData');
-        refetchTasks(); // Refrescar para quitar el indicador visual
+        qc.setQueryData<Task[]>(queryKeys.tasks(workspaceId), (prev) =>
+          (prev ?? []).map((t) => ({ ...t, isNew: false }))
+        );
+        void qc.invalidateQueries({ queryKey: queryKeys.tasks(workspaceId) });
       }, 20000);
       
       toast.success(`${data.count} tareas generadas correctamente`);
       setAiText("");
-      refetchTasks();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "Error al generar tareas";
@@ -542,7 +591,76 @@ export default function WorkspacePage() {
     } finally {
       setIsGenerating(false);
     }
-  }, [aiText, workspaceId, refetchTasks]);
+  }, [aiText, workspaceId, qc]);
+
+  const handleToggleRecording = useCallback(async () => {
+    if (isRecording) {
+      // Stop recording
+      mediaRecorderRef.current?.stop();
+      return;
+    }
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+
+      // Prefer webm if supported, fallback to default
+      const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+        ? "audio/webm;codecs=opus"
+        : MediaRecorder.isTypeSupported("audio/webm")
+        ? "audio/webm"
+        : "";
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        // Stop all tracks to release the mic
+        stream.getTracks().forEach((t) => t.stop());
+        setIsRecording(false);
+
+        const audioBlob = new Blob(audioChunksRef.current, {
+          type: mimeType || "audio/webm",
+        });
+
+        if (audioBlob.size === 0) return;
+
+        setIsTranscribing(true);
+        try {
+          const formData = new FormData();
+          formData.append("audio", audioBlob, "recording.webm");
+
+          const res = await fetch("/api/ai/transcribe", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || "Error al transcribir");
+          }
+
+          const { text } = await res.json();
+          if (text?.trim()) {
+            setAiText((prev) => (prev.trim() ? `${prev.trim()} ${text.trim()}` : text.trim()));
+          }
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Error al transcribir el audio";
+          toast.error(message);
+        } finally {
+          setIsTranscribing(false);
+        }
+      };
+
+      recorder.start();
+      setIsRecording(true);
+    } catch {
+      toast.error("No se pudo acceder al micrófono. Comprueba los permisos.");
+    }
+  }, [isRecording]);
 
   const handleCreateTask = useCallback(() => {
     setTaskDialogMode("create");
@@ -796,6 +914,12 @@ export default function WorkspacePage() {
     );
   }, []);
 
+  const handleTagsChange = useCallback((taskId: string, tags: import("@/lib/types").TaskTag[]) => {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === taskId ? { ...t, tags } : t))
+    );
+  }, []);
+
   const handleRemoveRecurrence = useCallback(async (taskId: string) => {
     try {
       const res = await fetch(`/api/tasks/${taskId}`, {
@@ -901,27 +1025,36 @@ export default function WorkspacePage() {
             <ListTodo className="h-4 w-4 md:h-5 md:w-5" />
             <h2 className="font-semibold text-sm md:text-base">Tareas</h2>
           </div>
-          <div className="flex items-center gap-1.5 md:gap-2">
-            {/* View mode toggle */}
-            <div className="flex items-center border rounded-lg p-0.5 md:p-1 bg-background/95 backdrop-blur-sm border-border/50">
-              <Button
-                variant={viewMode === "list" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("list")}
-                className="gap-1.5 h-9 md:h-9 px-2.5 md:px-3"
+          <div className="flex items-center gap-3 md:gap-3.5">
+            {/* View mode toggle - animated pill (slightly smaller) */}
+            <div className="relative grid grid-cols-2 items-center border rounded-lg p-0.5 md:p-0.5 bg-background/95 backdrop-blur-sm border-border/50">
+              {/* Sliding active background: sized to match each button accounting for container padding */}
+              <div
+                className={cn(
+                  "absolute inset-0.5 md:inset-0.5 w-[calc(50%-2px)] md:w-[calc(50%-3px)] rounded-md bg-primary shadow-sm transition-transform duration-200 ease-in-out",
+                  viewMode === "kanban" ? "translate-x-full" : "translate-x-0"
+                )}
+              />
+              <button
+                onClick={() => startTransition(() => setViewMode("list"))}
+                className={cn(
+                  "relative z-10 flex items-center justify-center gap-1 h-8 px-2 md:px-2.5 rounded-md text-xs md:text-sm font-medium transition-colors duration-200",
+                  viewMode === "list" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
               >
-                <List className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs md:text-sm">Lista</span>
-              </Button>
-              <Button
-                variant={viewMode === "kanban" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("kanban")}
-                className="gap-1.5 h-9 md:h-9 px-2.5 md:px-3"
+                <List className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Lista</span>
+              </button>
+              <button
+                onClick={() => startTransition(() => setViewMode("kanban"))}
+                className={cn(
+                  "relative z-10 flex items-center justify-center gap-1 h-8 px-2 md:px-2.5 rounded-md text-xs md:text-sm font-medium transition-colors duration-200",
+                  viewMode === "kanban" ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                )}
               >
-                <LayoutGrid className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs md:text-sm">Kanban</span>
-              </Button>
+                <LayoutGrid className="h-4 w-4 shrink-0" />
+                <span className="hidden sm:inline">Kanban</span>
+              </button>
             </div>
             <Button onClick={handleCreateTask} size="sm" className="gap-1.5 h-9 md:h-10 px-3 md:px-4 text-sm md:text-base btn-accent-gradient text-white font-semibold">
               <Plus className="h-4 w-4" />
@@ -971,6 +1104,21 @@ export default function WorkspacePage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => handleMoveSectionInList(section, "left")}
+                          disabled={sections.indexOf(section) === 0}
+                        >
+                          <ChevronLeft className="h-4 w-4 mr-2" />
+                          Mover a la izquierda
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleMoveSectionInList(section, "right")}
+                          disabled={sections.indexOf(section) === sections.length - 1}
+                        >
+                          <ChevronRight className="h-4 w-4 mr-2" />
+                          Mover a la derecha
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleEditSection(section)}>
                           <Pencil className="h-4 w-4 mr-2" />
                           Editar sección
@@ -1016,6 +1164,9 @@ export default function WorkspacePage() {
             setSortField(field);
             setSortOrder(order);
           }}
+          availableTags={availableTags}
+          selectedTagIds={selectedTagIds}
+          onSelectedTagsChange={setSelectedTagIds}
         />
 
         {isLoadingTasks || isLoadingSections ? (
@@ -1039,12 +1190,14 @@ export default function WorkspacePage() {
               onAssigneesChange={handleAssigneesChange}
               onDueDateChange={handleDueDateChange}
               onImportanceChange={handleImportanceChange}
+              onTagsChange={handleTagsChange}
               onQuickDelete={handleQuickDelete}
               onAddSection={() => {
                 setEditingSection(null);
                 setSectionDialogOpen(true);
               }}
               searchQuery={searchQuery}
+              selectedTagIds={selectedTagIds}
               sortField={sortField}
               sortOrder={sortOrder}
             />
@@ -1089,6 +1242,7 @@ export default function WorkspacePage() {
                 onDueDateChange={handleDueDateChange}
                 onImportanceChange={handleImportanceChange}
                 onSubtasksChange={handleSubtasksChange}
+                onTagsChange={handleTagsChange}
                 onQuickDelete={handleQuickDelete}
               />
             ))}
@@ -1200,22 +1354,45 @@ export default function WorkspacePage() {
               {/* Contenedor del Input - Sin bordes, solo fondo translúcido y blur shadow */}
               <div className="relative rounded-2xl bg-background/60 backdrop-blur-md border border-black/10 dark:border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.5)] dark:shadow-[0_15px_40px_rgba(0,0,0,0.5)]">
                 <Textarea
-                  placeholder="Describe tus tareas..."
+                  placeholder="Crear tareas con IA"
                   value={aiText}
                   onChange={(e) => setAiText(e.target.value)}
                   onKeyDown={handleKeyDown}
                   rows={1}
-                  className="resize-none bg-transparent !border-0 !shadow-none !ring-0 !outline-none focus-visible:!ring-0 focus-visible:!border-0 transition-all w-full min-h-[48px] md:min-h-[52px] text-base md:text-base rounded-2xl pr-[120px] md:pr-[140px] pl-4 py-3 md:py-3.5"
+                  className="resize-none bg-transparent !border-0 !shadow-none !ring-0 !outline-none focus-visible:!ring-0 focus-visible:!border-0 transition-all w-full min-h-[48px] md:min-h-[52px] text-base md:text-base rounded-2xl pr-[140px] md:pr-[160px] pl-4 py-3 md:py-3.5"
                   disabled={isGenerating}
                   style={{ fontSize: '16px' }}
                 />
                 
-                {/* Button positioned inside input */}
+                {/* Mic button */}
+                <button
+                  type="button"
+                  onClick={handleToggleRecording}
+                  disabled={isGenerating || isTranscribing}
+                  title={isRecording ? "Detener grabación" : "Hablar"}
+                  className={`absolute right-[100px] md:right-[122px] top-1/2 -translate-y-1/2 flex items-center justify-center h-[40px] w-[40px] rounded-full transition-all disabled:opacity-40 ${
+                    isRecording
+                      ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 animate-pulse"
+                      : isTranscribing
+                      ? "text-muted-foreground"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                  }`}
+                >
+                  {isTranscribing ? (
+                    <Loader2 className="h-5 w-5 animate-spin" />
+                  ) : isRecording ? (
+                    <Square className="h-5 w-5 fill-current" />
+                  ) : (
+                    <Mic className="h-5 w-5" />
+                  )}
+                </button>
+
+                {/* Organizar button positioned inside input */}
                 <Button
                   onClick={handleGenerateTasks}
                   disabled={isGenerating || !aiText.trim()}
                   size="sm"
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 gap-1.5 md:gap-2 h-[40px] md:h-[44px] px-3 md:px-5 bg-ta hover:bg-ta-light text-white border-0 shadow-md transition-all rounded-[14px]"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 gap-1.5 md:gap-2 h-[40px] md:h-[44px] px-3 md:px-5 btn-accent-gradient text-white border-0 shadow-md transition-all rounded-[14px]"
                 >
                   {isGenerating ? (
                     <>

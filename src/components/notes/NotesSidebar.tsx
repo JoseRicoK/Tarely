@@ -40,13 +40,13 @@ import {
   CheckCircle2,
   Eye,
   EyeOff,
+  Tag,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { NoteFolder, Note, NoteTemplate, Workspace } from "@/lib/types";
+import type { NoteFolder, Note, NoteTemplate, Workspace, WorkspaceTag } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -82,6 +82,12 @@ interface NotesSidebarProps {
   onOpenTemplates: () => void;
   onCreateNoteFromTemplate: (template: NoteTemplate) => void;
   onMoveNote?: (noteId: string, targetFolderId: string | null) => void;
+  onDeleteNote?: (noteId: string) => void;
+  // Tags
+  workspaceTags?: WorkspaceTag[];
+  selectedTagFilter?: string | null;
+  onTagFilterChange?: (tagId: string | null) => void;
+  noteTagCounts?: Record<string, number>;
 }
 
 function getIcon(iconName: string, className?: string) {
@@ -126,6 +132,7 @@ function FolderItem({
   onMoveNote,
   dragOverFolderId,
   onDragOverFolder,
+  onDeleteNote,
 }: {
   folder: NoteFolder & { children: NoteFolder[] };
   depth?: number;
@@ -144,6 +151,7 @@ function FolderItem({
   onMoveNote?: (noteId: string, targetFolderId: string | null) => void;
   dragOverFolderId: string | null;
   onDragOverFolder: (folderId: string | null) => void;
+  onDeleteNote?: (noteId: string) => void;
 }) {
   const isSelected = selectedFolderId === folder.id;
   const allFolderNotes = notes.filter((n) => n.folderId === folder.id);
@@ -258,7 +266,7 @@ function FolderItem({
                 e.dataTransfer.effectAllowed = 'move';
               }}
               className={cn(
-                "flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
+                "group flex items-center gap-2 min-w-0 px-2 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
                 selectedNoteId === note.id
                   ? "bg-accent text-accent-foreground"
                   : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
@@ -272,11 +280,18 @@ function FolderItem({
                 <span className="shrink-0 text-base leading-none">{note.icon}</span>
               )}
               <span className={cn(
-                "truncate flex-1",
+                "truncate flex-1 min-w-0",
                 note.completed && "line-through opacity-70"
               )}>{note.title || "Sin título"}</span>
               {note.isPinned && <Pin className="h-3 w-3 shrink-0 text-muted-foreground/40" />}
               {note.isFavorite && <Star className="h-3 w-3 shrink-0 text-yellow-500 fill-yellow-500" />}
+              <button
+                onClick={(e) => { e.stopPropagation(); onDeleteNote?.(note.id); }}
+                className="shrink-0 opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground/40 hover:text-destructive transition-all"
+                title="Eliminar nota"
+              >
+                <Trash2 className="h-3 w-3" />
+              </button>
             </div>
           ))}
         </div>
@@ -306,8 +321,14 @@ export function NotesSidebar({
   onOpenTemplates,
   onCreateNoteFromTemplate,
   onMoveNote,
+  onDeleteNote,
+  workspaceTags = [],
+  selectedTagFilter,
+  onTagFilterChange,
+  noteTagCounts = {},
 }: NotesSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [tagsCollapsed, setTagsCollapsed] = useState(false);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
   // Folder open/close state managed at sidebar level for persistence
   const [closedFolders, setClosedFolders] = useState<Set<string>>(new Set());
@@ -407,7 +428,7 @@ export function NotesSidebar({
   }, []);
 
   return (
-    <div className="flex flex-col h-full border-r border-border/40 bg-muted/25">
+    <div className="flex flex-col h-full w-full overflow-hidden border-r border-border/40 bg-muted/25">
       {/* Workspace selector - Fijo arriba */}
       <div className="shrink-0 p-4 pb-3 border-b border-border/30">
         <div className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em] mb-2 px-0.5">
@@ -530,8 +551,8 @@ export function NotesSidebar({
       </div>
 
       {/* Contenido scrolleable */}
-      <ScrollArea className="flex-1 overflow-y-auto">
-        <div className="px-3 pb-2">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="px-3 pb-2 w-full">
           {/* Favorites */}
           {favoriteNotes.length > 0 && (
             <div className="mb-1">
@@ -542,7 +563,7 @@ export function NotesSidebar({
                   <div
                     key={note.id}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
+                      "group flex items-center gap-2 min-w-0 px-3 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
                       selectedNoteId === note.id
                         ? "bg-accent text-accent-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
@@ -550,7 +571,14 @@ export function NotesSidebar({
                     onClick={() => onSelectNote(note.id)}
                   >
                     <Star className="h-3.5 w-3.5 text-yellow-500 fill-yellow-500 shrink-0" />
-                    <span className="truncate">{note.title || "Sin título"}</span>
+                    <span className="truncate flex-1 min-w-0">{note.title || "Sin título"}</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); onDeleteNote?.(note.id); }}
+                      className="shrink-0 opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground/40 hover:text-destructive transition-all"
+                      title="Eliminar nota"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
                   </div>
                 ))}
             </div>
@@ -582,6 +610,7 @@ export function NotesSidebar({
               onMoveNote={onMoveNote}
               dragOverFolderId={dragOverFolderId}
               onDragOverFolder={setDragOverFolderId}
+              onDeleteNote={onDeleteNote}
             />
           ))}
           {folderTree.length === 0 && (
@@ -622,7 +651,7 @@ export function NotesSidebar({
                     e.dataTransfer.effectAllowed = 'move';
                   }}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
+                    "group flex items-center gap-2 min-w-0 px-3 py-1.5 rounded-lg cursor-pointer text-sm transition-colors",
                     selectedNoteId === note.id
                       ? "bg-accent text-accent-foreground"
                       : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
@@ -635,10 +664,17 @@ export function NotesSidebar({
                     <FileText className="h-3.5 w-3.5 shrink-0" />
                   )}
                   <span className={cn(
-                    "truncate flex-1",
+                    "truncate flex-1 min-w-0",
                     note.completed && "line-through opacity-70"
                   )}>{note.title || "Sin título"}</span>
                   {note.isPinned && <Pin className="h-3 w-3 shrink-0 text-muted-foreground/40" />}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onDeleteNote?.(note.id); }}
+                    className="shrink-0 opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground/40 hover:text-destructive transition-all"
+                    title="Eliminar nota"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
                 </div>
               ))}
             </div>
@@ -647,6 +683,63 @@ export function NotesSidebar({
 
         {/* Separator */}
         <div className="mx-4 my-2 border-t border-border/20" />
+
+        {/* Tags section */}
+        {workspaceTags.length > 0 && (
+          <div className="px-3 pb-1">
+            <button
+              className="w-full flex items-center gap-2 px-2 py-1 mb-1 hover:bg-accent/40 rounded-md transition-colors group"
+              onClick={() => setTagsCollapsed(c => !c)}
+            >
+              <Tag className="h-3.5 w-3.5 text-muted-foreground/50" />
+              <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em] flex-1 text-left">
+                Etiquetas
+              </span>
+              <ChevronDown className={cn(
+                "h-3.5 w-3.5 text-muted-foreground/40 transition-transform",
+                tagsCollapsed && "-rotate-90"
+              )} />
+            </button>
+
+            {!tagsCollapsed && (
+              <div className="space-y-0.5">
+                {workspaceTags.map(tag => {
+                  const count = noteTagCounts[tag.id] ?? 0;
+                  const isActive = selectedTagFilter === tag.id;
+                  return (
+                    <button
+                      key={tag.id}
+                      onClick={() => onTagFilterChange?.(isActive ? null : tag.id)}
+                      className={cn(
+                        "w-full flex items-center gap-2 px-2 py-1.5 rounded-lg cursor-pointer text-sm transition-colors text-left",
+                        isActive
+                          ? "bg-accent text-accent-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent/40"
+                      )}
+                    >
+                      <span
+                        className="inline-flex items-center shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-semibold border"
+                        style={{
+                          backgroundColor: `${tag.color}18`,
+                          color: tag.color,
+                          borderColor: `${tag.color}30`,
+                        }}
+                      >
+                        {tag.name}
+                      </span>
+                      <span className="flex-1" />
+                      {count > 0 && (
+                        <span className="text-[11px] text-muted-foreground/50 tabular-nums bg-muted/40 px-1.5 py-0.5 rounded-md">
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Templates section — always visible, visual only */}
         <div className="px-3 pb-4">
@@ -659,19 +752,13 @@ export function NotesSidebar({
               <TooltipTrigger asChild>
                 <button
                   className="p-0.5 rounded text-muted-foreground/40 hover:text-muted-foreground hover:bg-accent/40 transition-colors"
-                  onClick={() => {
-                    if (templates.length > 0) {
-                      onCreateNoteFromTemplate(templates[0]);
-                    } else {
-                      onOpenTemplates();
-                    }
-                  }}
-                  title={templates.length > 0 ? "Crear nota desde primera plantilla" : "Crear plantilla"}
+                  onClick={onOpenTemplates}
+                  title="Gestionar plantillas"
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent>{templates.length > 0 ? "Nota rápida desde plantilla" : "Crear plantilla"}</TooltipContent>
+              <TooltipContent>Crear o usar plantilla</TooltipContent>
             </Tooltip>
           </div>
 
@@ -705,7 +792,7 @@ export function NotesSidebar({
             </button>
           )}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }

@@ -19,6 +19,7 @@ export interface Workspace {
   instructions: string; // Instrucciones largas para la IA
   icon: string; // Nombre del icono de Lucide (ej: Folder, Briefcase)
   color: string; // Color en formato hex (ej: #6366f1)
+  sortOrder: number; // Orden de visualización (0-based)
   createdAt: string;
   updatedAt: string;
   isShared?: boolean; // true si es un workspace compartido contigo
@@ -36,6 +37,22 @@ export interface WorkspaceSection {
   isSystem: boolean; // true para las 3 secciones por defecto
   createdAt: string;
   updatedAt: string;
+}
+
+export interface WorkspaceTag {
+  id: string;
+  workspaceId: string;
+  name: string;
+  color: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaskTag {
+  id: string;
+  tagId: string;
+  name: string;
+  color: string;
 }
 
 export interface TaskAssignee {
@@ -75,6 +92,7 @@ export interface Task {
   subtasks?: Subtask[]; // Subtareas
   recurrence?: RecurrenceRule; // Regla de recurrencia (null = tarea normal)
   nextDueAt?: string; // Cuándo aparece como pendiente (solo recurrentes)
+  tags?: TaskTag[]; // Etiquetas asignadas
 }
 
 export interface TareAIData {
@@ -138,6 +156,17 @@ export interface UpdateSectionInput {
   order?: number;
 }
 
+export interface CreateTagInput {
+  workspaceId: string;
+  name: string;
+  color: string;
+}
+
+export interface UpdateTagInput {
+  name?: string;
+  color?: string;
+}
+
 // Tipos para la API de IA
 export interface GenerateTasksInput {
   workspaceId: string;
@@ -150,6 +179,7 @@ export interface AIGeneratedTask {
   importance: number;
   dueDate?: string; // ISO 8601 date string opcional
   recurrence?: RecurrenceRule; // Regla de recurrencia detectada por la IA
+  tagIds?: string[]; // IDs de etiquetas a aplicar (opcionales)
 }
 
 export interface AIGenerateResponse {
@@ -268,6 +298,7 @@ export interface Note {
   workspaceName?: string;
   workspaceColor?: string;
   workspaceIcon?: string;
+  tags?: TaskTag[];
 }
 
 export interface NoteTemplate {

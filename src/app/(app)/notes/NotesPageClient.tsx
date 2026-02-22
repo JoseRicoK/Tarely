@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { PanelLeftClose, PanelLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Note, NoteFolder, NoteTemplate, Workspace } from "@/lib/types";
+import type { Note, NoteFolder, NoteTemplate, Workspace, WorkspaceTag, TaskTag } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { DeleteDialog } from "@/components/ui/delete-dialog";
 import { NotesSidebar } from "@/components/notes/NotesSidebar";
@@ -16,6 +16,8 @@ import { NoteChatPanel } from "@/components/notes/NoteChatPanel";
 import { FolderDialog } from "@/components/notes/FolderDialog";
 import { TemplateDialog } from "@/components/notes/TemplateDialog";
 import { EmptyNotes } from "@/components/notes/EmptyNotes";
+import { NoteTagSelector } from "@/components/notes/NoteTagSelector";
+import { NoteTaskPanel } from "@/components/notes/NoteTaskPanel";
 
 export function NotesPageClient() {
   const router = useRouter();
@@ -30,6 +32,10 @@ export function NotesPageClient() {
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
   const [templates, setTemplates] = useState<NoteTemplate[]>([]);
 
+  // Tags state
+  const [workspaceTags, setWorkspaceTags] = useState<WorkspaceTag[]>([]);
+  const [selectedTagFilter, setSelectedTagFilter] = useState<string | null>(null);
+
   // UI state
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,6 +47,7 @@ export function NotesPageClient() {
   const [editingFolder, setEditingFolder] = useState<NoteFolder | null>(null);
   const [deleteFolderTarget, setDeleteFolderTarget] = useState<NoteFolder | null>(null);
   const [deleteNoteOpen, setDeleteNoteOpen] = useState(false);
+  const [sidebarDeleteNoteId, setSidebarDeleteNoteId] = useState<string | null>(null);
   const [templateDialogOpen, setTemplateDialogOpen] = useState(false);
   const [templateDialogMode, setTemplateDialogMode] = useState<"select" | "save">("select");
 
@@ -50,6 +57,7 @@ export function NotesPageClient() {
   const selectedFolderIdRef = useRef<string | null>(null);
   const selectedNoteIdRef = useRef<string | null>(null);
   const selectedNoteRef = useRef<Note | null>(null);
+  const titleTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     selectedWorkspaceIdRef.current = selectedWorkspaceId;
@@ -57,6 +65,15 @@ export function NotesPageClient() {
     selectedNoteIdRef.current = selectedNote?.id || null;
     selectedNoteRef.current = selectedNote;
   }, [selectedWorkspaceId, selectedFolderId, selectedNote]);
+
+  // Auto-resize title textarea when note changes
+  useEffect(() => {
+    const el = titleTextareaRef.current;
+    if (el) {
+      el.style.height = "auto";
+      el.style.height = el.scrollHeight + "px";
+    }
+  }, [selectedNote?.id, selectedNote?.title]);
 
   // ============== DATA FETCHING ==============
 
@@ -112,6 +129,15 @@ export function NotesPageClient() {
     }
   }, []);
 
+  const fetchWorkspaceTags = useCallback(async (workspaceId: string) => {
+    try {
+      const res = await fetch(`/api/tags?workspaceId=${workspaceId}`);
+      if (res.ok) setWorkspaceTags(await res.json());
+    } catch {
+      // Tags are non-critical, silent failure
+    }
+  }, []);
+
   const fetchNote = useCallback(async (id: string) => {
     try {
       const res = await fetch(`/api/notes/${id}`);
@@ -146,6 +172,7 @@ export function NotesPageClient() {
             fetchFolders(note.workspaceId),
             fetchNotes(note.workspaceId),
             fetchTemplates(note.workspaceId),
+            fetchWorkspaceTags(note.workspaceId),
           ]);
           if (note.folderId) {
             setSelectedFolderId(note.folderId);
@@ -161,6 +188,7 @@ export function NotesPageClient() {
             fetchFolders(targetWs.id),
             fetchNotes(targetWs.id),
             fetchTemplates(targetWs.id),
+            fetchWorkspaceTags(targetWs.id),
           ]);
           if (allNotes && allNotes.length > 0) {
             setSelectedNote(allNotes[0]);
@@ -173,7 +201,7 @@ export function NotesPageClient() {
       setIsLoading(false);
     };
     init();
-  }, [fetchWorkspaces, fetchFolders, fetchNotes, fetchNote, fetchTemplates, searchParams]);
+  }, [fetchWorkspaces, fetchFolders, fetchNotes, fetchNote, fetchTemplates, fetchWorkspaceTags, searchParams]);
 
   // ============== NOTE HANDLERS ==============
 
@@ -281,6 +309,24 @@ export function NotesPageClient() {
       const allNotes = await fetchNotes(selectedWorkspaceId);
       setSelectedNote(allNotes && allNotes.length > 0 ? allNotes[0] : null);
       setDeleteNoteOpen(false);
+      toast.success("Nota eliminada");
+    } catch {
+      toast.error("Error al eliminar");
+    }
+  };
+
+  const handleSidebarDeleteNote = async () => {
+    if (!sidebarDeleteNoteId || !selectedWorkspaceId) return;
+    try {
+      const res = await fetch(`/api/notes/${sidebarDeleteNoteId}`, { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      if (selectedNote?.id === sidebarDeleteNoteId) {
+        const allNotes = await fetchNotes(selectedWorkspaceId);
+        setSelectedNote(allNotes && allNotes.length > 0 ? allNotes[0] : null);
+      } else {
+        fetchNotes(selectedWorkspaceId);
+      }
+      setSidebarDeleteNoteId(null);
       toast.success("Nota eliminada");
     } catch {
       toast.error("Error al eliminar");
@@ -456,30 +502,48 @@ export function NotesPageClient() {
   // Task handlers
   const handleLinkTask = async () => {
     if (!selectedNote || !selectedWorkspaceId) return;
+    // Optimistic UI: show "pending" state immediately
+    setSelectedNote((prev) => (prev ? { ...prev, taskId: "pending" } : null));
     try {
+      // Don't send contentText as description — it can be huge and slow the request
       const res = await fetch("/api/tasks", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           workspaceId: selectedWorkspaceId,
           title: selectedNote.title || "Nueva tarea",
-          description: selectedNote.contentText || "",
-          status: "todo",
+          importance: 5,
+          source: "manual",
           noteId: selectedNote.id,
         }),
       });
       if (!res.ok) throw new Error();
       const task = await res.json();
-      const patchRes = await fetch(`/api/notes/${selectedNote.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ taskId: task.id }),
-      });
-      if (!patchRes.ok) throw new Error();
+
+      // Update UI immediately with the real task ID
       setSelectedNote((prev) => (prev ? { ...prev, taskId: task.id } : null));
-      fetchNotes(selectedWorkspaceId);
       toast.success("Tarea vinculada");
+
+      // Fire the rest in parallel — not blocking UI
+      const noteTags = selectedNote.tags ?? [];
+      await Promise.allSettled([
+        fetch(`/api/notes/${selectedNote.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ taskId: task.id }),
+        }),
+        ...noteTags.map(tag =>
+          fetch(`/api/tasks/${task.id}/tags`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ tagId: tag.tagId }),
+          })
+        ),
+      ]);
+      fetchNotes(selectedWorkspaceId);
     } catch {
+      // Revert optimistic update on error
+      setSelectedNote((prev) => (prev ? { ...prev, taskId: null } : null));
       toast.error("Error al vincular");
     }
   };
@@ -502,18 +566,23 @@ export function NotesPageClient() {
   };
 
   const handleToggleComplete = async () => {
-    if (!selectedNote || !selectedWorkspaceId) return;
+    if (!selectedNote || !selectedWorkspaceId || !selectedNote.taskId) return;
+    // Optimistic update immediately
+    const newCompleted = !selectedNote.completed;
+    setSelectedNote((prev) => (prev ? { ...prev, completed: newCompleted } : null));
     try {
-      const res = await fetch(`/api/notes/${selectedNote.id}`, {
+      // Update the task — DB trigger syncs completed back to the note
+      const res = await fetch(`/api/tasks/${selectedNote.taskId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ completed: !selectedNote.completed }),
+        body: JSON.stringify({ completed: newCompleted }),
       });
       if (!res.ok) throw new Error();
-      setSelectedNote((prev) => (prev ? { ...prev, completed: !prev.completed } : null));
       fetchNotes(selectedWorkspaceId);
-      toast.success(selectedNote.completed ? "Marcada como pendiente" : "Completada");
+      toast.success(newCompleted ? "Completada" : "Marcada como pendiente");
     } catch {
+      // Revert optimistic update on error
+      setSelectedNote((prev) => (prev ? { ...prev, completed: !newCompleted } : null));
       toast.error("Error");
     }
   };
@@ -560,17 +629,43 @@ export function NotesPageClient() {
     }
   };
 
+  // ============== TAG HELPERS ==============
+
+  // Note count per tag (for sidebar badge)
+  const noteTagCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const note of notes) {
+      for (const tag of note.tags ?? []) {
+        counts[tag.tagId] = (counts[tag.tagId] ?? 0) + 1;
+      }
+    }
+    return counts;
+  }, [notes]);
+
+  // Notes filtered by selectedTagFilter (used in sidebar display)
+  const sidebarNotes = useMemo(() => {
+    if (!selectedTagFilter) return notes;
+    return notes.filter(n => n.tags?.some(t => t.tagId === selectedTagFilter));
+  }, [notes, selectedTagFilter]);
+
+  // ============== TAG HANDLERS ==============
+
+  const handleNoteTagsChange = useCallback((tags: TaskTag[]) => {
+    setSelectedNote(prev => prev ? { ...prev, tags } : null);
+  }, []);
+
   // Workspace/Folder selection
   const handleSelectWorkspace = useCallback(
     async (id: string) => {
       setSelectedWorkspaceId(id);
       setSelectedFolderId(null);
-      await Promise.all([fetchFolders(id), fetchNotes(id), fetchTemplates(id)]);
+      setSelectedTagFilter(null);
+      await Promise.all([fetchFolders(id), fetchNotes(id), fetchTemplates(id), fetchWorkspaceTags(id)]);
       const allNotes = notes.filter((n) => n.workspaceId === id);
       setSelectedNote(allNotes.length > 0 ? allNotes[0] : null);
       router.push(`/notes?workspace=${id}`);
     },
-    [router, fetchFolders, fetchNotes, fetchTemplates, notes]
+    [router, fetchFolders, fetchNotes, fetchTemplates, fetchWorkspaceTags, notes]
   );
 
   const handleSelectFolder = useCallback((id: string | null) => {
@@ -646,9 +741,9 @@ export function NotesPageClient() {
       {/* Sidebar - Mobile optimized */}
       <div
         className={cn(
-          "transition-all duration-300 ease-in-out flex-shrink-0 h-full",
+          "transition-all duration-300 ease-in-out flex-shrink-0 h-full overflow-hidden",
           sidebarCollapsed
-            ? "w-0 overflow-hidden"
+            ? "w-0"
             : "w-[85vw] sm:w-80 md:w-72 lg:w-72",
           !sidebarCollapsed && "max-lg:absolute max-lg:inset-y-0 max-lg:left-0 max-lg:z-20 max-lg:shadow-2xl max-lg:border-r max-lg:border-border/30 max-lg:bg-background"
         )}
@@ -671,7 +766,7 @@ export function NotesPageClient() {
         <NotesSidebar
           workspaces={workspaces}
           folders={folders}
-          notes={notes}
+          notes={sidebarNotes}
           templates={templates}
           selectedWorkspaceId={selectedWorkspaceId}
           selectedFolderId={selectedFolderId}
@@ -683,10 +778,15 @@ export function NotesPageClient() {
           onCreateNote={handleCreateNote}
           onRenameFolder={handleRenameFolder}
           onDeleteFolder={handleDeleteFolderTarget}
+          onDeleteNote={(id) => setSidebarDeleteNoteId(id)}
           onSearch={handleSearch}
           onOpenTemplates={handleOpenTemplates}
           onCreateNoteFromTemplate={handleCreateNoteFromTemplate}
           onMoveNote={handleDragMoveNote}
+          workspaceTags={workspaceTags}
+          selectedTagFilter={selectedTagFilter}
+          onTagFilterChange={setSelectedTagFilter}
+          noteTagCounts={noteTagCounts}
         />
       </div>
 
@@ -703,9 +803,6 @@ export function NotesPageClient() {
               onTogglePin={handleTogglePin}
               onToggleFavorite={handleToggleFavorite}
               onDelete={() => setDeleteNoteOpen(true)}
-              onLinkTask={handleLinkTask}
-              onUnlinkTask={handleUnlinkTask}
-              onToggleComplete={handleToggleComplete}
               onMoveToFolder={handleMoveToFolder}
               onSaveAsTemplate={() => {
                 setTemplateDialogMode("save");
@@ -717,30 +814,54 @@ export function NotesPageClient() {
 
             {/* Title area - Mobile responsive */}
             <div className="bg-background/80 backdrop-blur-sm px-4 sm:px-6 md:px-8 pt-4 sm:pt-5 md:pt-6 pb-2 md:pb-3 border-b border-border/10">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <span className="text-2xl sm:text-3xl cursor-pointer hover:scale-110 active:scale-95 transition-transform select-none shrink-0">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <span className="text-2xl sm:text-3xl cursor-pointer hover:scale-110 active:scale-95 transition-transform select-none shrink-0 mt-1">
                   {selectedNote.icon}
                 </span>
-                <input
-                  className="text-2xl sm:text-3xl md:text-4xl font-extrabold bg-transparent border-none outline-none flex-1 placeholder:text-muted-foreground/30 min-w-0"
+                <textarea
+                  ref={titleTextareaRef}
+                  className="text-2xl sm:text-3xl md:text-4xl font-extrabold bg-transparent border-none outline-none flex-1 placeholder:text-muted-foreground/30 min-w-0 resize-none overflow-hidden leading-tight"
                   value={selectedNote.title}
-                  onChange={(e) =>
-                    setSelectedNote((prev) => (prev ? { ...prev, title: e.target.value } : null))
-                  }
+                  rows={1}
+                  onChange={(e) => {
+                    setSelectedNote((prev) => (prev ? { ...prev, title: e.target.value } : null));
+                    e.target.style.height = "auto";
+                    e.target.style.height = e.target.scrollHeight + "px";
+                  }}
                   onBlur={(e) => handleUpdateTitle(e.target.value)}
                   placeholder="Sin título"
                   autoComplete="off"
                   autoCorrect="off"
                   autoCapitalize="off"
-                  spellCheck="false"
+                  spellCheck={false}
                 />
+                <div className="mt-1 shrink-0">
+                  <NoteTaskPanel
+                    taskId={selectedNote.taskId}
+                    completed={selectedNote.completed}
+                    onLinkTask={handleLinkTask}
+                    onUnlinkTask={handleUnlinkTask}
+                    onToggleComplete={handleToggleComplete}
+                  />
+                </div>
               </div>
+              {/* Tags row */}
+              {selectedWorkspaceId && (
+                <div className="mt-2 ml-1">
+                  <NoteTagSelector
+                    noteId={selectedNote.id}
+                    workspaceId={selectedWorkspaceId}
+                    tags={selectedNote.tags ?? []}
+                    onTagsChange={handleNoteTagsChange}
+                  />
+                </div>
+              )}
             </div>
 
             {/* Editor - Touch optimized */}
             <div className="flex-1 flex overflow-hidden">
               <div className="flex-1 overflow-y-auto bg-background/60 backdrop-blur-sm overscroll-contain">
-                <NoteEditor ref={editorRef} key={selectedNote.id} content={selectedNote.contentJson} onUpdate={handleUpdateNote} />
+                <NoteEditor ref={editorRef} key={selectedNote.id} content={selectedNote.contentJson} onUpdate={handleUpdateNote} noteId={selectedNote.id} />
               </div>
             </div>
           </>
@@ -792,6 +913,14 @@ export function NotesPageClient() {
         title="Eliminar nota"
         description="¿Estás seguro de que quieres eliminar esta nota? Esta acción no se puede deshacer."
         onConfirm={handleDeleteNote}
+      />
+
+      <DeleteDialog
+        open={!!sidebarDeleteNoteId}
+        onOpenChange={(open) => !open && setSidebarDeleteNoteId(null)}
+        title="Eliminar nota"
+        description="¿Estás seguro de que quieres eliminar esta nota? Esta acción no se puede deshacer."
+        onConfirm={handleSidebarDeleteNote}
       />
 
       <TemplateDialog

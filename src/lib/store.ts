@@ -39,6 +39,8 @@ export const deleteWorkspace = store.deleteWorkspace;
 
 // ============== TASKS ==============
 export const listTasks = store.listTasks;
+export const listTasksLite = store.listTasksLite;
+export const listTasksWithTags = store.listTasksWithTags;
 export const getTask = store.getTask;
 export const createTask = store.createTask;
 export const createManyTasks = store.createManyTasks;

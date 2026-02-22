@@ -85,11 +85,13 @@ export function TagSelector({
     rawSetIsOpen(val);
   };
 
-  const [workspaceTags, setWorkspaceTags] = useState<WorkspaceTag[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const [assigningTagId, setAssigningTagId] = useState<string | null>(null);
   const [removingTagId, setRemovingTagId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+
+  // Usar la query de React Query o fallback si no está instalado
+  const [workspaceTags, setWorkspaceTags] = useState<WorkspaceTag[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchWorkspaceTags = async () => {
     setIsLoading(true);
@@ -308,8 +310,7 @@ export function TagSelector({
   );
 }
 
-// ============== Popover Content ==============
-
+// Subcomponente interno para el contenido del Popover
 interface TagPopoverContentProps {
   tags: TaskTag[];
   availableTags: WorkspaceTag[];

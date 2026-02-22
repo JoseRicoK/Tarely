@@ -49,6 +49,8 @@ import {
   ArrowLeft,
   Unlink,
   FileText,
+  FileSpreadsheet,
+  File,
 } from "lucide-react";
 
 
@@ -109,6 +111,72 @@ const PdfNode = Node.create({
 });
 
 
+// ============== OFFICE DOCUMENT NODE EXTENSION (Word / Excel) ==============
+
+type OfficeDocType = 'word' | 'excel';
+
+interface OfficeDocConfig {
+  label: string;
+  emoji: string;
+  colorClass: string;
+}
+
+const OFFICE_CONFIG: Record<OfficeDocType, OfficeDocConfig> = {
+  word:  { label: 'Word',  emoji: '📝', colorClass: 'office-doc-word'  },
+  excel: { label: 'Excel', emoji: '📊', colorClass: 'office-doc-excel' },
+};
+
+const OfficeDocNode = Node.create({
+  name: 'officedoc',
+  group: 'block',
+  atom: true,
+
+  addAttributes() {
+    return {
+      src:      { default: null },
+      fileName: { default: 'document' },
+      docType:  { default: 'word' }, // 'word' | 'excel'
+    };
+  },
+
+  parseHTML() {
+    return [{ tag: 'div[data-officedoc]' }];
+  },
+
+  renderHTML({ HTMLAttributes }) {
+    const src      = HTMLAttributes.src      || '';
+    const fileName = HTMLAttributes.fileName || 'document';
+    const docType  = (HTMLAttributes.docType as OfficeDocType) || 'word';
+    const cfg      = OFFICE_CONFIG[docType] ?? OFFICE_CONFIG.word;
+    // Use data-* attrs to pass values; avoid mergeAttributes on the outer div
+    // to prevent class collisions. Render as a flat structure to avoid
+    // TipTap atomic-node text concatenation bugs with nested children.
+    return [
+      'div',
+      {
+        'data-officedoc': docType,
+        'data-filename': fileName,
+        class: `office-doc-embed office-doc-embed--${docType}`,
+      },
+      ['span', { class: 'office-doc-icon' }, cfg.emoji],
+      ['span', { class: 'office-doc-name' }, fileName],
+      ['span', { class: 'office-doc-type' }, cfg.label],
+      [
+        'a',
+        {
+          href: src,
+          download: fileName,
+          target: '_blank',
+          rel: 'noopener noreferrer',
+          class: 'office-doc-open',
+        },
+        `Abrir en ${cfg.label}`,
+      ],
+    ];
+  },
+});
+
+
 // ============== TYPES ==============
 
 interface NoteEditorProps {
@@ -116,6 +184,8 @@ interface NoteEditorProps {
   onUpdate: (json: Record<string, unknown>, text: string) => void;
   editable?: boolean;
   className?: string;
+  /** ID de la nota activa, necesario para subir adjuntos a Storage */
+  noteId?: string | null;
 }
 
 export interface NoteEditorHandle {
@@ -231,6 +301,20 @@ const SLASH_COMMANDS: SlashCommand[] = [
     description: "Insertar documento PDF",
     icon: FileText,
     keywords: ["pdf", "documento", "document", "archivo", "file"],
+    action: null,
+  },
+  {
+    name: "Word",
+    description: "Insertar documento Word",
+    icon: File,
+    keywords: ["word", "doc", "docx", "documento", "microsoft", "office"],
+    action: null,
+  },
+  {
+    name: "Excel",
+    description: "Insertar hoja de cálculo Excel",
+    icon: FileSpreadsheet,
+    keywords: ["excel", "xls", "xlsx", "hoja", "calculo", "spreadsheet", "microsoft", "office"],
     action: null,
   },
 ];
@@ -545,6 +629,7 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
   onUpdate,
   editable = true,
   className,
+  noteId,
 }, ref) {
   const [linkUrl, setLinkUrl] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
@@ -617,6 +702,7 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
         },
       }),
       PdfNode,
+      OfficeDocNode,
       Link.configure({
         openOnClick: false,
         HTMLAttributes: { class: "editor-link" },
@@ -632,6 +718,27 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
     editorProps: {
       attributes: {
         class: "tiptap-editor focus:outline-none min-h-[500px] pl-20 pr-12 pt-6 pb-[40vh] max-w-none",
+      },
+      handleDrop: (_view, event) => {
+        // Let our React onDrop handler deal with files; prevent TipTap from
+        // moving/replacing editor nodes when a file is dropped.
+        if (event.dataTransfer && event.dataTransfer.files.length > 0) {
+          const files = Array.from(event.dataTransfer.files);
+          const hasSupported = files.some((f) => {
+            const t = f.type;
+            return (
+              t === 'application/pdf' ||
+              t.startsWith('image/') ||
+              t === 'application/msword' ||
+              t === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+              t === 'application/vnd.ms-excel' ||
+              t === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+              /\.(doc|docx|xls|xlsx)$/i.test(f.name)
+            );
+          });
+          if (hasSupported) return true; // suppress TipTap default drop
+        }
+        return false;
       },
       handleKeyDown: (_view, event) => {
         if (!slashOpenRef.current) return false;
@@ -707,50 +814,266 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
   }), [editor]);
 
   // Image insertion (must be declared before executeSlashCommand)
+  const insertImageFile = useCallback(async (file: File) => {
+    if (!editor) return;
+    if (!noteId) {
+      // Fallback: base64 si no hay noteId (no debería ocurrir en uso normal)
+      const reader = new FileReader();
+      reader.onload = () => {
+        editor.chain().focus().setImage({ src: reader.result as string }).run();
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('noteId', noteId);
+    try {
+      const res = await fetch('/api/notes/upload', { method: 'POST', body: formData });
+      if (!res.ok) throw new Error(await res.text());
+      const { url } = await res.json();
+      editor.chain().focus().setImage({ src: url }).run();
+    } catch (err) {
+      console.error('[NoteEditor] Error subiendo imagen:', err);
+      alert('Error al subir la imagen. Inténtalo de nuevo.');
+    }
+  }, [editor, noteId]);
+
   const addImage = useCallback(() => {
     if (!editor) return;
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "image/*";
-    input.onchange = async (e) => {
+    input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        editor
-          .chain()
-          .focus()
-          .setImage({ src: reader.result as string })
-          .run();
-      };
-      reader.readAsDataURL(file);
+      insertImageFile(file);
     };
     input.click();
-  }, [editor]);
+  }, [editor, insertImageFile]);
 
-  // PDF insertion
+  // PDF insertion — shared logic for both toolbar button and drag-and-drop
+  const insertPdfFile = useCallback(async (file: File) => {
+    if (!editor) return;
+    if (!noteId) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        editor.chain().focus().insertContent({
+          type: 'pdf',
+          attrs: { src: reader.result as string, fileName: file.name },
+        }).run();
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('noteId', noteId);
+    try {
+      const res = await fetch('/api/notes/upload', { method: 'POST', body: formData });
+      if (!res.ok) throw new Error(await res.text());
+      const { url, fileName } = await res.json();
+      editor.chain().focus().insertContent({
+        type: 'pdf',
+        attrs: { src: url, fileName },
+      }).run();
+    } catch (err) {
+      console.error('[NoteEditor] Error subiendo PDF:', err);
+      alert('Error al subir el PDF. Inténtalo de nuevo.');
+    }
+  }, [editor, noteId]);
+
   const addPdf = useCallback(() => {
     if (!editor) return;
     const input = document.createElement("input");
     input.type = "file";
     input.accept = "application/pdf";
-    input.onchange = async (e) => {
+    input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
+      insertPdfFile(file);
+    };
+    input.click();
+  }, [editor, insertPdfFile]);
+
+  // Word / Excel insertion
+  const insertOfficeFile = useCallback(async (file: File, docType: OfficeDocType) => {
+    if (!editor) return;
+    if (!noteId) {
       const reader = new FileReader();
       reader.onload = () => {
-        editor.chain().insertContent({
-          type: 'pdf',
-          attrs: {
-            src: reader.result as string,
-            fileName: file.name,
-          },
+        editor.chain().focus().insertContent({
+          type: 'officedoc',
+          attrs: { src: reader.result as string, fileName: file.name, docType },
         }).run();
       };
       reader.readAsDataURL(file);
+      return;
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('noteId', noteId);
+    try {
+      const res = await fetch('/api/notes/upload', { method: 'POST', body: formData });
+      if (!res.ok) throw new Error(await res.text());
+      const { url, fileName } = await res.json();
+      editor.chain().focus().insertContent({
+        type: 'officedoc',
+        attrs: { src: url, fileName, docType },
+      }).run();
+    } catch (err) {
+      console.error('[NoteEditor] Error subiendo archivo Office:', err);
+      alert('Error al subir el archivo. Inténtalo de nuevo.');
+    }
+  }, [editor, noteId]);
+
+  const addWord = useCallback(() => {
+    if (!editor) return;
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      insertOfficeFile(file, 'word');
     };
     input.click();
-  }, [editor]);
+  }, [editor, insertOfficeFile]);
+
+  const addExcel = useCallback(() => {
+    if (!editor) return;
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      insertOfficeFile(file, 'excel');
+    };
+    input.click();
+  }, [editor, insertOfficeFile]);
+
+  // ── Drag-and-drop: PDF, images, Word, Excel ──────────────────────────────
+  // Use refs to avoid React re-renders during drag (which conflict with TipTap DOM)
+  const pdfOverlayRef = useRef<HTMLDivElement>(null);
+  const dragCounter  = useRef(0);
+
+  type DragFileKind = 'pdf' | 'image' | 'word' | 'excel' | null;
+
+  const getFileKind = (items: DataTransferItemList): DragFileKind => {
+    for (const item of Array.from(items)) {
+      if (item.kind !== 'file') continue;
+      if (item.type === 'application/pdf') return 'pdf';
+      if (item.type.startsWith('image/')) return 'image';
+      if (
+        item.type === 'application/msword' ||
+        item.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        item.type === ''  // .doc/.docx sometimes report empty MIME
+      ) {
+        // We'll disambiguate on drop via extension; treat unknown as word for overlay
+        return 'word';
+      }
+      if (
+        item.type === 'application/vnd.ms-excel' ||
+        item.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      ) return 'excel';
+    }
+    return null;
+  };
+
+  const OVERLAY_INFO: Record<NonNullable<DragFileKind>, { icon: string; label: string }> = {
+    pdf:   { icon: '📄', label: 'Suelta el PDF para insertarlo'    },
+    image: { icon: '🖼️', label: 'Suelta la imagen para insertarla' },
+    word:  { icon: '📝', label: 'Suelta el Word para insertarlo'   },
+    excel: { icon: '📊', label: 'Suelta el Excel para insertarlo'  },
+  };
+
+  const showPdfOverlay = useCallback((kind: NonNullable<DragFileKind>) => {
+    const el = pdfOverlayRef.current;
+    if (!el) return;
+    const info = OVERLAY_INFO[kind];
+    const icon = el.querySelector<HTMLSpanElement>('.drag-overlay-icon');
+    const label = el.querySelector<HTMLSpanElement>('.drag-overlay-label');
+    if (icon)  icon.textContent  = info.icon;
+    if (label) label.textContent = info.label;
+    el.classList.remove('hidden');
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const hidePdfOverlay = useCallback(() => {
+    pdfOverlayRef.current?.classList.add('hidden');
+  }, []);
+
+  const handleDragEnter = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!editable) return;
+    const kind = getFileKind(e.dataTransfer.items);
+    if (!kind) return;
+    dragCounter.current++;
+    e.preventDefault();
+    showPdfOverlay(kind);
+  }, [editable, showPdfOverlay]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!editable) return;
+    const kind = getFileKind(e.dataTransfer.items);
+    if (kind) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+    }
+  }, [editable]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleDragLeave = useCallback(() => {
+    dragCounter.current--;
+    if (dragCounter.current <= 0) {
+      dragCounter.current = 0;
+      hidePdfOverlay();
+    }
+  }, [hidePdfOverlay]);
+
+  const MAX_FILE_MB = 10 * 1024 * 1024;
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (!editable) return;
+    const files = Array.from(e.dataTransfer.files);
+    const relevant = files.filter((f) => {
+      const t = f.type;
+      return (
+        t === 'application/pdf' ||
+        t.startsWith('image/') ||
+        t === 'application/msword' ||
+        t === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        t === 'application/vnd.ms-excel' ||
+        t === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        /\.(doc|docx|xls|xlsx)$/i.test(f.name)
+      );
+    });
+    if (relevant.length === 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    dragCounter.current = 0;
+    hidePdfOverlay();
+
+    relevant.forEach((file) => {
+      if (file.size > MAX_FILE_MB) {
+        alert(`"${file.name}" supera el límite de 10 MB y no se puede insertar.`);
+        return;
+      }
+      const t = file.type;
+      const name = file.name.toLowerCase();
+      if (t === 'application/pdf') {
+        insertPdfFile(file);
+      } else if (t.startsWith('image/')) {
+        insertImageFile(file);
+      } else if (
+        t === 'application/vnd.ms-excel' ||
+        t === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+        name.endsWith('.xls') || name.endsWith('.xlsx')
+      ) {
+        insertOfficeFile(file, 'excel');
+      } else {
+        insertOfficeFile(file, 'word');
+      }
+    });
+  }, [editable, hidePdfOverlay, insertPdfFile, insertImageFile, insertOfficeFile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Execute slash command
   const executeSlashCommand = useCallback(
@@ -768,12 +1091,16 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
         addImage();
       } else if (cmd.name === "PDF") {
         addPdf();
+      } else if (cmd.name === "Word") {
+        addWord();
+      } else if (cmd.name === "Excel") {
+        addExcel();
       } else if (cmd.action) {
         cmd.action(editor);
       }
       setSlashOpen(false);
     },
-    [editor, slashQuery, addImage, addPdf]
+    [editor, slashQuery, addImage, addPdf, addWord, addExcel]
   );
 
   // Close menus on click outside
@@ -801,7 +1128,23 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
   if (!editor) return null;
 
   return (
-    <div className={cn("relative h-full", className)}>
+    <div
+      className={cn("relative h-full", className)}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
+      {/* Drag-and-drop overlay — fixed viewport overlay, shown/hidden via ref to avoid React re-renders */}
+      <div
+        ref={pdfOverlayRef}
+        className="hidden fixed inset-0 z-[200] pointer-events-none flex items-center justify-center"
+      >
+        <div className="flex flex-col items-center gap-3 px-10 py-8 rounded-2xl border-2 border-dashed border-primary bg-background/90 shadow-2xl text-primary backdrop-blur-sm">
+          <span className="drag-overlay-icon text-5xl leading-none">📄</span>
+          <span className="drag-overlay-label text-base font-semibold">Suelta el archivo para insertarlo</span>
+        </div>
+      </div>
       {/* ===== DRAG HANDLE (Notion-style: + and grip on left margin) ===== */}
       {editable && (
         <DragHandle editor={editor} nested={false}>

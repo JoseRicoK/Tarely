@@ -6,7 +6,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
 import * as LucideIcons from "lucide-react";
-import { GripHorizontal, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { GripHorizontal, MoreHorizontal, Pencil, Trash2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { WorkspaceSection } from "@/lib/types";
@@ -25,6 +26,10 @@ interface KanbanColumnProps {
   children: React.ReactNode;
   onEditSection?: (section: WorkspaceSection) => void;
   onDeleteSection?: (section: WorkspaceSection) => void;
+  onMoveLeft?: (section: WorkspaceSection) => void;
+  onMoveRight?: (section: WorkspaceSection) => void;
+  isFirst?: boolean;
+  isLast?: boolean;
 }
 
 // Map of icon names to components
@@ -72,6 +77,10 @@ export function KanbanColumn({
   children,
   onEditSection,
   onDeleteSection,
+  onMoveLeft,
+  onMoveRight,
+  isFirst,
+  isLast,
 }: KanbanColumnProps) {
   // Sortable for column reordering (drag from header)
   const {
@@ -125,18 +134,16 @@ export function KanbanColumn({
           {...listeners}
           className="cursor-grab active:cursor-grabbing"
         >
-          <GripHorizontal 
-            className="h-4 w-4 text-muted-foreground/50" 
-          />
+          <GripHorizontal className="h-4 w-4 text-muted-foreground/50" />
         </div>
         <Icon 
-          className="h-4 w-4" 
+          className="h-4 w-4 flex-shrink-0" 
           style={{ color: section.color }}
         />
         <span className="font-medium text-sm truncate flex-1">{section.name}</span>
         <Badge
           variant="secondary"
-          className="text-xs"
+          className="text-xs flex-shrink-0"
           style={{ 
             backgroundColor: `${section.color}25`,
             color: section.color
@@ -145,13 +152,13 @@ export function KanbanColumn({
           {count}
         </Badge>
         {/* Section options menu */}
-        {(onEditSection || onDeleteSection) && (
+        {(onEditSection || onDeleteSection || onMoveLeft || onMoveRight) && (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 opacity-60 hover:opacity-100"
+                className="h-6 w-6 flex-shrink-0 opacity-60 hover:opacity-100"
                 onClick={(e) => e.stopPropagation()}
               >
                 <MoreHorizontal className="h-4 w-4" />
@@ -159,6 +166,25 @@ export function KanbanColumn({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {(onMoveLeft || onMoveRight) && (
+                <>
+                  <DropdownMenuItem
+                    onClick={() => onMoveLeft?.(section)}
+                    disabled={isFirst}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-2" />
+                    Mover a la izquierda
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => onMoveRight?.(section)}
+                    disabled={isLast}
+                  >
+                    <ChevronRight className="h-4 w-4 mr-2" />
+                    Mover a la derecha
+                  </DropdownMenuItem>
+                  {(onEditSection || onDeleteSection) && <DropdownMenuSeparator />}
+                </>
+              )}
               {onEditSection && (
                 <DropdownMenuItem onClick={() => onEditSection(section)}>
                   <Pencil className="h-4 w-4 mr-2" />
