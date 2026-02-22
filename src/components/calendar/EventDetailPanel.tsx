@@ -51,7 +51,7 @@ export function EventDetailPanel({
   };
 
   return (
-    <div className="w-72 border-l border-border/20 bg-background/95 backdrop-blur-sm flex flex-col overflow-hidden">
+    <div className="h-full bg-background flex flex-col overflow-hidden w-full">
       {event ? (
         <>
           {/* Detail header */}

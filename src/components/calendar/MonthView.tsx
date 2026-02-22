@@ -199,7 +199,20 @@ export function MonthView({
                         ? { borderLeftColor: event.color, backgroundColor: `${event.color}18`, color: event.color }
                         : { backgroundColor: event.color }
                     }
-                    onClick={() => handleEventClick(event)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEventClick?.({
+                        id: event.id,
+                        title: event.title,
+                        start: event.start,
+                        end: event.start,
+                        color: event.color,
+                        type: event.type,
+                        task: event.task,
+                        workspace: event.workspace,
+                        googleEvent: event.type === 'google' ? event : undefined
+                      });
+                    }}
                   >
                     {event.type === 'task' && (
                       <CheckCircle2 className="h-2 w-2 flex-shrink-0 opacity-70" />

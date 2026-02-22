@@ -442,14 +442,13 @@ export function NotionCalendar({
                 googleEvents={filteredGoogleEvents}
                 googleCalendars={googleCalendars}
                 onEventClick={handleEventClick}
-                onTaskClick={onTaskClick}
                 onDateClick={handleTimeSlotClick}
               />
             )}
           </div>
 
           {/* Desktop Right panel */}
-          <div className="hidden lg:block w-80 border-l border-border/20 bg-background/50">
+          <div className="hidden lg:block w-80 border-l border-border/20 bg-background/50 flex-shrink-0 h-full overflow-hidden">
             <EventDetailPanel
               event={selectedEvent}
               upcomingTasks={upcomingTasks}
@@ -460,7 +459,7 @@ export function NotionCalendar({
           </div>
 
           {/* Mobile Right panel (Sheet) */}
-          <div className="lg:hidden">
+          <div className="block lg:hidden">
             <Sheet open={selectedEvent !== null} onOpenChange={(open) => !open && setSelectedEvent(null)}>
               <SheetContent side="right" className="p-0 w-[85vw] sm:w-96">
                 <SheetTitle className="sr-only">Detalles del evento</SheetTitle>
