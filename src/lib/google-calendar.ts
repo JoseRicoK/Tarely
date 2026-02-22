@@ -4,6 +4,7 @@ import type { GoogleCalendarEvent, GoogleFreeBusyResponse } from './types';
 const SCOPES = [
   'https://www.googleapis.com/auth/calendar.events',
   'https://www.googleapis.com/auth/calendar.freebusy',
+  'https://www.googleapis.com/auth/calendar.readonly',
 ];
 
 export function getOAuth2Client() {
@@ -145,6 +146,20 @@ export async function listCalendarEvents(
   });
 
   return (response.data.items || []) as GoogleCalendarEvent[];
+}
+
+export async function getGoogleCalendarList(
+  accessToken: string,
+  refreshToken: string
+): Promise<{ id: string; summary: string; backgroundColor: string; primary: boolean }[]> {
+  const calendar = await getCalendarClient(accessToken, refreshToken);
+  const response = await calendar.calendarList.list({ minAccessRole: 'reader' });
+  return (response.data.items || []).map(cal => ({
+    id: cal.id || 'primary',
+    summary: cal.summary || 'Sin nombre',
+    backgroundColor: cal.backgroundColor || '#4285f4',
+    primary: !!cal.primary,
+  }));
 }
 
 export async function getGoogleCalendarEvents(

@@ -1,13 +1,15 @@
 "use client";
 
 import { useMemo } from 'react';
-import { 
-  format, 
-  startOfWeek, 
-  endOfWeek, 
+import {
+  format,
+  startOfWeek,
+  endOfWeek,
   eachDayOfInterval,
   isSameDay,
   isToday,
+  isSaturday,
+  isSunday,
   parseISO,
   differenceInMinutes,
   startOfDay,
@@ -15,6 +17,7 @@ import {
 import { es } from 'date-fns/locale';
 import { CheckCircle2 } from 'lucide-react';
 import type { Task, Workspace } from '@/lib/types';
+import type { SelectedCalendarEvent } from './EventDetailPanel';
 import { cn } from '@/lib/utils';
 
 interface WeekViewProps {
@@ -22,7 +25,8 @@ interface WeekViewProps {
   tasks: Task[];
   workspaces: Workspace[];
   googleEvents: any[];
-  onTaskClick?: (taskId: string, workspaceId: string) => void;
+  googleCalendars: { id: string; summary: string; backgroundColor: string }[];
+  onEventClick: (event: SelectedCalendarEvent) => void;
 }
 
 interface CalendarEvent {
@@ -32,20 +36,23 @@ interface CalendarEvent {
   end: Date;
   color: string;
   type: 'task' | 'google';
-  taskId?: string;
-  workspaceId?: string;
   isAllDay?: boolean;
+  task?: Task;
+  workspace?: Workspace;
+  googleEvent?: any;
+  calendarName?: string;
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const HOUR_HEIGHT = 60; // pixels per hour
+const HOUR_HEIGHT = 48; // px per hour — más compacto
 
 export function WeekView({
   currentDate,
   tasks,
   workspaces,
   googleEvents,
-  onTaskClick,
+  googleCalendars,
+  onEventClick,
 }: WeekViewProps) {
   const weekDays = useMemo(() => {
     const start = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -59,8 +66,7 @@ export function WeekView({
       .map(task => {
         const workspace = workspaces.find(w => w.id === task.workspaceId);
         const start = parseISO(task.dueDate!);
-        const end = new Date(start.getTime() + 60 * 60 * 1000); // 1 hour default
-        
+        const end = new Date(start.getTime() + 45 * 60 * 1000); // 45 min default
         return {
           id: task.id,
           title: task.title,
@@ -68,114 +74,121 @@ export function WeekView({
           end,
           color: workspace?.color || '#888',
           type: 'task' as const,
-          taskId: task.id,
-          workspaceId: task.workspaceId,
+          task,
+          workspace,
         };
       });
 
     const googleEventsFormatted: CalendarEvent[] = googleEvents.map(event => {
-      const isAllDay = !event.start?.dateTime; // Si no tiene dateTime, es todo el día
+      const isAllDay = !event.start?.dateTime;
+      const calInfo = googleCalendars.find(c => c.id === event._calendarId);
       return {
         id: event.id,
         title: event.summary || 'Evento de Google',
         start: new Date(event.start?.dateTime || event.start?.date),
         end: new Date(event.end?.dateTime || event.end?.date),
-        color: '#4285f4',
+        color: calInfo?.backgroundColor || '#4285f4',
         type: 'google' as const,
         isAllDay,
+        googleEvent: event,
+        calendarName: calInfo?.summary,
       };
     });
 
     return [...taskEvents, ...googleEventsFormatted];
-  }, [tasks, workspaces, googleEvents]);
+  }, [tasks, workspaces, googleEvents, googleCalendars]);
 
   const getEventStyle = (event: CalendarEvent, day: Date) => {
     const dayStart = startOfDay(day);
     const eventStart = event.start > dayStart ? event.start : dayStart;
     const minutesFromStart = differenceInMinutes(eventStart, dayStart);
-    const duration = differenceInMinutes(event.end, event.start);
-    
+    const duration = Math.max(differenceInMinutes(event.end, event.start), 30);
     const top = (minutesFromStart / 60) * HOUR_HEIGHT;
-    const height = Math.max((duration / 60) * HOUR_HEIGHT, 30);
-    
-    return {
-      top: `${top}px`,
-      height: `${height}px`,
-    };
+    const height = Math.max((duration / 60) * HOUR_HEIGHT, 18);
+    return { top: `${top}px`, height: `${height}px` };
   };
 
-  const getEventsForDay = (day: Date) => {
-    return events.filter(event => 
-      !event.isAllDay && (
-        isSameDay(event.start, day) || 
-        (event.start < day && event.end > day)
-      )
+  const getEventsForDay = (day: Date) =>
+    events.filter(e =>
+      !e.isAllDay && (isSameDay(e.start, day) || (e.start < day && e.end > day))
     );
-  };
 
-  const getAllDayEventsForDay = (day: Date) => {
-    return events.filter(event => 
-      event.isAllDay && isSameDay(event.start, day)
-    );
-  };
+  const getAllDayEventsForDay = (day: Date) =>
+    events.filter(e => e.isAllDay && isSameDay(e.start, day));
+
+  const toSelectedEvent = (e: CalendarEvent): SelectedCalendarEvent => ({
+    type: e.type,
+    id: e.id,
+    title: e.title,
+    start: e.start,
+    end: e.end,
+    color: e.color,
+    isAllDay: e.isAllDay,
+    task: e.task,
+    workspace: e.workspace,
+    googleEvent: e.googleEvent,
+    calendarName: e.calendarName,
+  });
 
   return (
     <div className="flex flex-col h-full">
       {/* Days header */}
-      <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border/20 sticky top-0 bg-background z-10">
+      <div className="grid grid-cols-[52px_repeat(7,1fr)] border-b border-border/20 sticky top-0 bg-background z-10">
         <div className="border-r border-border/20" />
-        {weekDays.map(day => (
-          <div
-            key={day.toISOString()}
-            className={cn(
-              "py-2 md:py-3 text-center border-r border-border/20",
-              isToday(day) && "bg-primary/5"
-            )}
-          >
-            <div className="text-[10px] md:text-xs text-muted-foreground uppercase">
-              {format(day, 'EEE', { locale: es })}
-            </div>
+        {weekDays.map(day => {
+          const isWeekend = isSaturday(day) || isSunday(day);
+          return (
             <div
+              key={day.toISOString()}
               className={cn(
-                "text-sm md:text-lg font-semibold mt-0.5 md:mt-1",
-                isToday(day) && "text-primary"
+                "py-2 text-center border-r border-border/20",
+                isToday(day) && "bg-primary/5",
+                isWeekend && !isToday(day) && "bg-muted/20"
               )}
             >
-              {format(day, 'd')}
+              <div className={cn(
+                "text-[10px] uppercase tracking-wide",
+                isWeekend ? "text-muted-foreground/50" : "text-muted-foreground/70"
+              )}>
+                {format(day, 'EEE', { locale: es })}
+              </div>
+              <div className={cn(
+                "text-sm md:text-base font-semibold mt-0.5",
+                isToday(day) && "bg-primary text-primary-foreground w-6 h-6 rounded-full flex items-center justify-center mx-auto text-xs",
+                isWeekend && !isToday(day) && "text-muted-foreground/60"
+              )}>
+                {format(day, 'd')}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* All-day events section */}
-      <div className="grid grid-cols-[60px_repeat(7,1fr)] border-b border-border/20 bg-muted/10">
-        <div className="border-r border-border/20 px-2 py-2 text-right">
-          <span className="text-[10px] text-muted-foreground/60">Todo el día</span>
+      {/* All-day events */}
+      <div className="grid grid-cols-[52px_repeat(7,1fr)] border-b border-border/20 bg-muted/10">
+        <div className="border-r border-border/20 px-1 py-1.5 text-right">
+          <span className="text-[9px] text-muted-foreground/50 leading-none">todo el día</span>
         </div>
         {weekDays.map(day => {
           const allDayEvents = getAllDayEventsForDay(day);
+          const isWeekend = isSaturday(day) || isSunday(day);
           return (
             <div
               key={`allday-${day.toISOString()}`}
               className={cn(
-                "border-r border-border/20 p-1 min-h-[40px]",
-                isToday(day) && "bg-primary/[0.02]"
+                "border-r border-border/20 p-1 min-h-[32px]",
+                isToday(day) && "bg-primary/5",
+                isWeekend && !isToday(day) && "bg-muted/20"
               )}
             >
               {allDayEvents.map(event => (
                 <div
                   key={event.id}
-                  className="text-[10px] md:text-[11px] px-1.5 py-0.5 md:py-1 rounded mb-1 cursor-pointer hover:brightness-110 transition-all text-white flex items-center gap-1"
+                  className="text-[10px] px-1.5 py-0.5 rounded mb-0.5 cursor-pointer hover:brightness-110 transition-all text-white flex items-center gap-1 truncate"
                   style={{ backgroundColor: event.color }}
-                  onClick={() => {
-                    if (event.type === 'task' && event.taskId && event.workspaceId && onTaskClick) {
-                      onTaskClick(event.taskId, event.workspaceId);
-                    }
-                  }}
+                  onClick={() => onEventClick(toSelectedEvent(event))}
                 >
-                  {event.type === 'task' && (
-                    <CheckCircle2 className="h-2.5 w-2.5 md:h-3 md:w-3 flex-shrink-0" />
-                  )}
+                  {event.type === 'task' && <CheckCircle2 className="h-2.5 w-2.5 flex-shrink-0" />}
                   <span className="truncate">{event.title}</span>
                 </div>
               ))}
@@ -185,77 +198,87 @@ export function WeekView({
       </div>
 
       {/* Time grid */}
-      <div className="flex-1 relative overflow-x-auto">
-        <div className="grid grid-cols-[50px_repeat(7,minmax(80px,1fr))] md:grid-cols-[60px_repeat(7,1fr)]">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+        <div className="grid grid-cols-[52px_repeat(7,1fr)]" style={{ minHeight: `${HOUR_HEIGHT * 24}px` }}>
           {/* Hours column */}
-          <div>
+          <div className="border-r border-border/20">
             {HOURS.map(hour => (
               <div
                 key={hour}
-                className="h-[60px] border-r border-border/20 px-1 md:px-2 text-right pt-1"
+                className="text-right pr-1.5 border-b border-border/5"
+                style={{ height: `${HOUR_HEIGHT}px` }}
               >
-                <span className="text-[9px] md:text-[11px] text-muted-foreground/60">
-                  {hour === 0 ? '12 AM' : hour < 12 ? `${hour} AM` : hour === 12 ? '12 PM' : `${hour - 12} PM`}
+                <span className="text-[9px] md:text-[10px] text-muted-foreground/40 leading-none translate-y-[-0.5em] inline-block mt-[-1px]">
+                  {hour === 0 ? '' : hour < 12 ? `${hour}` : hour === 12 ? '12' : `${hour - 12}`}
+                  {hour !== 0 && <span className="text-[7px] ml-px">{hour < 12 ? 'am' : 'pm'}</span>}
                 </span>
               </div>
             ))}
           </div>
 
           {/* Day columns */}
-          {weekDays.map((day, dayIndex) => (
-            <div
-              key={day.toISOString()}
-              className={cn(
-                "relative border-r border-border/20",
-                isToday(day) && "bg-primary/[0.02]"
-              )}
-            >
-              {/* Hour lines */}
-              {HOURS.map(hour => (
-                <div
-                  key={hour}
-                  className="h-[60px] border-b border-border/10"
-                />
-              ))}
+          {weekDays.map(day => {
+            const isWeekend = isSaturday(day) || isSunday(day);
+            const dayEvents = getEventsForDay(day);
+            return (
+              <div
+                key={day.toISOString()}
+                className={cn(
+                  "relative border-r border-border/20",
+                  isToday(day) && "bg-primary/[0.03]",
+                  isWeekend && !isToday(day) && "bg-muted/15"
+                )}
+                style={{ height: `${HOUR_HEIGHT * 24}px` }}
+              >
+                {/* Hour lines */}
+                {HOURS.map(hour => (
+                  <div
+                    key={hour}
+                    className="absolute w-full border-b border-border/10"
+                    style={{ top: `${hour * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}
+                  />
+                ))}
 
-              {/* Events */}
-              <div className="absolute inset-0 pointer-events-none">
-                {getEventsForDay(day).map(event => {
+                {/* Events */}
+                {dayEvents.map(event => {
                   const style = getEventStyle(event, day);
+                  const isTask = event.type === 'task';
                   return (
                     <div
                       key={event.id}
                       className={cn(
-                        "absolute left-0.5 right-0.5 rounded px-1 md:px-1.5 py-0.5 md:py-1 pointer-events-auto cursor-pointer",
-                        "hover:brightness-110 transition-all duration-150",
-                        "text-white overflow-hidden shadow-sm",
-                        event.type === 'task' && "ring-1 ring-white/30"
+                        "absolute left-0.5 right-0.5 rounded cursor-pointer overflow-hidden",
+                        "hover:brightness-110 transition-all duration-100 shadow-sm",
+                        isTask
+                          ? "border-l-[2px] pl-1.5 pr-1"
+                          : "px-1.5"
                       )}
                       style={{
                         ...style,
-                        backgroundColor: event.color,
+                        backgroundColor: isTask ? `${event.color}22` : event.color,
+                        borderLeftColor: isTask ? event.color : undefined,
+                        color: isTask ? event.color : 'white',
                       }}
-                      onClick={() => {
-                        if (event.type === 'task' && event.taskId && event.workspaceId && onTaskClick) {
-                          onTaskClick(event.taskId, event.workspaceId);
-                        }
-                      }}
+                      onClick={() => onEventClick(toSelectedEvent(event))}
                     >
-                      <div className="flex items-center gap-1 text-[9px] md:text-[11px] font-medium leading-tight">
-                        {event.type === 'task' && (
-                          <CheckCircle2 className="h-2 w-2 md:h-2.5 md:w-2.5 flex-shrink-0" />
-                        )}
-                        <span className="truncate">{event.title}</span>
+                      <div className="flex items-center gap-0.5 leading-none py-0.5">
+                        {isTask && <CheckCircle2 className="h-2 w-2 flex-shrink-0 opacity-80" />}
+                        <span className="text-[10px] font-medium truncate">{event.title}</span>
                       </div>
-                      <div className="text-[8px] md:text-[10px] opacity-80 leading-tight hidden sm:block">
-                        {format(event.start, 'h:mm a')}
-                      </div>
+                      {parseInt(style.height) > 28 && (
+                        <div className={cn(
+                          "text-[9px] opacity-60 leading-none",
+                          isTask && "ml-2.5"
+                        )}>
+                          {format(event.start, 'h:mm a')}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

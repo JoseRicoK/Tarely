@@ -1,30 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ArrowLeft, Calendar as CalendarIcon, Loader2, Settings } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Task, Workspace } from "@/lib/types";
 import { NotionCalendar } from "@/components/calendar/NotionCalendar";
-import { GoogleCalendarSettings } from "@/components/calendar/GoogleCalendarSettings";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 
 interface CalendarTask extends Task {
   workspaceName: string;
@@ -32,10 +12,8 @@ interface CalendarTask extends Task {
 }
 
 export default function CalendarPage() {
-  const router = useRouter();
   const [tasks, setTasks] = useState<CalendarTask[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [selectedWorkspace, setSelectedWorkspace] = useState<string>("all");
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -48,7 +26,7 @@ export default function CalendarPage() {
       const wsRes = await fetch("/api/workspaces");
       if (!wsRes.ok) throw new Error("Error loading workspaces");
       const wsData = await wsRes.json();
-      const workspacesList = Array.isArray(wsData) ? wsData : (wsData.workspaces || []);
+      const workspacesList: Workspace[] = Array.isArray(wsData) ? wsData : (wsData.workspaces || []);
       setWorkspaces(workspacesList);
 
       const allTasks: CalendarTask[] = [];
@@ -74,25 +52,11 @@ export default function CalendarPage() {
     }
   }
 
-  const filteredTasks = selectedWorkspace === "all"
-    ? tasks
-    : tasks.filter((t) => t.workspaceId === selectedWorkspace);
-
-  const tasksWithDueDate = filteredTasks.filter((t) => t.dueDate);
-
-  const stats = {
-    total: tasksWithDueDate.length,
-    pending: tasksWithDueDate.filter((t) => !t.completed).length,
-    completed: tasksWithDueDate.filter((t) => t.completed).length,
-    overdue: tasksWithDueDate.filter((t) => {
-      if (t.completed || !t.dueDate) return false;
-      return new Date(t.dueDate) < new Date();
-    }).length,
-  };
+  const tasksWithDueDate = tasks.filter((t) => t.dueDate);
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-20">
+      <div className="flex items-center justify-center h-full">
         <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
@@ -103,7 +67,6 @@ export default function CalendarPage() {
       <NotionCalendar
         tasks={tasksWithDueDate}
         workspaces={workspaces}
-        selectedWorkspace={selectedWorkspace}
       />
     </div>
   );
