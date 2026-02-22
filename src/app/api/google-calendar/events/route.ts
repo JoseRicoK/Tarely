@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     // Fetch events from all calendars in parallel
     const eventsByCalendar = await Promise.allSettled(
       targetCalendarIds.map(calId =>
-        getGoogleCalendarEvents(accessToken, new Date(timeMin), new Date(timeMax), calId)
+        getGoogleCalendarEvents(accessToken, refreshToken, new Date(timeMin), new Date(timeMax), calId)
           .then(events => events.map(e => ({ ...e, _calendarId: calId })))
       )
     );

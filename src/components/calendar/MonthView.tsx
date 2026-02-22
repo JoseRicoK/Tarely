@@ -14,6 +14,7 @@ import {
   parseISO,
   startOfWeek,
   endOfWeek,
+  startOfDay,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CheckCircle2 } from 'lucide-react';
@@ -29,6 +30,7 @@ interface MonthViewProps {
   googleCalendars?: { id: string; summary: string; backgroundColor: string }[];
   onEventClick?: (event: SelectedCalendarEvent) => void;
   onTaskClick?: (taskId: string, workspaceId: string) => void;
+  onDateClick?: (date: Date) => void;
 }
 
 interface CalendarEvent {
@@ -51,6 +53,7 @@ export function MonthView({
   googleCalendars = [],
   onEventClick,
   onTaskClick,
+  onDateClick,
 }: MonthViewProps) {
   const days = useMemo(() => {
     const start = startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 });
@@ -150,8 +153,23 @@ export function MonthView({
                 !isCurrentMonth && "bg-muted/10",
                 isCurrentDay && "bg-primary/5",
                 isWeekend && !isCurrentDay && !isCurrentMonth && "bg-muted/20",
-                isWeekend && isCurrentMonth && !isCurrentDay && "bg-muted/10"
+                isWeekend && isCurrentMonth && !isCurrentDay && "bg-muted/10",
+                "cursor-pointer hover:bg-muted/5 transition-colors"
               )}
+              onDoubleClick={() => onDateClick?.(startOfDay(day))}
+              onTouchStart={() => {
+                // simple long press simulation
+                const timer = setTimeout(() => {
+                  onDateClick?.(startOfDay(day));
+                }, 500);
+                (day as any)._touchTimer = timer;
+              }}
+              onTouchEnd={() => {
+                if ((day as any)._touchTimer) clearTimeout((day as any)._touchTimer);
+              }}
+              onTouchMove={() => {
+                if ((day as any)._touchTimer) clearTimeout((day as any)._touchTimer);
+              }}
             >
               <div className="mb-1">
                 <span

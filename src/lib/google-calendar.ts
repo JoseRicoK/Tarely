@@ -164,11 +164,12 @@ export async function getGoogleCalendarList(
 
 export async function getGoogleCalendarEvents(
   accessToken: string,
+  refreshToken: string,
   timeMin: Date,
   timeMax: Date,
   calendarId = 'primary'
 ): Promise<GoogleCalendarEvent[]> {
-  const calendar = await getCalendarClient(accessToken, '');
+  const calendar = await getCalendarClient(accessToken, refreshToken);
   
   const response = await calendar.events.list({
     calendarId,

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from 'react';
+import { useRef } from 'react';
 import {
   format,
   startOfWeek,
@@ -13,6 +14,7 @@ import {
   parseISO,
   differenceInMinutes,
   startOfDay,
+  addMinutes,
 } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { CheckCircle2 } from 'lucide-react';
@@ -27,6 +29,7 @@ interface WeekViewProps {
   googleEvents: any[];
   googleCalendars: { id: string; summary: string; backgroundColor: string }[];
   onEventClick: (event: SelectedCalendarEvent) => void;
+  onTimeSlotClick?: (date: Date) => void;
 }
 
 interface CalendarEvent {
@@ -53,7 +56,21 @@ export function WeekView({
   googleEvents,
   googleCalendars,
   onEventClick,
+  onTimeSlotClick,
 }: WeekViewProps) {
+  const touchTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleTouchStart = (date: Date) => {
+    touchTimerRef.current = setTimeout(() => {
+      onTimeSlotClick?.(date);
+    }, 500); // 500ms long press
+  };
+
+  const handleTouchEnd = () => {
+    if (touchTimerRef.current) {
+      clearTimeout(touchTimerRef.current);
+    }
+  };
   const weekDays = useMemo(() => {
     const start = startOfWeek(currentDate, { weekStartsOn: 1 });
     const end = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -230,17 +247,27 @@ export function WeekView({
                 )}
                 style={{ height: `${HOUR_HEIGHT * 24}px` }}
               >
-                {/* Hour lines */}
-                {HOURS.map(hour => (
-                  <div
-                    key={hour}
-                    className="absolute w-full border-b border-border/10"
-                    style={{ top: `${hour * HOUR_HEIGHT}px`, height: `${HOUR_HEIGHT}px` }}
-                  />
-                ))}
+                {/* Hour slots for clicking */}
+                <div className="absolute inset-0 z-0 flex flex-col">
+                  {HOURS.map(hour => {
+                    const slotDate = addMinutes(startOfDay(day), hour * 60);
+                    return (
+                      <div
+                        key={`slot-${hour}`}
+                        className="flex-1 cursor-pointer hover:bg-primary/5 transition-colors border-b border-border/10"
+                        onDoubleClick={() => onTimeSlotClick?.(slotDate)}
+                        onTouchStart={() => handleTouchStart(slotDate)}
+                        onTouchEnd={handleTouchEnd}
+                        onTouchMove={handleTouchEnd}
+                        onTouchCancel={handleTouchEnd}
+                      />
+                    );
+                  })}
+                </div>
 
-                {/* Events */}
-                {dayEvents.map(event => {
+                {/* Events container */}
+                <div className="absolute inset-0 pointer-events-none z-10">
+                  {dayEvents.map(event => {
                   const style = getEventStyle(event, day);
                   const isTask = event.type === 'task';
                   return (
@@ -276,6 +303,7 @@ export function WeekView({
                     </div>
                   );
                 })}
+                </div>
               </div>
             );
           })}

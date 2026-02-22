@@ -17,6 +17,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DatePicker } from "@/components/ui/date-picker";
 import { RecurrenceSelector } from "./RecurrenceSelector";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2 } from "lucide-react";
 import type { RecurrenceRule } from "@/lib/types";
 
@@ -31,9 +38,10 @@ type TaskFormData = z.infer<typeof taskSchema>;
 interface TaskDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (data: TaskFormData & { dueDate?: string | null; recurrence?: RecurrenceRule | null }) => Promise<void>;
-  initialData?: TaskFormData & { dueDate?: string | null; recurrence?: RecurrenceRule | null };
+  onSubmit: (data: TaskFormData & { dueDate?: string | null; recurrence?: RecurrenceRule | null; workspaceId?: string }) => Promise<void>;
+  initialData?: TaskFormData & { dueDate?: string | null; recurrence?: RecurrenceRule | null; workspaceId?: string };
   mode: "create" | "edit";
+  workspaces?: { id: string; name: string }[];
 }
 
 export function TaskDialog({
@@ -42,9 +50,11 @@ export function TaskDialog({
   onSubmit,
   initialData,
   mode,
+  workspaces,
 }: TaskDialogProps) {
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [recurrence, setRecurrence] = useState<RecurrenceRule | null>(null);
+  const [selectedWorkspace, setSelectedWorkspace] = useState<string>("");
   
   const {
     register,
@@ -66,6 +76,7 @@ export function TaskDialog({
     if (open && initialData) {
       setDueDate(initialData.dueDate || null);
       setRecurrence(initialData.recurrence || null);
+      setSelectedWorkspace(initialData.workspaceId || "");
       setValue("title", initialData.title);
       setValue("description", initialData.description || "");
       setValue("importance", initialData.importance);
@@ -73,14 +84,16 @@ export function TaskDialog({
       reset({ title: "", description: "", importance: 5 });
       setDueDate(null);
       setRecurrence(null);
+      setSelectedWorkspace(workspaces?.[0]?.id || "");
     }
-  }, [open, initialData, setValue, reset]);
+  }, [open, initialData, setValue, reset, workspaces]);
 
   const handleFormSubmit = async (data: TaskFormData) => {
-    await onSubmit({ ...data, dueDate, recurrence });
+    await onSubmit({ ...data, dueDate, recurrence, workspaceId: selectedWorkspace });
     reset();
     setDueDate(null);
     setRecurrence(null);
+    setSelectedWorkspace("");
   };
 
   return (
@@ -128,6 +141,26 @@ export function TaskDialog({
               </p>
             )}
           </div>
+
+          {workspaces && workspaces.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Workspace
+              </label>
+              <Select value={selectedWorkspace} onValueChange={setSelectedWorkspace}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona un workspace" />
+                </SelectTrigger>
+                <SelectContent>
+                  {workspaces.map(ws => (
+                    <SelectItem key={ws.id} value={ws.id}>
+                      {ws.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           <div className="space-y-2">
             <label className="text-sm font-medium">

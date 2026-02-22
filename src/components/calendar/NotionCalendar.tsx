@@ -30,7 +30,13 @@ import { EventDetailPanel } from './EventDetailPanel';
 import type { SelectedCalendarEvent } from './EventDetailPanel';
 import type { Task, Workspace } from '@/lib/types';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+
+import { TaskDialog } from '@/components/tasks/TaskDialog';
+
+// ... (después de GoogleCalendar)
 interface GoogleCalendar {
   id: string;
   summary: string;
@@ -56,8 +62,64 @@ export function NotionCalendar({
   const [googleEvents, setGoogleEvents] = useState<any[]>([]);
   const [googleCalendars, setGoogleCalendars] = useState<GoogleCalendar[]>([]);
   const [isGoogleConnected, setIsGoogleConnected] = useState(false);
+  const [selectedCalendars, setSelectedCalendars] = useState<Set<string>>(new Set());
   const [selectedEvent, setSelectedEvent] = useState<SelectedCalendarEvent | null>(null);
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [isTaskDialogOpen, setIsTaskDialogOpen] = useState(false);
+  const [newTaskInitialData, setNewTaskInitialData] = useState<{ dueDate?: string | null; workspaceId?: string } | undefined>(undefined);
+
+  const handleTimeSlotClick = useCallback((date: Date) => {
+    setNewTaskInitialData({
+      dueDate: date.toISOString(),
+      workspaceId: selectedWorkspace === 'all' ? workspaces[0]?.id : selectedWorkspace,
+    });
+    setIsTaskDialogOpen(true);
+  }, [selectedWorkspace, workspaces]);
+
+  const handleCreateTask = async (data: any) => {
+    try {
+      const res = await fetch("/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...data,
+          workspaceId: data.workspaceId || selectedWorkspace || workspaces[0]?.id,
+          source: "manual",
+        }),
+      });
+
+      if (!res.ok) throw new Error("Failed to create task");
+      
+      const newTask = await res.json();
+      setTasks(prev => [...prev, newTask]);
+      setIsTaskDialogOpen(false);
+      toast.success("Tarea creada");
+    } catch (error) {
+      console.error("Error creating task:", error);
+      toast.error("Error al crear la tarea");
+    }
+  };
+
+  const toggleCalendar = (id: string) => {
+    setSelectedCalendars(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  // Filtrar eventos basándose en la selección
+  const filteredGoogleEvents = selectedCalendars.size === 0 
+    ? googleEvents 
+    : googleEvents.filter(e => selectedCalendars.has(e._calendarId));
+
+  const filteredTasks = selectedCalendars.size === 0 
+    ? tasks 
+    : tasks.filter(t => selectedCalendars.has(t.workspaceId));
 
   // Sync when parent updates tasks
   useEffect(() => {
@@ -195,20 +257,56 @@ export function NotionCalendar({
           </p>
 
           {/* Google Calendars */}
-          {isGoogleConnected && googleCalendars.map(cal => (
-            <div key={cal.id} className="flex items-center gap-2 px-1 py-1 rounded hover:bg-muted/30 transition-colors">
-              <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: cal.backgroundColor }} />
-              <span className="text-xs text-muted-foreground truncate">{cal.summary}</span>
-            </div>
-          ))}
+          {isGoogleConnected && googleCalendars.map(cal => {
+            const isSelected = selectedCalendars.size === 0 || selectedCalendars.has(cal.id);
+            return (
+              <button
+                key={cal.id}
+                onClick={() => toggleCalendar(cal.id)}
+                className="w-full flex items-center gap-2 px-1 py-1 rounded hover:bg-muted/30 transition-colors text-left"
+              >
+                <div 
+                  className={cn(
+                    "w-2.5 h-2.5 rounded-sm flex-shrink-0 transition-opacity",
+                    !isSelected && "opacity-20"
+                  )} 
+                  style={{ backgroundColor: cal.backgroundColor }} 
+                />
+                <span className={cn(
+                  "text-xs truncate transition-opacity",
+                  isSelected ? "text-foreground" : "text-muted-foreground/60 line-through"
+                )}>
+                  {cal.summary}
+                </span>
+              </button>
+            );
+          })}
 
           {/* Workspace calendars */}
-          {workspaces.map(ws => (
-            <div key={ws.id} className="flex items-center gap-2 px-1 py-1 rounded hover:bg-muted/30 transition-colors">
-              <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: ws.color || '#888' }} />
-              <span className="text-xs text-muted-foreground truncate">{ws.name}</span>
-            </div>
-          ))}
+          {workspaces.map(ws => {
+            const isSelected = selectedCalendars.size === 0 || selectedCalendars.has(ws.id);
+            return (
+              <button
+                key={ws.id}
+                onClick={() => toggleCalendar(ws.id)}
+                className="w-full flex items-center gap-2 px-1 py-1 rounded hover:bg-muted/30 transition-colors text-left"
+              >
+                <div 
+                  className={cn(
+                    "w-2.5 h-2.5 rounded-sm flex-shrink-0 transition-opacity",
+                    !isSelected && "opacity-20"
+                  )} 
+                  style={{ backgroundColor: ws.color || '#888' }} 
+                />
+                <span className={cn(
+                  "text-xs truncate transition-opacity",
+                  isSelected ? "text-foreground" : "text-muted-foreground/60 line-through"
+                )}>
+                  {ws.name}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -284,35 +382,66 @@ export function NotionCalendar({
             {viewMode === 'week' ? (
               <WeekView
                 currentDate={currentDate}
-                tasks={tasks}
+                tasks={filteredTasks}
                 workspaces={workspaces}
-                googleEvents={googleEvents}
+                googleEvents={filteredGoogleEvents}
                 googleCalendars={googleCalendars}
                 onEventClick={handleEventClick}
+                onTimeSlotClick={handleTimeSlotClick}
               />
             ) : (
               <MonthView
                 currentDate={currentDate}
-                tasks={tasks}
+                tasks={filteredTasks}
                 workspaces={workspaces}
-                googleEvents={googleEvents}
+                googleEvents={filteredGoogleEvents}
                 googleCalendars={googleCalendars}
                 onEventClick={handleEventClick}
                 onTaskClick={onTaskClick}
+                onDateClick={handleTimeSlotClick}
               />
             )}
           </div>
 
-          {/* Right panel */}
-          <EventDetailPanel
-            event={selectedEvent}
-            upcomingTasks={upcomingTasks}
-            workspaces={workspaces}
-            onClose={() => setSelectedEvent(null)}
-            onTaskToggle={handleTaskToggle}
-          />
+          {/* Desktop Right panel */}
+          <div className="hidden lg:block">
+            <EventDetailPanel
+              event={selectedEvent}
+              upcomingTasks={upcomingTasks}
+              workspaces={workspaces}
+              onClose={() => setSelectedEvent(null)}
+              onTaskToggle={handleTaskToggle}
+            />
+          </div>
+
+          {/* Mobile Right panel (Sheet) */}
+          <div className="lg:hidden">
+            <Sheet open={selectedEvent !== null} onOpenChange={(open) => !open && setSelectedEvent(null)}>
+              <SheetContent side="right" className="p-0 w-[85vw] sm:w-96">
+                <SheetTitle className="sr-only">Detalles del evento</SheetTitle>
+                <div className="h-full pt-6">
+                  <EventDetailPanel
+                    event={selectedEvent}
+                    upcomingTasks={upcomingTasks}
+                    workspaces={workspaces}
+                    onClose={() => setSelectedEvent(null)}
+                    onTaskToggle={handleTaskToggle}
+                  />
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
+
+      <TaskDialog
+        open={isTaskDialogOpen}
+        onOpenChange={setIsTaskDialogOpen}
+        onSubmit={handleCreateTask}
+        mode="create"
+        workspaces={workspaces}
+        initialData={newTaskInitialData as any}
+      />
     </div>
   );
 }
