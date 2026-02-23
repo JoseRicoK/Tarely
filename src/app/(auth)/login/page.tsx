@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import Link from "next/link";
 import Image from "next/image";
 import { Loader2, Mail, Lock, Sparkles, AlertCircle, ArrowLeft } from "lucide-react";
+import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 
 interface FieldErrors {
   email?: string;
@@ -254,7 +255,22 @@ export default function LoginPage() {
                 <div className="w-full border-t border-white/10" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="px-2 text-muted-foreground">
+                <span className="bg-background px-2 text-muted-foreground">
+                  O continúa con
+                </span>
+              </div>
+            </div>
+
+            {/* Google Login */}
+            <GoogleLoginButton mode="login" variant="outline" className="bg-white/5 border-white/10 hover:bg-white/10 hover:border-purple-500/50" />
+
+            {/* Divider */}
+            <div className="relative my-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-white/10" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
                   ¿Nuevo aquí?
                 </span>
               </div>

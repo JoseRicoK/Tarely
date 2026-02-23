@@ -29,7 +29,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // Componente de texto animado para el hero
 function AnimatedText() {
-  const words = ["emails", "ideas", "notas", "reuniones", "proyectos"];
+  const words = ["emails", "ideas", "notas", "reuniones", "proyectos", "tareas inteligentes"];
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -137,8 +137,6 @@ export default function LandingPage() {
   const [inputValue, setInputValue] = useState("");
   const [showTooltip, setShowTooltip] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const placeholderText =
-    "Tengo varios correos pendientes, un bug urgente y no sé por dónde empezar…";
 
   // Cuando el usuario escribe algo, mostrar tooltip y redirigir después de un momento
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -276,7 +274,7 @@ export default function LandingPage() {
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-violet-500/20 bg-violet-500/10 backdrop-blur-sm mb-6 sm:mb-8"
               >
                 <Sparkles className="h-3.5 w-3.5 text-violet-400" />
-                <span className="text-xs sm:text-sm text-violet-300">Potenciado con IA</span>
+                <span className="text-xs sm:text-sm text-violet-300">Tu segundo cerebro potenciado por IA</span>
               </motion.div>
 
               {/* Main Heading */}
@@ -287,10 +285,10 @@ export default function LandingPage() {
                 custom={1}
                 className="text-[2.25rem] leading-[1.1] sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight mb-5 sm:mb-6"
               >
-                <span className="text-white">Convierte el caos en</span>
+                <span className="text-white">Conecta tus ideas,</span>
                 <br />
                 <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent">
-                  tareas claras
+                  ejecuta sin fricción
                 </span>
               </motion.h1>
 
@@ -302,8 +300,7 @@ export default function LandingPage() {
                 custom={2}
                 className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-xl mx-auto mb-8 sm:mb-10 leading-relaxed"
               >
-                Pega tus <AnimatedText />, una idea o un texto desordenado.{" "}
-                <span className="text-white/80">Tarely lo organiza por ti en segundos.</span>
+                Notas, tareas y calendario en un solo ecosistema. La IA organiza tu caos, extrae las <AnimatedText /> y planifica tu día automáticamente.
               </motion.p>
 
               {/* CTA Buttons */}
@@ -411,22 +408,22 @@ export default function LandingPage() {
                       value={inputValue}
                       onChange={handleInputChange}
                       onFocus={handleInputFocus}
-                      placeholder={placeholderText}
-                      className="w-full h-20 sm:h-24 p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white text-sm placeholder:text-muted-foreground/40 resize-none focus:outline-none focus:ring-1 focus:ring-violet-500/40 focus:border-violet-500/30 transition-all"
+                      placeholder="Escribe tus notas aquí... Ej: Reunión de producto terminada. Hay que lanzar la nueva landing el próximo martes y avisar a marketing mañana a primera hora."
+                      className="w-full h-24 sm:h-28 p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white text-sm placeholder:text-muted-foreground/40 resize-none focus:outline-none focus:ring-1 focus:ring-violet-500/40 focus:border-violet-500/30 transition-all"
                     />
                     <div className="absolute bottom-3 right-3">
                       <Badge variant="outline" className="bg-violet-500/10 border-violet-500/20 text-[10px] text-violet-400">
                         <Sparkles className="h-2.5 w-2.5 mr-1" />
-                        IA
+                        IA Asistente
                       </Badge>
                     </div>
                     {showTooltip && (
                       <motion.div
                         initial={{ opacity: 0, y: 4 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="absolute -top-11 left-1/2 -translate-x-1/2 px-4 py-2 bg-violet-600 text-white text-xs rounded-lg whitespace-nowrap"
+                        className="absolute -top-11 left-1/2 -translate-x-1/2 px-4 py-2 bg-violet-600 text-white text-xs rounded-lg whitespace-nowrap z-10"
                       >
-                        ¡Regístrate gratis para organizar tu caos!
+                        ¡Regístrate gratis para organizar tus ideas!
                         <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-violet-600 rotate-45" />
                       </motion.div>
                     )}
@@ -435,15 +432,14 @@ export default function LandingPage() {
                   {/* AI Processing indicator */}
                   <div className="flex items-center gap-2 mb-4">
                     <div className="h-2 w-2 rounded-full bg-violet-400 animate-pulse" />
-                    <span className="text-xs text-muted-foreground">Tareas detectadas por IA</span>
+                    <span className="text-xs text-muted-foreground">Tareas detectadas y sincronizadas con tu calendario</span>
                   </div>
 
                   {/* Task list */}
                   <div className="space-y-2">
                     {[
-                      { task: "Responder emails urgentes", priority: 10, color: "bg-red-500/20 text-red-400 border-red-500/20" },
-                      { task: "Revisar bug en producción", priority: 8, color: "bg-orange-500/20 text-orange-400 border-orange-500/20" },
-                      { task: "Preparar reunión de equipo", priority: 6, color: "bg-yellow-500/20 text-yellow-400 border-yellow-500/20" },
+                      { task: "Lanzar nueva landing", priority: 9, due: "Próximo martes", color: "bg-red-500/20 text-red-400 border-red-500/20" },
+                      { task: "Avisar a marketing", priority: 7, due: "Mañana", color: "bg-orange-500/20 text-orange-400 border-orange-500/20" },
                     ].map((item, i) => (
                       <motion.div
                         key={i}
@@ -454,7 +450,12 @@ export default function LandingPage() {
                         className="flex items-center gap-3 p-3 rounded-lg bg-white/[0.03] border border-white/[0.05]"
                       >
                         <div className="w-4 h-4 rounded-full border-2 border-violet-400/40 shrink-0" />
-                        <span className="text-sm text-white/80 flex-1">{item.task}</span>
+                        <div className="flex-1 flex flex-col">
+                          <span className="text-sm text-white/80">{item.task}</span>
+                          <span className="text-[10px] text-muted-foreground flex items-center mt-0.5">
+                            <Calendar className="w-3 h-3 mr-1 inline-block" /> {item.due}
+                          </span>
+                        </div>
                         <Badge variant="outline" className={cn("text-[10px]", item.color)}>
                           {item.priority}/10
                         </Badge>
@@ -462,6 +463,189 @@ export default function LandingPage() {
                     ))}
                   </div>
                 </div>
+              </div>
+            </motion.div>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════
+            NOTES UI HIGHLIGHT — Editor de notas interactivas
+        ═══════════════════════════════════════════ */}
+        <section className="relative pb-24 sm:pb-32 overflow-hidden">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              className="text-center mb-12 sm:mb-16"
+            >
+              <p className="text-sm font-medium text-violet-400 mb-3 tracking-wide uppercase">El concepto diferenciador</p>
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4">
+                Tu nota <span className="bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">ES</span> tu tarea
+              </h2>
+              <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-base">
+                No añades tareas dentro de una nota. <strong className="text-white/90">La nota entera se convierte en una tarea.</strong> Cuando completas la tarea en tu Kanban, la nota se marca como completada automáticamente. Todo vive en el mismo Workspace.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.1 }}
+              transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+              className="relative max-w-5xl mx-auto"
+            >
+              <div className="absolute -inset-4 bg-gradient-to-r from-blue-600/10 via-cyan-600/10 to-teal-600/10 rounded-3xl blur-2xl" />
+              <div className="relative rounded-2xl border border-white/10 bg-slate-900/80 backdrop-blur-sm overflow-hidden shadow-2xl shadow-blue-500/5 flex flex-col md:flex-row h-[450px] sm:h-[550px]">
+                
+                {/* Sidebar (hidden on small mobile, visible on md) */}
+                <div className="hidden md:flex flex-col w-64 border-r border-white/5 bg-slate-950/50 p-4">
+                  <div className="flex flex-col gap-1 mb-6 px-1">
+                    <span className="text-[10px] text-muted-foreground tracking-widest font-semibold uppercase">Workspace</span>
+                    <div className="flex items-center gap-2 mt-1 px-2 py-1.5 bg-white/5 rounded-md cursor-pointer border border-white/10 hover:bg-white/10 transition-colors">
+                      <div className="w-5 h-5 rounded bg-gradient-to-br from-violet-500 to-fuchsia-500 flex items-center justify-center">
+                        <Sparkles className="h-3 w-3 text-white" />
+                      </div>
+                      <span className="text-sm font-semibold text-white/90 flex-1">Marketing</span>
+                      <ChevronRight className="w-3 h-3 text-muted-foreground rotate-90" />
+                    </div>
+                  </div>
+                  
+                  <div className="relative mb-5">
+                    <div className="w-full h-8 bg-white/5 rounded-md border border-white/5 flex items-center px-3">
+                      <span className="text-xs text-muted-foreground">Buscar notas...</span>
+                    </div>
+                  </div>
+                  
+                  <button className="w-full h-9 bg-white/10 hover:bg-white/15 transition-colors rounded-md border border-white/10 flex items-center justify-center gap-2 mb-6 text-white text-sm font-medium">
+                    Nueva nota
+                  </button>
+
+                  <div className="flex-1 overflow-y-auto pr-1">
+                    <div className="text-[10px] font-semibold text-muted-foreground tracking-wider mb-3 px-2">NOTAS DEL WORKSPACE</div>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-white/5 text-sm text-white/70 cursor-pointer">
+                        <div className="w-4 h-4 rounded-full border-2 border-green-400 shrink-0 bg-green-400/20 flex items-center justify-center">
+                          <CheckCircle2 className="w-3 h-3 text-green-400" />
+                        </div>
+                        <span className="truncate flex-1 line-through">📝 Estrategia Q1</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-white/10 text-sm text-white font-medium cursor-pointer border border-white/5">
+                        <div className="w-4 h-4 rounded-full border-2 border-violet-400 shrink-0" />
+                        <span className="truncate flex-1">🚀 Lanzamiento Q3</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-white/5 text-sm text-white/60 cursor-pointer">
+                        <div className="w-4 h-4 rounded-full border-2 border-white/40 shrink-0" />
+                        <span className="truncate flex-1">💡 Ideas creativas</span>
+                      </div>
+                      <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-white/5 text-sm text-white/60 cursor-pointer">
+                        <div className="w-4 h-4 rounded-full border-2 border-white/40 shrink-0" />
+                        <span className="truncate flex-1">📊 Analíticas mensuales</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Editor Area */}
+                <div className="flex-1 flex flex-col relative bg-slate-900/30">
+                  {/* Top bar */}
+                  <div className="flex items-center justify-between px-4 sm:px-6 py-3 border-b border-white/5 bg-slate-900/50">
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground overflow-hidden">
+                      <span className="hidden sm:inline font-medium text-violet-300">Marketing</span>
+                      <span className="hidden sm:inline">/</span>
+                      <span className="text-white/70 truncate">🚀 Lanzamiento Q3</span>
+                    </div>
+                    <div className="flex items-center gap-2 sm:gap-3">
+                      <Badge variant="outline" className="bg-orange-500/10 border-orange-500/20 text-xs text-orange-400 gap-1.5 py-1 px-2.5">
+                        <Target className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">Tarea activa</span>
+                        <span className="sm:hidden">Tarea</span>
+                      </Badge>
+                      <Badge variant="outline" className="bg-violet-500/10 border-violet-500/20 text-xs text-violet-400 gap-1.5 py-1 px-2.5 cursor-pointer hover:bg-violet-500/20 transition-colors">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">IA</span>
+                      </Badge>
+                    </div>
+                  </div>
+
+                  {/* Editor Content */}
+                  <div className="flex-1 p-5 sm:p-8 md:p-10 overflow-y-auto">
+                    <motion.div 
+                      initial={{ opacity: 0 }}
+                      whileInView={{ opacity: 1 }}
+                      transition={{ delay: 0.3, duration: 0.5 }}
+                      className="max-w-3xl mx-auto relative"
+                    >
+                      <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-6 flex items-center gap-3">
+                        <span className="text-3xl sm:text-4xl">🚀</span> Plan de Lanzamiento Q3
+                      </h1>
+                      
+                      <div className="space-y-4 sm:space-y-5 text-white/70 text-sm sm:text-base leading-relaxed">
+                        <p>
+                          El objetivo de este trimestre es lanzar el nuevo "Ecosistema de Productividad" donde las <strong className="text-white">Notas y Tareas están 100% enlazadas dentro del mismo Workspace</strong>.
+                        </p>
+                        
+                        <div className="pl-4 sm:pl-5 border-l-2 border-violet-500/40 py-1 my-5 sm:my-6 bg-violet-500/5 rounded-r-lg pr-4">
+                          <p className="text-white/90 italic text-sm">
+                            💡 <strong>Concepto clave:</strong> Esta nota ES una tarea. Cuando la marque como completada en mi tablero Kanban, esta nota entera se marcará como completada automáticamente.
+                          </p>
+                        </div>
+                        
+                        <p>
+                          Acciones acordadas en la reunión de hoy:
+                        </p>
+                        
+                        <ul className="list-disc pl-5 sm:pl-6 space-y-2 sm:space-y-3 text-white/80 marker:text-violet-500">
+                          <li>Rediseñar la landing page para reflejar el ecosistema completo (Para este viernes).</li>
+                          <li>Preparar la campaña de email marketing para usuarios inactivos.</li>
+                          <li>Grabar el video demostrativo de cómo funciona la vinculación Nota-Tarea.</li>
+                        </ul>
+
+                        <div className="mt-6 p-4 rounded-lg bg-white/5 border border-white/10">
+                          <div className="flex items-center gap-2 mb-2">
+                            <ListChecks className="h-4 w-4 text-violet-400" />
+                            <span className="text-sm font-medium text-white">Estado de esta nota/tarea:</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full border-2 border-violet-400" />
+                            <span className="text-sm text-white/70">Pendiente (Importancia: 9/10)</span>
+                          </div>
+                        </div>
+
+                      </div>
+                    </motion.div>
+                    
+                    {/* Simulated completion popover */}
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                      whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                      viewport={{ once: true, margin: "-50px" }}
+                      transition={{ delay: 0.8, type: "spring", stiffness: 200, damping: 20 }}
+                      className="absolute bottom-6 right-6 sm:bottom-8 sm:right-8 w-[calc(100%-3rem)] sm:w-80 rounded-xl border border-white/10 bg-slate-800/95 backdrop-blur-xl p-4 sm:p-5 shadow-2xl shadow-violet-900/20"
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 rounded-md bg-green-500/20">
+                            <CheckCircle2 className="h-4 w-4 text-green-400" />
+                          </div>
+                          <span className="text-sm font-semibold text-white">Vinculación activa</span>
+                        </div>
+                        <div className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+                      </div>
+                      <p className="text-xs sm:text-sm text-muted-foreground mb-4 leading-relaxed">
+                        Esta nota está vinculada a una tarea en tu Kanban. <strong className="text-white">Si completas la tarea, esta nota se marcará como completada automáticamente.</strong>
+                      </p>
+                      <div className="flex gap-2">
+                        <button className="flex-1 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-lg text-xs font-medium text-white transition-all shadow-lg shadow-green-500/20">
+                          Ver en Kanban
+                        </button>
+                      </div>
+                    </motion.div>
+
+                  </div>
+                </div>
+
               </div>
             </motion.div>
           </div>
@@ -492,25 +676,25 @@ export default function LandingPage() {
               {[
                 {
                   step: "01",
-                  title: "Pega tu caos",
+                  title: "Captura tus ideas",
                   description:
-                    "Copia y pega ese email, esas notas de la reunión o esa lista mental que tienes en la cabeza.",
+                    "Escribe en tus Notas todo lo que pasa por tu mente. Documenta reuniones, ideas o emails sin preocuparte por el formato.",
                   icon: MessageSquare,
                   gradient: "from-violet-500/80 to-purple-600/80",
                 },
                 {
                   step: "02",
-                  title: "La IA organiza",
+                  title: "La IA extrae y organiza",
                   description:
-                    "Nuestra IA extrae las tareas, las prioriza por importancia y las categoriza automáticamente.",
+                    "El asistente IA analiza tu texto, deduce las tareas accionables, fechas límite, recurrencia y les asigna una prioridad (1-10).",
                   icon: Brain,
                   gradient: "from-fuchsia-500/80 to-pink-600/80",
                 },
                 {
                   step: "03",
-                  title: "Ejecuta sin estrés",
+                  title: "Ejecuta y sincroniza",
                   description:
-                    "Tarely te muestra exactamente qué hacer primero para ser más productivo.",
+                    "Tus tareas aparecen en el Calendario y se sincronizan con Google Calendar. Completa la tarea y tu Nota se actualizará sola.",
                   icon: Target,
                   gradient: "from-pink-500/80 to-rose-600/80",
                 },
@@ -564,43 +748,43 @@ export default function LandingPage() {
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 max-w-5xl mx-auto">
               <FeatureCard
                 icon={Brain}
-                title="IA que prioriza"
-                description="Analiza tus tareas y asigna importancia del 1 al 10. Siempre sabrás qué hacer primero."
+                title="IA que prioriza y extrae"
+                description="Analiza tus notas o texto libre, extrae tareas, asigna fechas y prioriza del 1 al 10 automáticamente."
                 gradient="from-violet-500/80 to-purple-600/80"
                 index={0}
               />
               <FeatureCard
-                icon={FolderKanban}
-                title="Workspaces"
-                description="Organiza todo en espacios separados. Proyectos, vida personal, ideas... cada cosa en su lugar."
+                icon={MessageSquare}
+                title="Editor de Notas Inteligente"
+                description="Resumen, traducción, mejora de redacción y checklists a un clic gracias al asistente de IA integrado."
                 gradient="from-blue-500/80 to-cyan-600/80"
                 index={1}
               />
               <FeatureCard
-                icon={LayoutGrid}
-                title="Vista Kanban"
-                description="Arrastra y suelta tareas entre columnas. Visualiza tu progreso de forma clara e intuitiva."
-                gradient="from-fuchsia-500/80 to-pink-600/80"
+                icon={Calendar}
+                title="Google Calendar integrado"
+                description="Sincronización bidireccional. Tus tareas aparecen en tu calendario y revisamos tu disponibilidad (Free/Busy)."
+                gradient="from-amber-500/80 to-orange-600/80"
                 index={2}
               />
               <FeatureCard
-                icon={ListChecks}
-                title="Subtareas inteligentes"
-                description="Divide tareas grandes en pasos pequeños. La IA genera subtareas automáticamente."
+                icon={Rocket}
+                title="Generador de Prompts (Devs)"
+                description="La IA genera prompts altamente contextualizados para tu IDE (Cursor, Copilot) basados en la tarea."
                 gradient="from-emerald-500/80 to-green-600/80"
                 index={3}
               />
               <FeatureCard
-                icon={Calendar}
-                title="Calendario integrado"
-                description="Todas tus tareas con fecha límite en un calendario. Nunca más olvides una deadline."
-                gradient="from-amber-500/80 to-orange-600/80"
+                icon={LayoutGrid}
+                title="Vista Kanban y Subtareas"
+                description="Arrastra y suelta tareas entre columnas o desglosa tareas complejas en subtareas más pequeñas."
+                gradient="from-fuchsia-500/80 to-pink-600/80"
                 index={4}
               />
               <FeatureCard
-                icon={Users}
-                title="Colaboración en equipo"
-                description="Invita a tu equipo, asigna tareas y trabaja juntos en tiempo real."
+                icon={FolderKanban}
+                title="Workspaces Aislados"
+                description="Organiza tu vida personal, trabajo o proyectos en espacios separados, cada uno con sus propias instrucciones para la IA."
                 gradient="from-indigo-500/80 to-blue-600/80"
                 index={5}
               />
@@ -621,20 +805,19 @@ export default function LandingPage() {
                 viewport={{ once: true, amount: 0.2 }}
                 transition={{ duration: 0.6 }}
               >
-                <p className="text-sm font-medium text-violet-400 mb-3 tracking-wide uppercase">Potenciado por IA</p>
+                <p className="text-sm font-medium text-violet-400 mb-3 tracking-wide uppercase">El cerebro del ecosistema</p>
                 <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 sm:mb-6">
-                  Deja de pensar en qué hacer primero
+                  Deja que la IA organice tu vida
                 </h2>
                 <p className="text-muted-foreground mb-6 sm:mb-8 text-sm sm:text-base leading-relaxed">
-                  Tarely analiza el contexto de tus tareas y determina cuáles son más urgentes e importantes. Tú solo
-                  tienes que escribir.
+                  Tarely analiza el contexto de tus notas o textos libres, entiende tus necesidades y estructura tu trabajo automáticamente para que tú solo te enfoques en ejecutar.
                 </p>
                 <ul className="space-y-3">
                   {[
-                    "Extracción automática de tareas desde texto",
+                    "Extracción de tareas desde notas de reuniones",
+                    "Deducción automática de fechas límite y recurrencia",
+                    "Asistente en el editor: resume, traduce y mejora",
                     "Priorización inteligente del 1 al 10",
-                    "Generación de subtareas automáticas",
-                    "Instrucciones personalizadas por workspace",
                   ].map((feature, i) => (
                     <motion.li
                       key={i}
@@ -666,19 +849,17 @@ export default function LandingPage() {
                   </div>
                   <div className="p-3.5 rounded-xl bg-white/[0.03] border border-white/[0.05] mb-4">
                     <p className="text-xs sm:text-sm text-muted-foreground/70 italic leading-relaxed">
-                      &ldquo;Mañana tengo que enviar el presupuesto al cliente, revisar los bugs que reportó QA,
-                      y preparar la presentación para el viernes...&rdquo;
+                      &ldquo;Mañana tengo que enviar el presupuesto a Carlos. Además, acordamos en la reunión revisar los bugs de QA todos los viernes a primera hora.&rdquo;
                     </p>
                   </div>
                   <div className="flex items-center gap-2 mb-3">
                     <Sparkles className="h-3.5 w-3.5 text-violet-400" />
-                    <span className="text-xs text-white/80">Tareas detectadas:</span>
+                    <span className="text-xs text-white/80">Tareas extraídas por IA:</span>
                   </div>
                   <div className="space-y-2">
                     {[
-                      { task: "Enviar presupuesto al cliente", priority: 9, color: "bg-red-500/15 text-red-400 border-red-500/20" },
-                      { task: "Revisar bugs de QA", priority: 8, color: "bg-orange-500/15 text-orange-400 border-orange-500/20" },
-                      { task: "Preparar presentación", priority: 7, color: "bg-yellow-500/15 text-yellow-400 border-yellow-500/20" },
+                      { task: "Enviar presupuesto a Carlos", priority: 9, due: "Mañana", color: "bg-red-500/15 text-red-400 border-red-500/20" },
+                      { task: "Revisar bugs de QA", priority: 7, due: "Cada Viernes", color: "bg-orange-500/15 text-orange-400 border-orange-500/20" },
                     ].map((item, i) => (
                       <motion.div
                         key={i}
@@ -686,13 +867,19 @@ export default function LandingPage() {
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
                         transition={{ delay: 0.4 + i * 0.12, duration: 0.3 }}
-                        className="flex items-center gap-3 p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.05]"
+                        className="flex flex-col gap-1.5 p-2.5 rounded-lg bg-white/[0.03] border border-white/[0.05]"
                       >
-                        <div className="w-4 h-4 rounded-full border-2 border-violet-400/40 shrink-0" />
-                        <span className="text-xs sm:text-sm text-white/70 flex-1">{item.task}</span>
-                        <Badge variant="outline" className={cn("text-[10px]", item.color)}>
-                          {item.priority}/10
-                        </Badge>
+                        <div className="flex items-center gap-3">
+                          <div className="w-4 h-4 rounded-full border-2 border-violet-400/40 shrink-0" />
+                          <span className="text-xs sm:text-sm text-white/70 flex-1">{item.task}</span>
+                          <Badge variant="outline" className={cn("text-[10px]", item.color)}>
+                            {item.priority}/10
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 pl-7">
+                          <Calendar className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-[10px] text-muted-foreground">{item.due}</span>
+                        </div>
                       </motion.div>
                     ))}
                   </div>
@@ -725,19 +912,19 @@ export default function LandingPage() {
 
             <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5 max-w-4xl mx-auto">
               <TestimonialCard
-                quote="Antes tardaba 30 minutos en organizar mi día. Ahora pego mis notas y en segundos tengo todo listo."
+                quote="Antes usaba Notion para notas, Todoist para tareas y Calendar. Ahora tengo todo en Tarely y la IA me ahorra horas cada semana."
                 author="María García"
                 role="Product Manager"
                 index={0}
               />
               <TestimonialCard
-                quote="La priorización automática es genial. Ya no me agobio pensando en qué hacer primero."
+                quote="La priorización automática es genial, pero la extracción de tareas de las actas de reunión me voló la cabeza."
                 author="Carlos Ruiz"
                 role="Desarrollador Senior"
                 index={1}
               />
               <TestimonialCard
-                quote="El mejor gestor de tareas que he probado. Simple, rápido y la IA realmente entiende lo que necesito."
+                quote="El mejor ecosistema que he probado. Simple, rápido y la IA entiende perfectamente mis rutinas y necesidades."
                 author="Laura Martínez"
                 role="Freelance Designer"
                 index={2}

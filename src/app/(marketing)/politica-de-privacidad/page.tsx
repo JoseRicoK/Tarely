@@ -90,9 +90,10 @@ export default function PoliticaDePrivacidadPage() {
               <p>Recopilamos los siguientes tipos de información:</p>
               <h4 className="text-white font-medium mt-4 mb-2">3.1. Datos proporcionados por el usuario</h4>
               <ul className="list-disc pl-5 space-y-1">
-                <li><strong className="text-white/80">Datos de registro:</strong> nombre, dirección de correo electrónico y contraseña (almacenada de forma encriptada).</li>
-                <li><strong className="text-white/80">Avatar:</strong> imagen de perfil que elijas o subas.</li>
-                <li><strong className="text-white/80">Contenido del usuario:</strong> tareas, workspaces, subtareas, comentarios y cualquier texto que introduzcas en la plataforma.</li>
+                <li><strong className="text-white/80">Datos de registro:</strong> nombre, dirección de correo electrónico y contraseña (almacenada de forma encriptada). Si utilizas Google Login, recibiremos tu nombre, correo electrónico y foto de perfil desde Google.</li>
+                <li><strong className="text-white/80">Avatar:</strong> imagen de perfil que elijas, subas o la proporcionada por Google.</li>
+                <li><strong className="text-white/80">Contenido del usuario:</strong> notas, tareas, workspaces, subtareas, comentarios y cualquier texto que introduzcas en la plataforma.</li>
+                <li><strong className="text-white/80">Integración con Google Calendar (Opcional):</strong> Si decides conectar tu cuenta con Google Calendar, solicitaremos acceso (tokens OAuth) para leer tus eventos (disponibilidad/Free-Busy) y crear, editar o eliminar eventos correspondientes a tus tareas en Tarely. No compartimos esta información con terceros.</li>
               </ul>
               <h4 className="text-white font-medium mt-4 mb-2">3.2. Datos recopilados automáticamente</h4>
               <ul className="list-disc pl-5 space-y-1">
@@ -159,17 +160,21 @@ export default function PoliticaDePrivacidadPage() {
               </p>
             </Section>
 
-            <Section title="7. Compartición de datos">
+            <Section title="7. Compartición de datos y APIs de terceros">
               <p>
                 No vendemos, alquilamos ni compartimos tus datos personales con terceros con fines comerciales.
                 Solo compartimos datos con:
               </p>
-              <ul className="list-disc pl-5 space-y-1">
+              <ul className="list-disc pl-5 space-y-1 mb-4">
                 <li><strong className="text-white/80">Supabase:</strong> como proveedor de infraestructura (base de datos y autenticación). Los datos se almacenan de forma segura en sus servidores.</li>
-                <li><strong className="text-white/80">OpenAI:</strong> procesamos los textos que introduces para generar tareas. Solo se envía el contenido necesario, sin datos identificativos personales.</li>
+                <li><strong className="text-white/80">OpenAI:</strong> procesamos los textos que introduces para generar tareas o resúmenes de notas. Solo se envía el contenido necesario, sin datos identificativos personales.</li>
                 <li><strong className="text-white/80">Google Analytics:</strong> solo si aceptas cookies de analítica. Los datos son anónimos y agregados.</li>
                 <li><strong className="text-white/80">Resend:</strong> para el envío de correos electrónicos transaccionales (solo tu email).</li>
               </ul>
+              <h4 className="text-white font-medium mt-4 mb-2">Uso de datos de las APIs de Google</h4>
+              <p className="text-white/80 text-sm">
+                El uso y transferencia de información que Tarely recibe a través de las APIs de Google hacia cualquier otra aplicación se adherirá a la <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:underline">Google API Services User Data Policy</a>, incluyendo los requisitos de uso limitado (Limited Use requirements). <strong>En ningún caso los datos extraídos de tu Google Calendar se utilizarán para entrenar modelos de IA o compartirse con terceros no autorizados.</strong>
+              </p>
             </Section>
 
             <Section title="8. Seguridad de los datos">

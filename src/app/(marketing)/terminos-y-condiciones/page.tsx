@@ -73,14 +73,15 @@ export default function TerminosYCondicionesPage() {
 
             <Section title="2. Descripción del servicio">
               <p>
-                Tarely es una plataforma de gestión de tareas potenciada por inteligencia artificial que permite a los usuarios:
+                Tarely es un ecosistema de productividad potenciado por inteligencia artificial que permite a los usuarios:
               </p>
               <ul className="list-disc pl-5 space-y-1">
+                <li>Crear y gestionar notas que se convierten en tareas dentro de workspaces organizados.</li>
                 <li>Convertir texto desordenado (emails, notas, ideas) en tareas organizadas y priorizadas automáticamente.</li>
-                <li>Crear y gestionar workspaces para organizar proyectos.</li>
-                <li>Visualizar tareas en vista Kanban y calendario.</li>
+                <li>Visualizar tareas en vista Kanban y calendario integrado.</li>
                 <li>Generar subtareas automáticas mediante IA.</li>
                 <li>Colaborar en equipo con otros usuarios.</li>
+                <li>Conectar opcionalmente con Google para inicio de sesión y sincronización de calendario.</li>
               </ul>
             </Section>
 
@@ -89,7 +90,7 @@ export default function TerminosYCondicionesPage() {
               <ul className="list-disc pl-5 space-y-1">
                 <li>Un nombre de usuario.</li>
                 <li>Una dirección de correo electrónico válida.</li>
-                <li>Una contraseña segura (mínimo 6 caracteres).</li>
+                <li>Una contraseña segura (mínimo 6 caracteres), o bien autenticarte mediante Google Login (opcional).</li>
               </ul>
               <p className="mt-3">Eres responsable de:</p>
               <ul className="list-disc pl-5 space-y-1">
@@ -160,6 +161,35 @@ export default function TerminosYCondicionesPage() {
                 <li>Los resultados generados por la IA son sugerencias y no deben considerarse como asesoramiento profesional.</li>
                 <li>No garantizamos la exactitud, completitud ni idoneidad de las tareas generadas por IA.</li>
               </ul>
+            </Section>
+
+            <Section title="7.1. Integraciones con servicios de terceros (Google)">
+              <h4 className="text-white font-medium mt-1 mb-2">Google Login (Opcional)</h4>
+              <p>
+                Tarely ofrece la opción de iniciar sesión mediante tu cuenta de Google. Si decides utilizar esta funcionalidad:
+              </p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Serás redirigido a los servidores de Google para autenticarte.</li>
+                <li>Google compartirá con nosotros tu nombre, correo electrónico y foto de perfil.</li>
+                <li>Aceptas los <a href="https://policies.google.com/terms" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:underline">Términos de Servicio de Google</a>.</li>
+                <li>Esta integración es completamente opcional y puedes registrarte con email y contraseña si lo prefieres.</li>
+              </ul>
+              
+              <h4 className="text-white font-medium mt-4 mb-2">Google Calendar (Opcional)</h4>
+              <p>
+                Tarely permite conectar tu cuenta con Google Calendar para sincronizar tus tareas como eventos. Si decides activar esta integración:
+              </p>
+              <ul className="list-disc pl-5 space-y-1">
+                <li>Solicitaremos permisos de acceso a tu Google Calendar mediante OAuth 2.0.</li>
+                <li>Podremos leer tu disponibilidad (Free/Busy) y crear, editar o eliminar eventos correspondientes a tus tareas en Tarely.</li>
+                <li>Los datos de tu calendario no se compartirán con terceros ni se utilizarán para entrenar modelos de IA.</li>
+                <li>Puedes revocar el acceso en cualquier momento desde la configuración de tu cuenta de Google o desde Tarely.</li>
+                <li>El uso de esta integración está sujeto a la <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" className="text-violet-400 hover:underline">Google API Services User Data Policy</a>.</li>
+              </ul>
+              
+              <p className="mt-3 text-white/80 text-sm">
+                <strong>Importante:</strong> Tarely no es responsable de las políticas de privacidad o términos de servicio de Google. Al utilizar estas integraciones, aceptas que Google procese tus datos de acuerdo con sus propias políticas.
+              </p>
             </Section>
 
             <Section title="8. Disponibilidad del servicio">

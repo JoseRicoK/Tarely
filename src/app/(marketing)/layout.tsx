@@ -8,15 +8,22 @@ export const metadata: Metadata = {
       "es-ES": "/",
     },
   },
-  title: "Tarely — Convierte el caos en tareas claras con IA | Gestor de tareas inteligente",
+  title: "Tarely — Tu Ecosistema de Productividad con IA | Tareas, Notas y Calendario",
   description:
-    "Pega un email, una idea o un texto desordenado y Tarely lo organiza por ti en segundos con inteligencia artificial. Priorización automática, workspaces, vista Kanban, subtareas y calendario. Gratis para siempre.",
+    "Más que un gestor de tareas. Tarely conecta tus notas, tareas y calendario con Inteligencia Artificial. Convierte texto en tareas, resume documentos y planifica tu día automáticamente. Gratis para siempre.",
   keywords: [
     "gestor de tareas",
+    "tareas inteligentes",
     "gestor de tareas con IA",
     "productividad",
+    "organizar proyectos",
     "inteligencia artificial",
     "organizar tareas",
+    "notas inteligentes",
+    "gestor de notas",
+    "calendario inteligente",
+    "sincronización google calendar",
+    "ecosistema de productividad",
     "priorizar tareas automáticamente",
     "kanban",
     "to-do list",
@@ -30,9 +37,9 @@ export const metadata: Metadata = {
     "herramienta de productividad gratis",
   ],
   openGraph: {
-    title: "Tarely — Convierte el caos en tareas claras con IA",
+    title: "Tarely — Tu Ecosistema de Productividad con IA",
     description:
-      "Pega un email, una idea o un texto desordenado. Tarely lo organiza por ti en segundos con inteligencia artificial. Gratis para siempre.",
+      "Conecta tus notas, tareas y calendario en un solo lugar. Tarely usa Inteligencia Artificial para organizar tu caos en segundos. Gratis para siempre.",
     type: "website",
     locale: "es_ES",
     siteName: "Tarely",
@@ -40,9 +47,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Tarely — Convierte el caos en tareas claras con IA",
+    title: "Tarely — Tu Ecosistema de Productividad con IA",
     description:
-      "Pega un email, una idea o un texto desordenado. Tarely lo organiza por ti en segundos con inteligencia artificial.",
+      "Más que un gestor de tareas. Conecta tus notas, tareas y calendario con Inteligencia Artificial. Gratis para siempre.",
   },
   robots: {
     index: true,
@@ -65,7 +72,7 @@ const jsonLd = {
   operatingSystem: "Web",
   url: "https://tarely.com",
   description:
-    "Gestor de tareas con inteligencia artificial que convierte texto desordenado en tareas claras y priorizadas automáticamente.",
+    "Ecosistema de productividad con Inteligencia Artificial que integra gestión de tareas, notas interactivas y calendario.",
   offers: {
     "@type": "Offer",
     price: "0",
@@ -80,11 +87,13 @@ const jsonLd = {
     worstRating: "1",
   },
   featureList: [
-    "Priorización automática con IA",
+    "Generación de tareas con IA",
+    "Editor de notas inteligente",
+    "Integración con Google Calendar",
+    "Asistente IA transversal",
     "Workspaces personalizables",
-    "Vista Kanban",
-    "Subtareas inteligentes",
-    "Calendario integrado",
+    "Vista Kanban y Calendario",
+    "Subtareas y recurrencia",
     "Colaboración en equipo",
   ],
 };
