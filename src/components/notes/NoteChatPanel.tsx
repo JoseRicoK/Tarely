@@ -139,8 +139,8 @@ export function NoteChatPanel({ noteId, noteContent, workspaceColor = "#8b5cf6" 
                 <Bot className="h-4 w-4 sm:h-5 sm:w-5" />
               </div>
               <div className="min-w-0">
-                <h3 className="font-semibold text-sm truncate">Asistente IA</h3>
-                <p className="text-xs text-muted-foreground truncate">Pregunta sobre tu nota</p>
+                <h3 className="font-semibold text-sm truncate">Tari</h3>
+                <p className="text-xs text-muted-foreground truncate">Tu asistente de notas</p>
               </div>
             </div>
             <div className="flex items-center gap-1 shrink-0">
@@ -166,10 +166,10 @@ export function NoteChatPanel({ noteId, noteContent, workspaceColor = "#8b5cf6" 
                   <Bot className="h-16 w-16" style={{ color: workspaceColor }} />
                 </div>
                 <p className="text-base font-semibold mb-2">
-                  ¡Hola! 👋 Estoy aquí para ayudarte
+                  ¡Hola! Soy Tari 👋
                 </p>
                 <p className="text-sm text-muted-foreground max-w-xs">
-                  Hazme cualquier pregunta sobre el contenido de esta nota y te responderé al instante
+                  Pregúntame lo que quieras sobre esta nota, estoy aquí para ayudarte
                 </p>
                 <div className="mt-6 grid grid-cols-1 gap-2 w-full max-w-xs">
                   <div className="p-3 rounded-lg bg-muted/50 text-xs text-left">

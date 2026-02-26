@@ -1,7 +1,10 @@
 "use client";
 
-import { useState } from 'react';
-import { X, CheckCircle2, Circle, Clock, MapPin, ExternalLink, Tag, CalendarIcon, AlertCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import {
+  X, CheckCircle2, Circle, Clock, MapPin, ExternalLink, Tag,
+  CalendarIcon, Pencil, Check, RotateCcw
+} from 'lucide-react';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
@@ -29,6 +32,7 @@ interface EventDetailPanelProps {
   workspaces: Workspace[];
   onClose: () => void;
   onTaskToggle: (taskId: string, completed: boolean) => void;
+  onTaskUpdate?: (taskId: string, updates: Partial<Task>) => Promise<void>;
 }
 
 export function EventDetailPanel({
@@ -37,8 +41,26 @@ export function EventDetailPanel({
   workspaces,
   onClose,
   onTaskToggle,
+  onTaskUpdate,
 }: EventDetailPanelProps) {
   const [toggling, setToggling] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const [editTitle, setEditTitle] = useState('');
+  const [editDescription, setEditDescription] = useState('');
+  const [editImportance, setEditImportance] = useState(5);
+  const [editWorkspaceId, setEditWorkspaceId] = useState('');
+
+  useEffect(() => {
+    if (event?.task) {
+      setEditTitle(event.task.title ?? '');
+      setEditDescription(event.task.description ?? '');
+      setEditImportance(event.task.importance ?? 5);
+      setEditWorkspaceId(event.task.workspaceId ?? '');
+    }
+    setIsEditing(false);
+  }, [event?.id]);
 
   const handleToggle = async () => {
     if (!event?.task) return;
@@ -50,36 +72,114 @@ export function EventDetailPanel({
     }
   };
 
+  const handleSave = async () => {
+    if (!event?.task || !onTaskUpdate) return;
+    setSaving(true);
+    try {
+      await onTaskUpdate(event.task.id, {
+        title: editTitle.trim() || event.task.title,
+        description: editDescription,
+        importance: editImportance,
+        workspaceId: editWorkspaceId,
+      });
+      setIsEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    if (event?.task) {
+      setEditTitle(event.task.title ?? '');
+      setEditDescription(event.task.description ?? '');
+      setEditImportance(event.task.importance ?? 5);
+      setEditWorkspaceId(event.task.workspaceId ?? '');
+    }
+    setIsEditing(false);
+  };
+
+  const importanceBarColor = (val: number) => {
+    if (val >= 8) return 'bg-red-500';
+    if (val >= 5) return 'bg-amber-500';
+    return 'bg-emerald-500';
+  };
+
   return (
     <div className="h-full bg-background flex flex-col overflow-hidden w-full">
       {event ? (
         <>
-          {/* Detail header */}
+          {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
               {event.type === 'task' ? 'Tarea' : 'Evento'}
             </span>
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onClose}>
-              <X className="h-3.5 w-3.5" />
-            </Button>
+            <div className="flex items-center gap-1">
+              {event.type === 'task' && onTaskUpdate && !isEditing && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                  onClick={() => setIsEditing(true)}
+                  title="Editar tarea"
+                >
+                  <Pencil className="h-3 w-3" />
+                </Button>
+              )}
+              {isEditing && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                    onClick={handleCancelEdit}
+                    title="Cancelar"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-emerald-500 hover:text-emerald-400"
+                    onClick={handleSave}
+                    disabled={saving}
+                    title="Guardar"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                  </Button>
+                </>
+              )}
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={onClose}>
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
 
-          {/* Detail content */}
+          {/* Content */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {/* Color bar + title */}
+            {/* Title */}
             <div className="flex items-start gap-3">
               <div
                 className="w-1 rounded-full flex-shrink-0 mt-1"
                 style={{ backgroundColor: event.color, minHeight: '36px' }}
               />
               <div className="flex-1 min-w-0">
-                <h2 className={cn(
-                  "font-semibold text-sm leading-snug",
-                  event.task?.completed && "line-through text-muted-foreground"
-                )}>
-                  {event.title}
-                </h2>
-                {event.task?.completed && (
+                {isEditing ? (
+                  <input
+                    autoFocus                  title="Título de la tarea"
+                  placeholder="Título de la tarea"                    value={editTitle}
+                    onChange={e => setEditTitle(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') handleCancelEdit(); }}
+                    className="w-full bg-muted/30 border border-border/40 rounded px-2 py-1 text-sm font-semibold outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
+                  />
+                ) : (
+                  <h2 className={cn(
+                    "font-semibold text-sm leading-snug",
+                    event.task?.completed && "line-through text-muted-foreground"
+                  )}>
+                    {event.title}
+                  </h2>
+                )}
+                {!isEditing && event.task?.completed && (
                   <Badge variant="secondary" className="mt-1.5 text-[10px] h-4 px-1.5">
                     Completada
                   </Badge>
@@ -107,6 +207,7 @@ export function EventDetailPanel({
             {/* Task-specific fields */}
             {event.type === 'task' && event.task && (
               <>
+                {/* Workspace - always read-only */}
                 {event.workspace && (
                   <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
                     <Tag className="h-3.5 w-3.5 flex-shrink-0" />
@@ -114,20 +215,96 @@ export function EventDetailPanel({
                   </div>
                 )}
 
-                {event.task.importance > 7 && (
-                  <div className="flex items-center gap-2.5 text-xs text-amber-500">
-                    <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
-                    <span>Importancia alta ({event.task.importance}/10)</span>
+                {/* Importance - always visible */}
+                {isEditing ? (
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                        Importancia
+                      </span>
+                      <span className={cn(
+                        "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                        editImportance >= 8 ? "text-red-400 bg-red-500/10" :
+                        editImportance >= 5 ? "text-amber-400 bg-amber-500/10" :
+                        "text-emerald-400 bg-emerald-500/10"
+                      )}>
+                        {editImportance}/10
+                      </span>
+                    </div>
+                    <div className="flex gap-1">
+                      {Array.from({ length: 10 }, (_, i) => i + 1).map(val => (
+                        <button
+                          key={val}
+                          onClick={() => setEditImportance(val)}
+                          className={cn(
+                            "flex-1 h-1.5 rounded-full transition-all",
+                            val <= editImportance
+                              ? importanceBarColor(editImportance)
+                              : "bg-muted/40 hover:bg-muted/60"
+                          )}
+                          title={`${val}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    {(() => {
+                      const imp = event.task?.importance ?? 5;
+                      return (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                              Importancia
+                            </span>
+                            <span className={cn(
+                              "text-[10px] font-bold px-1.5 py-0.5 rounded",
+                              imp >= 8 ? "text-red-400 bg-red-500/10" :
+                              imp >= 5 ? "text-amber-400 bg-amber-500/10" :
+                              "text-emerald-400 bg-emerald-500/10"
+                            )}>
+                              {imp}/10
+                            </span>
+                          </div>
+                          <div className="flex gap-1">
+                            {Array.from({ length: 10 }, (_, i) => i + 1).map(val => (
+                              <div
+                                key={val}
+                                className={cn(
+                                  "flex-1 h-1.5 rounded-full",
+                                  val <= imp ? importanceBarColor(imp) : "bg-muted/30"
+                                )}
+                              />
+                            ))}
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
 
-                {event.task.description && (
+                {/* Description */}
+                {isEditing ? (
+                  <div className="space-y-1">
+                    <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                      Descripción
+                    </span>
+                    <textarea
+                      value={editDescription}
+                      onChange={e => setEditDescription(e.target.value)}
+                      rows={3}
+                      placeholder="Añadir descripción…"
+                      className="w-full bg-muted/30 border border-border/40 rounded px-2 py-1.5 text-xs outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 resize-none text-foreground placeholder:text-muted-foreground/50"
+                    />
+                  </div>
+                ) : event.task.description ? (
                   <p className="text-xs text-muted-foreground bg-muted/30 rounded-md p-3 leading-relaxed">
                     {event.task.description}
                   </p>
-                )}
+                ) : null}
 
-                {event.task.subtasks && event.task.subtasks.length > 0 && (
+                {/* Subtasks (read-only) */}
+                {!isEditing && event.task.subtasks && event.task.subtasks.length > 0 && (
                   <div className="space-y-1.5">
                     <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                       Subtareas ({event.task.subtasks.filter(s => s.completed).length}/{event.task.subtasks.length})
@@ -147,29 +324,41 @@ export function EventDetailPanel({
                 )}
 
                 {/* Overdue warning */}
-                {!event.task.completed && isPast(event.end) && (
+                {!isEditing && !event.task.completed && isPast(event.end) && (
                   <div className="text-[11px] text-red-400 bg-red-500/10 rounded-md px-3 py-2">
                     Vencida {formatDistanceToNow(event.end, { locale: es, addSuffix: true })}
                   </div>
                 )}
 
-                <Button
-                  className="w-full h-8 text-xs"
-                  variant={event.task.completed ? 'outline' : 'default'}
-                  size="sm"
-                  disabled={toggling}
-                  onClick={handleToggle}
-                >
-                  {event.task.completed ? (
-                    <><Circle className="h-3.5 w-3.5 mr-2" />Marcar como pendiente</>
-                  ) : (
-                    <><CheckCircle2 className="h-3.5 w-3.5 mr-2" />Completar tarea</>
-                  )}
-                </Button>
+                {/* Action buttons */}
+                {isEditing ? (
+                  <div className="flex gap-2 pt-1">
+                    <Button className="flex-1 h-8 text-xs" variant="outline" size="sm" onClick={handleCancelEdit}>
+                      Cancelar
+                    </Button>
+                    <Button className="flex-1 h-8 text-xs" size="sm" disabled={saving} onClick={handleSave}>
+                      {saving ? 'Guardando…' : 'Guardar'}
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    className="w-full h-8 text-xs"
+                    variant={event.task.completed ? 'outline' : 'default'}
+                    size="sm"
+                    disabled={toggling}
+                    onClick={handleToggle}
+                  >
+                    {event.task.completed ? (
+                      <><Circle className="h-3.5 w-3.5 mr-2" />Marcar como pendiente</>
+                    ) : (
+                      <><CheckCircle2 className="h-3.5 w-3.5 mr-2" />Completar tarea</>
+                    )}
+                  </Button>
+                )}
               </>
             )}
 
-            {/* Google event-specific fields */}
+            {/* Google event fields */}
             {event.type === 'google' && event.googleEvent && (
               <>
                 {event.calendarName && (
@@ -178,20 +367,17 @@ export function EventDetailPanel({
                     <span>{event.calendarName}</span>
                   </div>
                 )}
-
                 {event.googleEvent.location && (
                   <div className="flex items-center gap-2.5 text-xs text-muted-foreground">
                     <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
                     <span className="leading-snug">{event.googleEvent.location}</span>
                   </div>
                 )}
-
                 {event.googleEvent.description && (
                   <p className="text-xs text-muted-foreground bg-muted/30 rounded-md p-3 leading-relaxed">
                     {event.googleEvent.description.replace(/<[^>]+>/g, '')}
                   </p>
                 )}
-
                 {event.googleEvent.htmlLink && (
                   <Button variant="outline" size="sm" className="w-full h-8 text-xs" asChild>
                     <a href={event.googleEvent.htmlLink} target="_blank" rel="noopener noreferrer">

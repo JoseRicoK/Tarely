@@ -791,7 +791,7 @@ export function NotesPageClient() {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col overflow-hidden bg-background/40">
+      <div className="flex-1 flex flex-col overflow-hidden bg-background/40 relative">
         {selectedNote ? (
           <>
             {/* Toolbar */}
@@ -812,55 +812,56 @@ export function NotesPageClient() {
               saving={saving}
             />
 
-            {/* Title area - Mobile responsive */}
-            <div className="bg-background/80 backdrop-blur-sm px-4 sm:px-6 md:px-8 pt-4 sm:pt-5 md:pt-6 pb-2 md:pb-3 border-b border-border/10">
-              <div className="flex items-start gap-2 sm:gap-3">
-                <span className="text-2xl sm:text-3xl cursor-pointer hover:scale-110 active:scale-95 transition-transform select-none shrink-0 mt-1">
-                  {selectedNote.icon}
-                </span>
-                <textarea
-                  ref={titleTextareaRef}
-                  className="text-2xl sm:text-3xl md:text-4xl font-extrabold bg-transparent border-none outline-none flex-1 placeholder:text-muted-foreground/30 min-w-0 resize-none overflow-hidden leading-tight"
-                  value={selectedNote.title}
-                  rows={1}
-                  onChange={(e) => {
-                    setSelectedNote((prev) => (prev ? { ...prev, title: e.target.value } : null));
-                    e.target.style.height = "auto";
-                    e.target.style.height = e.target.scrollHeight + "px";
-                  }}
-                  onBlur={(e) => handleUpdateTitle(e.target.value)}
-                  placeholder="Sin título"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                />
-                <div className="mt-1 shrink-0">
-                  <NoteTaskPanel
-                    taskId={selectedNote.taskId}
-                    completed={selectedNote.completed}
-                    onLinkTask={handleLinkTask}
-                    onUnlinkTask={handleUnlinkTask}
-                    onToggleComplete={handleToggleComplete}
-                  />
-                </div>
-              </div>
-              {/* Tags row */}
-              {selectedWorkspaceId && (
-                <div className="mt-2 ml-1">
-                  <NoteTagSelector
-                    noteId={selectedNote.id}
-                    workspaceId={selectedWorkspaceId}
-                    tags={selectedNote.tags ?? []}
-                    onTagsChange={handleNoteTagsChange}
-                  />
-                </div>
-              )}
+            {/* Floating NoteTaskPanel - siempre visible, esquina superior derecha */}
+            <div className="absolute top-[72px] right-6 z-20">
+              <NoteTaskPanel
+                taskId={selectedNote.taskId}
+                completed={selectedNote.completed}
+                onLinkTask={handleLinkTask}
+                onUnlinkTask={handleUnlinkTask}
+                onToggleComplete={handleToggleComplete}
+              />
             </div>
 
             {/* Editor - Touch optimized */}
             <div className="flex-1 flex overflow-hidden">
-              <div className="flex-1 overflow-y-auto bg-background/60 backdrop-blur-sm overscroll-contain">
+              <div className="flex-1 overflow-y-auto bg-background/60 backdrop-blur-sm overscroll-contain notes-scroll-area">
+                {/* Title area - se desplaza con el contenido */}
+                <div className="px-4 sm:px-6 md:px-8 pt-4 sm:pt-5 md:pt-6 pb-2 md:pb-3">
+                  <div className="flex items-start gap-2 sm:gap-3 pr-28">
+                    <span className="text-2xl sm:text-3xl cursor-pointer hover:scale-110 active:scale-95 transition-transform select-none shrink-0 mt-1">
+                      {selectedNote.icon}
+                    </span>
+                    <textarea
+                      ref={titleTextareaRef}
+                      className="text-2xl sm:text-3xl md:text-4xl font-extrabold bg-transparent border-none outline-none flex-1 placeholder:text-muted-foreground/30 min-w-0 resize-none overflow-hidden leading-tight"
+                      value={selectedNote.title}
+                      rows={1}
+                      onChange={(e) => {
+                        setSelectedNote((prev) => (prev ? { ...prev, title: e.target.value } : null));
+                        e.target.style.height = "auto";
+                        e.target.style.height = e.target.scrollHeight + "px";
+                      }}
+                      onBlur={(e) => handleUpdateTitle(e.target.value)}
+                      placeholder="Sin título"
+                      autoComplete="off"
+                      autoCorrect="off"
+                      autoCapitalize="off"
+                      spellCheck={false}
+                    />
+                  </div>
+                  {/* Tags row */}
+                  {selectedWorkspaceId && (
+                    <div className="mt-2 ml-1">
+                      <NoteTagSelector
+                        noteId={selectedNote.id}
+                        workspaceId={selectedWorkspaceId}
+                        tags={selectedNote.tags ?? []}
+                        onTagsChange={handleNoteTagsChange}
+                      />
+                    </div>
+                  )}
+                </div>
                 <NoteEditor ref={editorRef} key={selectedNote.id} content={selectedNote.contentJson} onUpdate={handleUpdateNote} noteId={selectedNote.id} />
               </div>
             </div>

@@ -185,14 +185,17 @@ export function MonthView({
               </div>
 
               <div className="space-y-0.5">
-                {dayEvents.slice(0, 3).map(event => (
+                {dayEvents.slice(0, 3).map(event => {
+                  const isCompleted = event.type === 'task' && event.task?.completed;
+                  return (
                   <div
                     key={event.id}
                     className={cn(
                       "text-[10px] px-1.5 py-0.5 rounded cursor-pointer hover:brightness-110 transition-all flex items-center gap-1",
                       event.type === 'task'
                         ? "border-l-2 pl-1"
-                        : "text-white"
+                        : "text-white",
+                      isCompleted && "opacity-50"
                     )}
                     style={
                       event.type === 'task'
@@ -215,11 +218,12 @@ export function MonthView({
                     }}
                   >
                     {event.type === 'task' && (
-                      <CheckCircle2 className="h-2 w-2 flex-shrink-0 opacity-70" />
+                      <CheckCircle2 className={cn("h-2 w-2 flex-shrink-0", isCompleted ? "opacity-100" : "opacity-70")} />
                     )}
-                    <span className="truncate">{event.title}</span>
+                    <span className={cn("truncate", isCompleted && "line-through")}>{event.title}</span>
                   </div>
-                ))}
+                  );
+                })}
                 {dayEvents.length > 3 && (
                   <div className="text-[10px] text-muted-foreground/60 pl-1">
                     +{dayEvents.length - 3} más

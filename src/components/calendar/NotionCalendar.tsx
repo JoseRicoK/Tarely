@@ -287,6 +287,62 @@ export function NotionCalendar({
     }
   }, []);
 
+  const handleTaskMove = useCallback(async (taskId: string, newDate: Date) => {
+    // Optimistic update
+    setTasks(prev =>
+      prev.map(t => t.id === taskId ? { ...t, dueDate: newDate.toISOString() } : t)
+    );
+    setSelectedEvent(prev => {
+      if (prev?.task?.id === taskId) {
+        const end = new Date(newDate.getTime() + 45 * 60 * 1000);
+        return { ...prev, start: newDate, end, task: { ...prev.task!, dueDate: newDate.toISOString() } };
+      }
+      return prev;
+    });
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dueDate: newDate.toISOString() }),
+      });
+      if (!res.ok) throw new Error('Failed to move task');
+      toast.success(`Tarea movida a las ${newDate.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}`);
+    } catch (error) {
+      console.error('Error moving task:', error);
+      toast.error('Error al mover la tarea');
+      // Revert on failure
+      setTasks(initialTasks);
+    }
+  }, [initialTasks]);
+
+  const handleTaskUpdate = useCallback(async (taskId: string, updates: Partial<Task>) => {
+    // Optimistic update
+    setTasks(prev => prev.map(t => t.id === taskId ? { ...t, ...updates } : t));
+    setSelectedEvent(prev => {
+      if (prev?.task?.id === taskId) {
+        return {
+          ...prev,
+          title: (updates.title as string) ?? prev.title,
+          task: { ...prev.task!, ...updates },
+        };
+      }
+      return prev;
+    });
+    try {
+      const res = await fetch(`/api/tasks/${taskId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (!res.ok) throw new Error('Failed to update task');
+      toast.success('Tarea actualizada');
+    } catch (error) {
+      console.error('Error updating task:', error);
+      toast.error('Error al actualizar la tarea');
+      setTasks(initialTasks);
+    }
+  }, [initialTasks]);
+
   // Upcoming tasks sorted by dueDate (next 30 days)
   const upcomingTasks = useMemo(() => {
     const now = new Date();
@@ -458,6 +514,7 @@ export function NotionCalendar({
                 googleCalendars={googleCalendars}
                 onEventClick={handleEventClick}
                 onTimeSlotClick={handleTimeSlotClick}
+                onTaskMove={handleTaskMove}
               />
             ) : (
               <MonthView
@@ -481,27 +538,27 @@ export function NotionCalendar({
                 workspaces={workspaces}
                 onClose={() => setSelectedEvent(null)}
                 onTaskToggle={handleTaskToggle}
+                onTaskUpdate={handleTaskUpdate}
               />
             </div>
           )}
 
-          {/* Mobile Right panel (Sheet) */}
-          <div className="block lg:hidden">
-            <Sheet open={!isDesktop && selectedEvent !== null} onOpenChange={(open) => !open && setSelectedEvent(null)}>
-              <SheetContent side="right" className="p-0 w-[85vw] sm:w-96">
-                <SheetTitle className="sr-only">Detalles del evento</SheetTitle>
-                <div className="h-full pt-6">
-                  <EventDetailPanel
-                    event={selectedEvent}
-                    upcomingTasks={upcomingTasks}
-                    workspaces={workspaces}
-                    onClose={() => setSelectedEvent(null)}
-                    onTaskToggle={handleTaskToggle}
-                  />
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
+          {/* Mobile/collapsed Right panel (Sheet) */}
+          <Sheet open={selectedEvent !== null && (!isDesktop || !isRightPanelOpen)} onOpenChange={(open) => !open && setSelectedEvent(null)}>
+            <SheetContent side="right" className="p-0 w-[85vw] sm:w-96">
+              <SheetTitle className="sr-only">Detalles del evento</SheetTitle>
+              <div className="h-full pt-6">
+                <EventDetailPanel
+                  event={selectedEvent}
+                  upcomingTasks={upcomingTasks}
+                  workspaces={workspaces}
+                  onClose={() => setSelectedEvent(null)}
+                  onTaskToggle={handleTaskToggle}
+                  onTaskUpdate={handleTaskUpdate}
+                />
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </div>
 

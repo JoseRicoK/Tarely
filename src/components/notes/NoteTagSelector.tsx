@@ -21,6 +21,9 @@ import { Loader2, Tag, Plus, X, Check, ArrowLeft, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskTag, WorkspaceTag } from "@/lib/types";
 
+// Cache de etiquetas por workspace para evitar peticiones repetidas
+const tagsCache = new Map<string, WorkspaceTag[]>();
+
 const TAG_COLORS = [
   "#ef4444", "#f97316", "#eab308", "#22c55e",
   "#14b8a6", "#06b6d4", "#3b82f6", "#6366f1",
@@ -56,10 +59,18 @@ export function NoteTagSelector({
   const [showCreateForm, setShowCreateForm] = useState(false);
 
   const fetchWorkspaceTags = async () => {
+    if (tagsCache.has(workspaceId)) {
+      setWorkspaceTags(tagsCache.get(workspaceId)!);
+      return;
+    }
     setIsLoading(true);
     try {
       const res = await fetch(`/api/tags?workspaceId=${workspaceId}`);
-      if (res.ok) setWorkspaceTags(await res.json());
+      if (res.ok) {
+        const data = await res.json();
+        tagsCache.set(workspaceId, data);
+        setWorkspaceTags(data);
+      }
     } catch {
       toast.error("Error al cargar etiquetas");
     } finally {
@@ -111,7 +122,9 @@ export function NoteTagSelector({
   };
 
   const handleTagCreated = (newTag: WorkspaceTag) => {
-    setWorkspaceTags(prev => [...prev, newTag]);
+    const updated = [...workspaceTags, newTag];
+    setWorkspaceTags(updated);
+    tagsCache.set(workspaceId, updated);
     setShowCreateForm(false);
     handleAssignTag(newTag.id);
   };
@@ -120,7 +133,9 @@ export function NoteTagSelector({
     try {
       const res = await fetch(`/api/tags/${tagId}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
-      setWorkspaceTags(prev => prev.filter(t => t.id !== tagId));
+      const updated = workspaceTags.filter(t => t.id !== tagId);
+      setWorkspaceTags(updated);
+      tagsCache.set(workspaceId, updated);
       if (tags.some(t => t.tagId === tagId)) {
         onTagsChange(tags.filter(t => t.tagId !== tagId));
       }

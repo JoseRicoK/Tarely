@@ -551,7 +551,7 @@ export function NotesSidebar({
       </div>
 
       {/* Contenido scrolleable */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden subtle-scroll">
         <div className="px-3 pb-2 w-full">
           {/* Favorites */}
           {favoriteNotes.length > 0 && (

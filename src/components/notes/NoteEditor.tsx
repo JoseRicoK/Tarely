@@ -717,7 +717,7 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
     immediatelyRender: false,
     editorProps: {
       attributes: {
-        class: "tiptap-editor focus:outline-none min-h-[500px] pl-20 pr-12 pt-6 pb-[40vh] max-w-none",
+        class: "tiptap-editor focus:outline-none min-h-[500px] pl-20 pr-12 pt-6 pb-4 max-w-none",
       },
       handleDrop: (_view, event) => {
         // Let our React onDrop handler deal with files; prevent TipTap from
@@ -1129,7 +1129,7 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
 
   return (
     <div
-      className={cn("relative h-full", className)}
+      className={cn("relative", className)}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -1334,7 +1334,32 @@ export const NoteEditor = forwardRef<NoteEditorHandle, NoteEditorProps>(function
       )}
 
       {/* ===== EDITOR CONTENT ===== */}
-      <EditorContent editor={editor} className="h-full" />
+      <EditorContent editor={editor} />
+
+      {/* Zona clickable Notion-style: justo debajo del contenido */}
+      {editable && (
+        <div
+          className="h-[30vh] cursor-text"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            const { state, view } = editor;
+            const lastNode = state.doc.lastChild;
+            const lastIsEmpty =
+              lastNode?.type.name === "paragraph" &&
+              lastNode.content.size === 0;
+            view.focus();
+            if (!lastIsEmpty) {
+              const newPara = state.schema.nodes.paragraph.create();
+              const tr = state.tr.insert(state.doc.content.size, newPara);
+              view.dispatch(tr);
+              // Pequeño delay para que ProseMirror procese la transacción
+              requestAnimationFrame(() => editor.commands.focus("end"));
+            } else {
+              editor.commands.focus("end");
+            }
+          }}
+        />
+      )}
 
       {/* ===== TABLE CONTROLS (Notion-style: + on edges, right-click menu) ===== */}
       {editable && <TableControls editor={editor} />}
