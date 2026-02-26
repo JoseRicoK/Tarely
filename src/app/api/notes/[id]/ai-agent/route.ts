@@ -171,6 +171,30 @@ export async function POST(request: NextRequest, { params }: Params) {
       });
 
       const answer = response.output_text || "";
+
+      // Registrar uso de IA en notas (chat)
+      try {
+        const monthStart = new Date(
+          new Date().getFullYear(),
+          new Date().getMonth(),
+          1
+        ).toISOString().slice(0, 10);
+        await Promise.all([
+          (supabase as any).from("ai_usage_events").insert({
+            user_id: user.id,
+            workspace_id: null,
+            kind: "notes",
+          }),
+          (supabase as any).rpc("increment_ai_usage", {
+            p_user_id: user.id,
+            p_month: monthStart,
+            p_kind: "notes",
+          }),
+        ]);
+      } catch (usageErr) {
+        console.error("Error tracking AI notes usage:", usageErr);
+      }
+
       return NextResponse.json({ 
         type: "answer", 
         result: answer,

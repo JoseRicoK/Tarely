@@ -28,6 +28,12 @@ import {
   Users,
   LayoutList,
   Building2,
+  Search,
+  Sparkles,
+  BookOpen,
+  Crown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -932,90 +938,348 @@ interface SiteStats {
   avgWorkspacesPerUser: number;
 }
 
+interface UserUsage {
+  id: string;
+  name: string;
+  email: string;
+  plan: "free" | "pro";
+  createdAt: string;
+  tasksCount: number;
+  workspacesCount: number;
+  notesCount: number;
+  aiTasksUses: number;
+  aiNotesUses: number;
+}
+
 function StatsPanel() {
   const [stats, setStats] = useState<SiteStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  // Users table state
+  const [users, setUsers] = useState<UserUsage[]>([]);
+  const [usersLoading, setUsersLoading] = useState(true);
+  const [search, setSearch] = useState("");
+  const [view, setView] = useState<"monthly" | "historical">("monthly");
+  const [currentMonth, setCurrentMonth] = useState(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    return `${y}-${m}-01`;
+  });
+  const [updatingPlan, setUpdatingPlan] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchStats() {
       try {
         const res = await fetch("/api/admin/stats");
-        if (!res.ok) throw new Error("Error al cargar estadísticas");
+        if (!res.ok) throw new Error();
         const data = await res.json();
         setStats(data);
       } catch {
         toast.error("Error al cargar las estadísticas");
       } finally {
-        setLoading(false);
+        setStatsLoading(false);
       }
     }
     fetchStats();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
-    );
-  }
+  const fetchUsers = useCallback(async () => {
+    setUsersLoading(true);
+    try {
+      const url = view === "monthly"
+        ? `/api/admin/users?view=monthly&month=${currentMonth}`
+        : `/api/admin/users?view=historical`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      setUsers(data.users || []);
+    } catch {
+      toast.error("Error al cargar los usuarios");
+    } finally {
+      setUsersLoading(false);
+    }
+  }, [view, currentMonth]);
 
-  if (!stats) {
-    return (
-      <div className="text-center py-12 text-muted-foreground">
-        <BarChart3 className="h-12 w-12 mx-auto mb-3 opacity-30" />
-        <p>No se pudieron cargar las estadísticas</p>
-      </div>
-    );
-  }
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
 
-  const statCards = [
-    {
-      label: "Total Tareas",
-      value: stats.totalTasks.toLocaleString("es-ES"),
-      color: "from-ta/20 to-ta/5",
-      textColor: "text-ta-light",
-      icon: LayoutList,
-    },
-    {
-      label: "Total Usuarios",
-      value: stats.totalUsers.toLocaleString("es-ES"),
-      color: "from-blue-500/20 to-blue-500/5",
-      textColor: "text-blue-400",
-      icon: Users,
-    },
-    {
-      label: "Total Workspaces",
-      value: stats.totalWorkspaces.toLocaleString("es-ES"),
-      color: "from-indigo-500/20 to-indigo-500/5",
-      textColor: "text-indigo-400",
-      icon: Building2,
-    },
-    {
-      label: "Media Workspaces/Usuario",
-      value: stats.avgWorkspacesPerUser.toLocaleString("es-ES", { minimumFractionDigits: 0, maximumFractionDigits: 2 }),
-      color: "from-emerald-500/20 to-emerald-500/5",
-      textColor: "text-emerald-400",
-      icon: BarChart3,
-    },
-  ];
+  // Helpers que evitan problemas de timezone (no usar toISOString para fechas locales)
+  const addMonths = (monthStr: string, delta: number): string => {
+    const [y, m] = monthStr.split("-").map(Number);
+    const date = new Date(y, m - 1 + delta, 1);
+    const ny = date.getFullYear();
+    const nm = String(date.getMonth() + 1).padStart(2, "0");
+    return `${ny}-${nm}-01`;
+  };
+
+  const todayMonthStr = (() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    return `${y}-${m}-01`;
+  })();
+
+  const prevMonth = () => setCurrentMonth((prev) => addMonths(prev, -1));
+
+  const nextMonth = () => {
+    const next = addMonths(currentMonth, 1);
+    if (next <= todayMonthStr) {
+      setCurrentMonth(next);
+    }
+  };
+
+  const togglePlan = async (userId: string, currentPlan: "free" | "pro") => {
+    const newPlan = currentPlan === "free" ? "pro" : "free";
+    setUpdatingPlan(userId);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/plan`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ plan: newPlan }),
+      });
+      if (!res.ok) throw new Error();
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, plan: newPlan } : u))
+      );
+      toast.success(`Plan cambiado a ${newPlan.toUpperCase()}`);
+    } catch {
+      toast.error("Error al cambiar el plan");
+    } finally {
+      setUpdatingPlan(null);
+    }
+  };
+
+  const filteredUsers = users.filter(
+    (u) =>
+      u.name.toLowerCase().includes(search.toLowerCase()) ||
+      u.email.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const monthLabel = new Date(currentMonth + "T12:00:00").toLocaleDateString("es-ES", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const isCurrentMonth = currentMonth === todayMonthStr;
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {statCards.map((stat) => {
-          const Icon = stat.icon;
-          return (
-            <div
-              key={stat.label}
-              className={`bg-gradient-to-b ${stat.color} rounded-xl border border-border p-5 text-center space-y-2`}
-            >
-              <Icon className={`h-5 w-5 mx-auto ${stat.textColor} opacity-70`} />
-              <p className={`text-2xl font-bold ${stat.textColor}`}>{stat.value}</p>
-              <p className="text-xs text-muted-foreground">{stat.label}</p>
+      {/* Overview stat cards */}
+      {statsLoading ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-foreground/[0.03] border border-border rounded-xl p-5 h-24 animate-pulse" />
+          ))}
+        </div>
+      ) : stats ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {[
+            { label: "Total Tareas", value: stats.totalTasks.toLocaleString("es-ES"), color: "from-ta/20 to-ta/5", textColor: "text-ta-light", icon: LayoutList },
+            { label: "Total Usuarios", value: stats.totalUsers.toLocaleString("es-ES"), color: "from-blue-500/20 to-blue-500/5", textColor: "text-blue-400", icon: Users },
+            { label: "Total Workspaces", value: stats.totalWorkspaces.toLocaleString("es-ES"), color: "from-indigo-500/20 to-indigo-500/5", textColor: "text-indigo-400", icon: Building2 },
+            { label: "Media WS/Usuario", value: stats.avgWorkspacesPerUser.toLocaleString("es-ES", { minimumFractionDigits: 0, maximumFractionDigits: 2 }), color: "from-emerald-500/20 to-emerald-500/5", textColor: "text-emerald-400", icon: BarChart3 },
+          ].map((stat) => {
+            const Icon = stat.icon;
+            return (
+              <div key={stat.label} className={`bg-gradient-to-b ${stat.color} rounded-xl border border-border p-5 text-center space-y-2`}>
+                <Icon className={`h-5 w-5 mx-auto ${stat.textColor} opacity-70`} />
+                <p className={`text-2xl font-bold ${stat.textColor}`}>{stat.value}</p>
+                <p className="text-xs text-muted-foreground">{stat.label}</p>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+
+      {/* Users table */}
+      <div className="space-y-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+            <Users className="h-4 w-4 text-muted-foreground" />
+            Usuarios
+          </h2>
+
+          {/* View toggle */}
+          <div className="flex gap-1 bg-foreground/5 rounded-lg p-1">
+            {(["monthly", "historical"] as const).map((v) => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+                  view === v
+                    ? "bg-foreground/10 text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {v === "monthly" ? "Mensual" : "Histórico"}
+              </button>
+            ))}
+          </div>
+
+          {/* Month navigator (only in monthly view) */}
+          {view === "monthly" && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={prevMonth}
+                className="p-1.5 rounded-md hover:bg-foreground/10 text-muted-foreground hover:text-foreground transition-colors"
+                title="Mes anterior"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              <span className="text-xs text-foreground capitalize min-w-[130px] text-center">
+                {monthLabel}
+              </span>
+              <button
+                onClick={nextMonth}
+                disabled={isCurrentMonth}
+                className="p-1.5 rounded-md hover:bg-foreground/10 text-muted-foreground hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                title="Mes siguiente"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
             </div>
-          );
-        })}
+          )}
+
+          {/* Search */}
+          <div className="relative ml-auto">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Buscar usuario..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-8 pr-3 py-1.5 bg-foreground/5 border border-border rounded-lg text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-ta/50 w-56"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch("")}
+                title="Limpiar búsqueda"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/50 hover:text-muted-foreground"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {usersLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-7 w-7 animate-spin text-muted-foreground" />
+          </div>
+        ) : filteredUsers.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <Users className="h-12 w-12 mx-auto mb-3 opacity-30" />
+            <p>No se encontraron usuarios</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl border border-border">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-foreground/[0.03]">
+                  <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground whitespace-nowrap">Usuario</th>
+                  <th className="text-center px-3 py-3 text-xs font-medium text-muted-foreground whitespace-nowrap">Plan</th>
+                  <th className="text-center px-3 py-3 text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    <span className="flex items-center gap-1 justify-center">
+                      <Sparkles className="h-3 w-3" />
+                      IA Tareas
+                    </span>
+                  </th>
+                  <th className="text-center px-3 py-3 text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    <span className="flex items-center gap-1 justify-center">
+                      <Sparkles className="h-3 w-3" />
+                      IA Notas
+                    </span>
+                  </th>
+                  <th className="text-center px-3 py-3 text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    <span className="flex items-center gap-1 justify-center">
+                      <LayoutList className="h-3 w-3" />
+                      Tareas
+                    </span>
+                  </th>
+                  <th className="text-center px-3 py-3 text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    <span className="flex items-center gap-1 justify-center">
+                      <Building2 className="h-3 w-3" />
+                      WS
+                    </span>
+                  </th>
+                  <th className="text-center px-3 py-3 text-xs font-medium text-muted-foreground whitespace-nowrap">
+                    <span className="flex items-center gap-1 justify-center">
+                      <BookOpen className="h-3 w-3" />
+                      Notas
+                    </span>
+                  </th>
+                  <th className="text-right px-4 py-3 text-xs font-medium text-muted-foreground whitespace-nowrap">Registro</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {filteredUsers.map((user) => (
+                  <tr key={user.id} className="hover:bg-foreground/[0.02] transition-colors">
+                    <td className="px-4 py-3">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">{user.name}</p>
+                        <p className="text-xs text-muted-foreground/70">{user.email}</p>
+                      </div>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <button
+                        onClick={() => togglePlan(user.id, user.plan)}
+                        disabled={updatingPlan === user.id}
+                        title="Haz clic para cambiar el plan"
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold transition-all border cursor-pointer ${
+                          user.plan === "pro"
+                            ? "bg-amber-500/15 text-amber-400 border-amber-500/30 hover:bg-amber-500/25"
+                            : "bg-foreground/5 text-muted-foreground border-border hover:bg-foreground/10"
+                        } ${updatingPlan === user.id ? "opacity-50 cursor-wait" : ""}`}
+                      >
+                        {updatingPlan === user.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : user.plan === "pro" ? (
+                          <Crown className="h-3 w-3" />
+                        ) : null}
+                        {user.plan === "pro" ? "PRO" : "FREE"}
+                      </button>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span className={`text-sm font-medium ${user.aiTasksUses > 0 ? "text-ta-light" : "text-muted-foreground/50"}`}>
+                        {user.aiTasksUses}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span className={`text-sm font-medium ${user.aiNotesUses > 0 ? "text-blue-400" : "text-muted-foreground/50"}`}>
+                        {user.aiNotesUses}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span className="text-sm text-foreground/70">{user.tasksCount}</span>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span className="text-sm text-foreground/70">{user.workspacesCount}</span>
+                    </td>
+                    <td className="px-3 py-3 text-center">
+                      <span className="text-sm text-foreground/70">{user.notesCount}</span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      <span className="text-xs text-muted-foreground/60">
+                        {new Date(user.createdAt).toLocaleDateString("es-ES", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <div className="px-4 py-2 border-t border-border bg-foreground/[0.02] text-xs text-muted-foreground/60">
+              {filteredUsers.length} usuario{filteredUsers.length !== 1 ? "s" : ""}
+              {search && ` · buscando "${search}"`}
+              {view === "monthly" && ` · ${monthLabel}`}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

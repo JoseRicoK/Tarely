@@ -51,6 +51,31 @@ export async function POST(request: NextRequest) {
 
     const result = response.output_text || "";
 
+    // Registrar uso de IA en notas (acciones de toolbar)
+    try {
+      const monthStart = new Date(
+        new Date().getFullYear(),
+        new Date().getMonth(),
+        1
+      ).toISOString().slice(0, 10);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sb = supabase as any;
+      await Promise.all([
+        sb.from("ai_usage_events").insert({
+          user_id: user.id,
+          workspace_id: null,
+          kind: "notes",
+        }),
+        sb.rpc("increment_ai_usage", {
+          p_user_id: user.id,
+          p_month: monthStart,
+          p_kind: "notes",
+        }),
+      ]);
+    } catch (usageErr) {
+      console.error("Error tracking AI notes usage:", usageErr);
+    }
+
     // For extract_tasks, try to parse as JSON
     if (action === "extract_tasks") {
       try {

@@ -105,6 +105,36 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Registrar uso de IA (evento histórico + resumen mensual)
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        const monthStart = new Date(
+          new Date().getFullYear(),
+          new Date().getMonth(),
+          1
+        ).toISOString().slice(0, 10);
+
+        await Promise.all([
+          // Evento histórico
+          (supabase as any).from("ai_usage_events").insert({
+            user_id: authUser.id,
+            workspace_id: validated.workspaceId,
+            kind: "tasks",
+          }),
+          // Upsert/increment resumen mensual (función atómica)
+          (supabase as any).rpc("increment_ai_usage", {
+            p_user_id: authUser.id,
+            p_month: monthStart,
+            p_kind: "tasks",
+          }),
+        ]);
+      }
+    } catch (usageError) {
+      // No bloqueamos la respuesta si falla el tracking
+      console.error("Error tracking AI usage:", usageError);
+    }
+
     return NextResponse.json({
       success: true,
       tasks: createdTasks,

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 
 const ADMIN_EMAIL = "josemariark@gmail.com";
 
@@ -26,8 +27,9 @@ export async function GET() {
       return NextResponse.json({ error: "No autorizado" }, { status: 403 });
     }
 
+    // Usar cliente admin para saltar RLS y contar todos los registros
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sb = supabase as any;
+    const sb = supabaseAdmin as any;
 
     // Ejecutar las 3 consultas en paralelo para mayor velocidad
     const [tasksResult, usersResult, workspacesResult] = await Promise.all([
