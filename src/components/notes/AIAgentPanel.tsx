@@ -127,7 +127,7 @@ export function AIAgentPanel({ noteId, editor, noteContent }: AIAgentPanelProps)
             ) : (
               <>
                 <Sparkles className="h-4 w-4" />
-                <span className="text-sm">Asistente IA</span>
+                <span className="text-sm">Acciones Tari</span>
               </>
             )}
           </Button>
@@ -136,7 +136,7 @@ export function AIAgentPanel({ noteId, editor, noteContent }: AIAgentPanelProps)
           <div className="px-3 py-2 border-b">
             <p className="text-sm font-semibold flex items-center gap-2">
               <Sparkles className="h-4 w-4" />
-              Asistente IA
+              Acciones Tari
             </p>
           </div>
           {(Object.entries(ACTION_LABELS) as [AIAction, typeof ACTION_LABELS[AIAction]][]).map(

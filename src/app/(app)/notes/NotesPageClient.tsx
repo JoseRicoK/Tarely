@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { PanelLeftClose, PanelLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Note, NoteFolder, NoteTemplate, Workspace, WorkspaceTag, TaskTag } from "@/lib/types";
+import type { Note, NoteFolder, NoteTemplate, Workspace, WorkspaceTag, TaskTag, Task } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { DeleteDialog } from "@/components/ui/delete-dialog";
 import { NotesSidebar } from "@/components/notes/NotesSidebar";
@@ -40,6 +40,9 @@ export function NotesPageClient() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  // Linked task details (fetched when a note has a taskId)
+  const [linkedTask, setLinkedTask] = useState<Pick<Task, "id" | "title" | "description" | "importance" | "dueDate" | "workspaceId"> | null>(null);
 
   // Dialog state
   const [folderDialogOpen, setFolderDialogOpen] = useState(false);
@@ -204,6 +207,31 @@ export function NotesPageClient() {
   }, [fetchWorkspaces, fetchFolders, fetchNotes, fetchNote, fetchTemplates, fetchWorkspaceTags, searchParams]);
 
   // ============== NOTE HANDLERS ==============
+
+  // Fetch linked task details whenever the selected note's taskId changes
+  useEffect(() => {
+    const taskId = selectedNote?.taskId;
+    if (!taskId || taskId === "pending") {
+      setLinkedTask(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/tasks/${taskId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((task) => {
+        if (cancelled || !task) return;
+        setLinkedTask({
+          id: task.id,
+          title: task.title,
+          description: task.description ?? null,
+          importance: task.importance,
+          dueDate: task.dueDate ?? null,
+          workspaceId: task.workspaceId,
+        });
+      })
+      .catch(() => setLinkedTask(null));
+    return () => { cancelled = true; };
+  }, [selectedNote?.taskId]);
 
   const handleCreateNote = useCallback(async (folderId?: string | null) => {
     const wsId = selectedWorkspaceIdRef.current;
@@ -522,10 +550,20 @@ export function NotesPageClient() {
 
       // Update UI immediately with the real task ID
       setSelectedNote((prev) => (prev ? { ...prev, taskId: task.id } : null));
+      setLinkedTask({
+        id: task.id,
+        title: task.title,
+        description: null, // will be filled async by AI
+        importance: task.importance,
+        dueDate: task.dueDate ?? null,
+        workspaceId: task.workspaceId,
+      });
       toast.success("Tarea vinculada");
 
       // Fire the rest in parallel — not blocking UI
       const noteTags = selectedNote.tags ?? [];
+      const noteContentText = selectedNote.contentText || "";
+      const noteTitle = selectedNote.title || "";
       await Promise.allSettled([
         fetch(`/api/notes/${selectedNote.id}`, {
           method: "PATCH",
@@ -540,6 +578,21 @@ export function NotesPageClient() {
           })
         ),
       ]);
+
+      // Async AI description — runs in background, no await
+      fetch(`/api/tasks/${task.id}/generate-description`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ noteContent: noteContentText, noteTitle }),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data?.description) {
+            setLinkedTask((prev) => prev ? { ...prev, description: data.description } : null);
+          }
+        })
+        .catch(() => { /* silent */ });
+
       fetchNotes(selectedWorkspaceId);
     } catch {
       // Revert optimistic update on error
@@ -548,21 +601,59 @@ export function NotesPageClient() {
     }
   };
 
-  const handleUnlinkTask = async () => {
-    if (!selectedNote || !selectedWorkspaceId) return;
+  const handleDeleteTask = async () => {
+    if (!selectedNote || !selectedWorkspaceId || !selectedNote.taskId) return;
+    const taskId = selectedNote.taskId;
     try {
-      const res = await fetch(`/api/notes/${selectedNote.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ taskId: null }),
-      });
+      // Delete the task from the database
+      const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       setSelectedNote((prev) => (prev ? { ...prev, taskId: null, completed: false } : null));
+      setLinkedTask(null);
       fetchNotes(selectedWorkspaceId);
-      toast.success("Tarea desvinculada");
+      toast.success("Tarea eliminada");
     } catch {
-      toast.error("Error");
+      toast.error("Error al eliminar la tarea");
     }
+  };
+
+  const handleUpdateLinkedTaskImportance = async (importance: number) => {
+    if (!linkedTask) return;
+    setLinkedTask((prev) => (prev ? { ...prev, importance } : null));
+    try {
+      const res = await fetch(`/api/tasks/${linkedTask.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ importance }),
+      });
+      if (!res.ok) throw new Error();
+      toast.success("Prioridad actualizada");
+    } catch {
+      // Revert on error
+      setLinkedTask((prev) => (prev ? { ...prev, importance: linkedTask.importance } : null));
+      toast.error("Error al actualizar prioridad");
+    }
+  };
+
+  const handleUpdateLinkedTaskDueDate = async (dueDate: string | null) => {
+    if (!linkedTask) return;
+    const prevDueDate = linkedTask.dueDate;
+    setLinkedTask((prev) => (prev ? { ...prev, dueDate: dueDate ?? undefined } : null));
+    try {
+      const res = await fetch(`/api/tasks/${linkedTask.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dueDate }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setLinkedTask((prev) => (prev ? { ...prev, dueDate: prevDueDate ?? undefined } : null));
+      toast.error("Error al actualizar fecha");
+    }
+  };
+
+  const handleNavigateToTask = () => {    if (!linkedTask?.workspaceId) return;
+    router.push(`/workspace/${linkedTask.workspaceId}`);
   };
 
   const handleToggleComplete = async () => {
@@ -809,26 +900,19 @@ export function NotesPageClient() {
                 setTemplateDialogOpen(true);
               }}
               onDuplicate={handleDuplicateNote}
+              onLinkTask={!selectedNote.taskId ? handleLinkTask : undefined}
               saving={saving}
             />
 
             {/* Floating NoteTaskPanel - siempre visible, esquina superior derecha */}
-            <div className="absolute top-[72px] right-6 z-20">
-              <NoteTaskPanel
-                taskId={selectedNote.taskId}
-                completed={selectedNote.completed}
-                onLinkTask={handleLinkTask}
-                onUnlinkTask={handleUnlinkTask}
-                onToggleComplete={handleToggleComplete}
-              />
-            </div>
+            {/* REMOVED - moved inline below tags */}
 
             {/* Editor - Touch optimized */}
             <div className="flex-1 flex overflow-hidden">
               <div className="flex-1 overflow-y-auto bg-background/60 backdrop-blur-sm overscroll-contain notes-scroll-area">
                 {/* Title area - se desplaza con el contenido */}
                 <div className="px-4 sm:px-6 md:px-8 pt-4 sm:pt-5 md:pt-6 pb-2 md:pb-3">
-                  <div className="flex items-start gap-2 sm:gap-3 pr-28">
+                  <div className="flex items-start gap-2 sm:gap-3">
                     <span className="text-2xl sm:text-3xl cursor-pointer hover:scale-110 active:scale-95 transition-transform select-none shrink-0 mt-1">
                       {selectedNote.icon}
                     </span>
@@ -859,6 +943,30 @@ export function NotesPageClient() {
                         tags={selectedNote.tags ?? []}
                         onTagsChange={handleNoteTagsChange}
                       />
+                    </div>
+                  )}
+                  {/* Task panel - inline, below tags. Only shown when a task is linked */}
+                  {selectedNote.taskId && selectedNote.taskId !== "pending" && (
+                    <div className="mt-3 ml-1">
+                      <NoteTaskPanel
+                        taskId={selectedNote.taskId}
+                        completed={selectedNote.completed}
+                        taskTitle={linkedTask?.title}
+                        taskDescription={linkedTask?.description}
+                        taskImportance={linkedTask?.importance}
+                        taskDueDate={linkedTask?.dueDate}
+                        onDeleteTask={handleDeleteTask}
+                        onToggleComplete={handleToggleComplete}
+                        onUpdateImportance={handleUpdateLinkedTaskImportance}
+                        onDueDateChange={handleUpdateLinkedTaskDueDate}
+                        onNavigateToTask={handleNavigateToTask}
+                      />
+                    </div>
+                  )}
+                  {selectedNote.taskId === "pending" && (
+                    <div className="mt-3 ml-1 flex items-center gap-2 text-xs text-muted-foreground/60 animate-pulse">
+                      <span className="w-3 h-3 rounded-full border-2 border-muted-foreground/30 border-t-muted-foreground/70 animate-spin inline-block" />
+                      Creando tarea vinculada...
                     </div>
                   )}
                 </div>

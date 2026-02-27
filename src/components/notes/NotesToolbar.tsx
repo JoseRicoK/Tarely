@@ -9,6 +9,7 @@ import {
   Download,
   FolderInput,
   Printer,
+  ListTodo,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Note, NoteFolder, Workspace } from "@/lib/types";
@@ -38,6 +39,7 @@ interface NotesToolbarProps {
   onMoveToFolder: (folderId: string | null) => void;
   onSaveAsTemplate: () => void;
   onDuplicate: () => void;
+  onLinkTask?: () => void;
   saving?: boolean;
 }
 
@@ -52,6 +54,7 @@ export function NotesToolbar({
   onMoveToFolder,
   onSaveAsTemplate,
   onDuplicate,
+  onLinkTask,
   saving,
 }: NotesToolbarProps) {
   return (
@@ -137,6 +140,18 @@ export function NotesToolbar({
             <p>{note.isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}</p>
           </TooltipContent>
         </Tooltip>
+
+        {/* Crear Tarea button — visible when no task is linked, before AI panel */}
+        {onLinkTask && !note.taskId && (
+          <Button
+            size="sm"
+            className="btn-accent-gradient border-0 shadow-sm gap-1.5 h-8 px-3 rounded-xl text-white transition-all active:scale-95"
+            onClick={onLinkTask}
+          >
+            <ListTodo className="h-3.5 w-3.5" />
+            <span className="text-sm font-semibold hidden sm:inline">Crear tarea</span>
+          </Button>
+        )}
 
         <AIAgentPanel
           noteId={note.id}
@@ -261,6 +276,13 @@ export function NotesToolbar({
                 ))}
               </DropdownMenuSubContent>
             </DropdownMenuSub>
+
+            {onLinkTask && !note.taskId && (
+              <DropdownMenuItem onClick={onLinkTask} className="cursor-pointer min-h-[44px] md:min-h-[36px]">
+                <ListTodo className="mr-2 h-4 w-4" />
+                Vincular a tarea
+              </DropdownMenuItem>
+            )}
 
             <DropdownMenuItem onClick={onDuplicate} className="cursor-pointer min-h-[44px] md:min-h-[36px]">
               <Copy className="mr-2 h-4 w-4" />

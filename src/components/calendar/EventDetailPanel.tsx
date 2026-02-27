@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   X, CheckCircle2, Circle, Clock, MapPin, ExternalLink, Tag,
-  CalendarIcon, Pencil, Check, RotateCcw
+  CalendarIcon, Pencil, Check, RotateCcw, FileText
 } from 'lucide-react';
 import { format, formatDistanceToNow, isPast } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -43,6 +44,7 @@ export function EventDetailPanel({
   onTaskToggle,
   onTaskUpdate,
 }: EventDetailPanelProps) {
+  const router = useRouter();
   const [toggling, setToggling] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -328,6 +330,19 @@ export function EventDetailPanel({
                   <div className="text-[11px] text-red-400 bg-red-500/10 rounded-md px-3 py-2">
                     Vencida {formatDistanceToNow(event.end, { locale: es, addSuffix: true })}
                   </div>
+                )}
+
+                {/* Note link button */}
+                {!isEditing && event.task.noteId && (
+                  <Button
+                    className="w-full h-8 text-xs"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/notes?noteId=${event.task!.noteId}`)}
+                  >
+                    <FileText className="h-3.5 w-3.5 mr-2" />
+                    Ver nota vinculada
+                  </Button>
                 )}
 
                 {/* Action buttons */}

@@ -49,7 +49,7 @@ export function DatePicker({
   const openGuardRef = React.useRef(false);
   const open = externalOpen !== undefined ? externalOpen : internalOpen;
   const rawSetOpen = onExternalOpenChange || setInternalOpen;
-  const [time, setTime] = React.useState("23:59");
+  const [time, setTime] = React.useState("09:00");
 
   // Guard: block premature close when opened externally (Radix dropdown focus conflict)
   React.useEffect(() => {
@@ -93,7 +93,7 @@ export function DatePicker({
 
     // Combine date with time
     const [hours, minutes] = time.split(":").map(Number);
-    date.setHours(hours || 23, minutes || 59, 0, 0);
+    date.setHours(isNaN(hours) ? 9 : hours, isNaN(minutes) ? 0 : minutes, 0, 0);
     onChange(date.toISOString());
     
     if (!showTime) {
