@@ -553,7 +553,7 @@ export function NotesPageClient() {
       setLinkedTask({
         id: task.id,
         title: task.title,
-        description: null, // will be filled async by AI
+        description: undefined, // will be filled async by AI
         importance: task.importance,
         dueDate: task.dueDate ?? null,
         workspaceId: task.workspaceId,

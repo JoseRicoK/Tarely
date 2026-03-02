@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useAccentColor } from "@/components/theme-provider";
@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Loader2, LogOut, ArrowLeft, Check, Sun, Moon, Palette, FileText, Shield, Trash2, AlertTriangle, MessageSquarePlus } from "lucide-react";
+import { Loader2, LogOut, ArrowLeft, Check, Sun, Moon, Palette, FileText, Shield, Trash2, AlertTriangle, Link2, Info, CheckCircle2 } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +27,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { lazy, Suspense } from "react";
 import { GoogleCalendarSettings } from "@/components/calendar/GoogleCalendarSettings";
+import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
+import { createClient } from "@/lib/supabase/client";
 
 const FeedbackPanel = lazy(() => import("@/components/workspace").then(m => ({ default: m.FeedbackPanel })));
 
@@ -42,6 +45,11 @@ function ThemeSettingsSection() {
   const { theme, setTheme } = useTheme();
   const { accentColor, setAccentColor } = useAccentColor();
   const [saving, setSaving] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const persistPreferences = useCallback(async (mode?: string, accent?: string) => {
     setSaving(true);
@@ -85,33 +93,39 @@ function ThemeSettingsSection() {
         {/* Modo claro / oscuro */}
         <div className="mb-5">
           <Label className="text-sm font-medium mb-3 block">Modo</Label>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => handleThemeChange("light")}
-              className={cn(
-                "flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all text-sm font-medium",
-                theme === "light"
-                  ? "border-ta bg-ta/10 text-foreground shadow-sm"
-                  : "border-border bg-foreground/5 text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
-              )}
-            >
-              <Sun className="h-4 w-4" />
-              Claro
-            </button>
-            <button
-              onClick={() => handleThemeChange("dark")}
-              className={cn(
-                "flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all text-sm font-medium",
-                theme === "dark"
-                  ? "border-ta bg-ta/10 text-foreground shadow-sm"
-                  : "border-border bg-foreground/5 text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
-              )}
-            >
-              <Moon className="h-4 w-4" />
-              Oscuro
-            </button>
-          </div>
-        </div>
+          {!mounted ? (
+            <div className="grid grid-cols-2 gap-2">
+              <div className="h-[52px] rounded-xl border border-border bg-foreground/5 animate-pulse" />
+              <div className="h-[52px] rounded-xl border border-border bg-foreground/5 animate-pulse" />
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={() => handleThemeChange("light")}
+                className={cn(
+                  "flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all text-sm font-medium",
+                  theme === "light"
+                    ? "border-ta bg-ta/10 text-foreground shadow-sm"
+                    : "border-border bg-foreground/5 text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
+                )}
+              >
+                <Sun className="h-4 w-4" />
+                Claro
+              </button>
+              <button
+                onClick={() => handleThemeChange("dark")}
+                className={cn(
+                  "flex items-center justify-center gap-2 px-4 py-3 rounded-xl border transition-all text-sm font-medium",
+                  theme === "dark"
+                    ? "border-ta bg-ta/10 text-foreground shadow-sm"
+                    : "border-border bg-foreground/5 text-muted-foreground hover:bg-foreground/10 hover:text-foreground"
+                )}
+              >
+                <Moon className="h-4 w-4" />
+                Oscuro
+              </button>
+            </div>
+          )}        </div>
 
         <Separator className="bg-border mb-5" />
 
@@ -169,6 +183,30 @@ export default function AjustesPage() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
+  const [hasGoogleLinked, setHasGoogleLinked] = useState(false);
+  const [checkingProviders, setCheckingProviders] = useState(true);
+  const [showGoogleDetails, setShowGoogleDetails] = useState(false);
+
+  useEffect(() => {
+    const checkGoogleProvider = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+
+        if (user) {
+          const hasGoogle = !!(user.app_metadata.providers?.includes("google") ||
+            user.identities?.some(identity => identity.provider === "google"));
+          setHasGoogleLinked(hasGoogle);
+        }
+      } catch (error) {
+        console.error("Error checking providers:", error);
+      } finally {
+        setCheckingProviders(false);
+      }
+    };
+
+    void checkGoogleProvider();
+  }, []);
 
   const handleLogout = useCallback(async () => {
     setIsLoggingOut(true);
@@ -233,8 +271,71 @@ export default function AjustesPage() {
         {/* Apariencia */}
         <ThemeSettingsSection />
 
-        {/* Google Calendar */}
-        <GoogleCalendarSettings />
+        {/* Integraciones de Google */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          <GoogleCalendarSettings />
+
+          {!checkingProviders && (
+            <div className="relative group h-full">
+              <div className="absolute -inset-0.5 bg-linear-to-r from-blue-500 via-purple-500 to-indigo-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-500" />
+              <div className="relative bg-background/60 backdrop-blur-xl border border-border rounded-2xl p-6 shadow-xl h-full flex flex-col">
+                <div className="flex items-center gap-2 mb-1">
+                  <Link2 className="h-5 w-5 text-blue-500" />
+                  <h2 className="font-semibold">Cuenta de Google</h2>
+                  <button
+                    onClick={() => setShowGoogleDetails(!showGoogleDetails)}
+                    className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Más información"
+                  >
+                    <Info className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="text-sm text-muted-foreground mb-4">
+                  {hasGoogleLinked ? 'Vinculada' : 'Inicia sesión más rápido'}
+                </p>
+
+                <div className="space-y-4 flex-1 flex flex-col">
+                  {hasGoogleLinked ? (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="default" className="bg-green-500 hover:bg-green-600">
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          Vinculada
+                        </Badge>
+                      </div>
+
+                      {showGoogleDetails && (
+                        <div className="space-y-2 animate-in fade-in duration-200">
+                          <p className="text-sm text-muted-foreground">
+                            Puedes usar Google Login para iniciar sesión en Tarely en cualquier momento.
+                          </p>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      {showGoogleDetails && (
+                        <div className="space-y-2 animate-in fade-in duration-200">
+                          <p className="text-sm text-muted-foreground">
+                            Vincula tu cuenta con Google para poder iniciar sesión más rápidamente.
+                          </p>
+                        </div>
+                      )}
+
+                      <div className="mt-auto pt-4 border-t">
+                        <GoogleLoginButton
+                          mode="link"
+                          variant="outline"
+                          className="bg-foreground/5 border-border hover:bg-foreground/10 hover:border-blue-500/50"
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Panel de sugerencias y errores */}
         <Suspense fallback={
