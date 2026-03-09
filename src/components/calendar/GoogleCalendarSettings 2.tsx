@@ -6,8 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Loader2, CheckCircle2, AlertCircle, Link2, Link2Off, Info } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { es, enUS } from "date-fns/locale";
-import { useTranslations, useLocale } from "next-intl";
+import { es } from "date-fns/locale";
 
 interface GoogleCalendarStatus {
   connected: boolean;
@@ -17,10 +16,6 @@ interface GoogleCalendarStatus {
 }
 
 export function GoogleCalendarSettings() {
-  const t = useTranslations('googleCalendar');
-  const locale = useLocale();
-  const dateLocale = locale === 'en' ? enUS : es;
-  
   const [status, setStatus] = useState<GoogleCalendarStatus | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
@@ -39,7 +34,7 @@ export function GoogleCalendarSettings() {
       setStatus(data);
     } catch (error) {
       console.error('Error checking Google Calendar status:', error);
-      toast.error(t('statusError'));
+      toast.error('Error al verificar conexión con Google Calendar');
     } finally {
       setIsLoading(false);
     }
@@ -58,7 +53,7 @@ export function GoogleCalendarSettings() {
       }
     } catch (error) {
       console.error('Error connecting to Google Calendar:', error);
-      toast.error(t('connectError'));
+      toast.error('Error al conectar con Google Calendar');
       setIsConnecting(false);
     }
   }
@@ -74,11 +69,11 @@ export function GoogleCalendarSettings() {
         throw new Error('Failed to disconnect');
       }
 
-      toast.success(t('disconnectSuccess'));
+      toast.success('Google Calendar desconectado correctamente');
       setStatus({ connected: false });
     } catch (error) {
       console.error('Error disconnecting Google Calendar:', error);
-      toast.error(t('disconnectError'));
+      toast.error('Error al desconectar Google Calendar');
     } finally {
       setIsDisconnecting(false);
     }
@@ -90,20 +85,20 @@ export function GoogleCalendarSettings() {
       <div className="relative bg-background/60 backdrop-blur-xl border border-border rounded-2xl p-6 shadow-xl h-full flex flex-col">
         <div className="flex items-center gap-2 mb-1">
           <Calendar className="h-5 w-5 text-ta-light" />
-          <h2 className="font-semibold">{t('title')}</h2>
+          <h2 className="font-semibold">Google Calendar</h2>
           {isLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground ml-auto" />}
           {!isLoading && (
             <button
               onClick={() => setShowDetails(!showDetails)}
               className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
-              aria-label={t('moreInfo')}
+              aria-label="Más información"
             >
               <Info className="h-4 w-4" />
             </button>
           )}
         </div>
         <p className="text-sm text-muted-foreground mb-4">
-          {status?.connected ? t('connected') : t('notConnected')}
+          {status?.connected ? 'Conectado' : 'Sincroniza tareas con tu calendario'}
         </p>
         
         <div className="space-y-4 flex-1 flex flex-col">
@@ -112,12 +107,12 @@ export function GoogleCalendarSettings() {
             <div className="flex items-center gap-2">
               <Badge variant="default" className="bg-green-500 hover:bg-green-600">
                 <CheckCircle2 className="h-3 w-3 mr-1" />
-                {t('connected')}
+                Conectado
               </Badge>
               {status.isExpired && (
                 <Badge variant="destructive">
                   <AlertCircle className="h-3 w-3 mr-1" />
-                  {t('tokenExpired')}
+                  Token expirado
                 </Badge>
               )}
             </div>
@@ -126,22 +121,22 @@ export function GoogleCalendarSettings() {
               <div className="space-y-3 animate-in fade-in duration-200">
                 {status.connectedSince && (
                   <div className="text-sm text-muted-foreground">
-                    {t('connectedSince')} {format(new Date(status.connectedSince), "PPP", { locale: dateLocale })}
+                    Conectado desde: {format(new Date(status.connectedSince), "PPP", { locale: es })}
                   </div>
                 )}
 
                 {status.tokenExpiry && !status.isExpired && (
                   <div className="text-sm text-muted-foreground">
-                    {t('tokenValid')} {format(new Date(status.tokenExpiry), "PPP 'a las' p", { locale: dateLocale })}
+                    Token válido hasta: {format(new Date(status.tokenExpiry), "PPP 'a las' p", { locale: es })}
                   </div>
                 )}
 
                 <div className="pt-2 space-y-2">
-                  <p className="text-sm font-medium">{t('whatSynced')}</p>
+                  <p className="text-sm font-medium">¿Qué está sincronizado?</p>
                   <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                    <li>{t('syncItem1')}</li>
-                    <li>{t('syncItem2')}</li>
-                    <li>{t('syncItem3')}</li>
+                    <li>Tareas con fecha y hora se crean automáticamente</li>
+                    <li>Bloques ocupados visibles para evitar conflictos</li>
+                    <li>Cambios se actualizan automáticamente</li>
                   </ul>
                 </div>
               </div>
@@ -157,12 +152,12 @@ export function GoogleCalendarSettings() {
                 {isDisconnecting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {t('disconnecting')}
+                    Desconectando...
                   </>
                 ) : (
                   <>
                     <Link2Off className="h-4 w-4 mr-2" />
-                    {t('disconnect')}
+                    Desconectar
                   </>
                 )}
               </Button>
@@ -172,12 +167,12 @@ export function GoogleCalendarSettings() {
           <>
             {showDetails && (
               <div className="space-y-2 animate-in fade-in duration-200">
-                <p className="text-sm font-medium">{t('benefits')}</p>
+                <p className="text-sm font-medium">Beneficios:</p>
                 <ul className="text-sm text-muted-foreground space-y-1 list-disc list-inside">
-                  <li>{t('benefitItem1')}</li>
-                  <li>{t('benefitItem2')}</li>
-                  <li>{t('benefitItem3')}</li>
-                  <li>{t('benefitItem4')}</li>
+                  <li>Visualiza tareas y eventos en un solo lugar</li>
+                  <li>Detecta conflictos de horarios automáticamente</li>
+                  <li>Sincronización bidireccional</li>
+                  <li>Ve bloques ocupados sin compartir detalles</li>
                 </ul>
               </div>
             )}
@@ -191,17 +186,17 @@ export function GoogleCalendarSettings() {
                 {isConnecting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    {t('connecting')}
+                    Conectando...
                   </>
                 ) : (
                   <>
                     <Link2 className="h-4 w-4 mr-2" />
-                    {t('connect')}
+                    Conectar
                   </>
                 )}
               </Button>
               <p className="text-xs text-muted-foreground mt-2 text-center">
-                {t('redirectMessage')}
+                Serás redirigido a Google
               </p>
             </div>
           </>

@@ -18,8 +18,10 @@ import { TemplateDialog } from "@/components/notes/TemplateDialog";
 import { EmptyNotes } from "@/components/notes/EmptyNotes";
 import { NoteTagSelector } from "@/components/notes/NoteTagSelector";
 import { NoteTaskPanel } from "@/components/notes/NoteTaskPanel";
+import { useTranslations } from "next-intl";
 
 export function NotesPageClient() {
+  const t = useTranslations('notes.dialogs');
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -1011,24 +1013,24 @@ export function NotesPageClient() {
       <DeleteDialog
         open={!!deleteFolderTarget}
         onOpenChange={(open) => !open && setDeleteFolderTarget(null)}
-        title="Eliminar carpeta"
-        description="¿Estás seguro de que quieres eliminar esta carpeta? Las notas dentro se moverán a 'Sin carpeta'."
+        title={t('deleteFolderTitle')}
+        description={t('deleteFolderDescription')}
         onConfirm={handleDeleteFolder}
       />
 
       <DeleteDialog
         open={deleteNoteOpen}
         onOpenChange={setDeleteNoteOpen}
-        title="Eliminar nota"
-        description="¿Estás seguro de que quieres eliminar esta nota? Esta acción no se puede deshacer."
+        title={t('deleteNoteTitle')}
+        description={t('deleteNoteDescription')}
         onConfirm={handleDeleteNote}
       />
 
       <DeleteDialog
         open={!!sidebarDeleteNoteId}
         onOpenChange={(open) => !open && setSidebarDeleteNoteId(null)}
-        title="Eliminar nota"
-        description="¿Estás seguro de que quieres eliminar esta nota? Esta acción no se puede deshacer."
+        title={t('deleteNoteTitle')}
+        description={t('deleteNoteDescription')}
         onConfirm={handleSidebarDeleteNote}
       />
 

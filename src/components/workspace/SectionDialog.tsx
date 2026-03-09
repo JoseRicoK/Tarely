@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import * as LucideIcons from "lucide-react";
 import { Loader2, Trash2 } from "lucide-react";
 import type { WorkspaceSection } from "@/lib/types";
+import { useTranslations } from "next-intl";
 
 interface SectionDialogProps {
   open: boolean;
@@ -71,6 +72,7 @@ export function SectionDialog({
   section,
   onDelete,
 }: SectionDialogProps) {
+  const t = useTranslations('workspaceSection');
   const isEditMode = !!section;
   const [name, setName] = useState("");
   const [selectedIcon, setSelectedIcon] = useState("folder");
@@ -132,12 +134,11 @@ export function SectionDialog({
       <DialogContent className="sm:max-w-md">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>{isEditMode ? "Editar sección" : "Nueva sección"}</DialogTitle>
+            <DialogTitle>{isEditMode ? t('edit') : t('create')}</DialogTitle>
             <DialogDescription>
               {isEditMode 
-                ? "Modifica el nombre, icono o color de la sección."
-                : "Crea una nueva sección para organizar tus tareas."
-              }
+                ? t('edit')
+                : t('create')}
             </DialogDescription>
           </DialogHeader>
 
@@ -156,26 +157,26 @@ export function SectionDialog({
                   style={{ color: selectedColor } as React.CSSProperties}
                 />
                 <span className="font-medium" style={{ color: selectedColor }}>
-                  {name || "Nombre de sección"}
+                  {name || t('namePlaceholder')}
                 </span>
               </div>
             </div>
 
             {/* Name input */}
             <div className="space-y-2">
-              <Label htmlFor="section-name">Nombre</Label>
+              <Label htmlFor="section-name">{t('name')}</Label>
               <Input
                 id="section-name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ej: En progreso, Bloqueadas, Ideas..."
+                placeholder={t('namePlaceholder')}
                 maxLength={50}
               />
             </div>
 
             {/* Icon selector */}
             <div className="space-y-2">
-              <Label>Icono</Label>
+              <Label>{t('icon')}</Label>
               <ScrollArea className="h-32 border rounded-lg p-2">
                 <div className="grid grid-cols-8 gap-1">
                   {availableIcons.map((iconName) => {
@@ -201,7 +202,7 @@ export function SectionDialog({
 
             {/* Color selector */}
             <div className="space-y-2">
-              <Label>Color</Label>
+              <Label>{t('color')}</Label>
               <div className="grid grid-cols-7 gap-2">
                 {availableColors.map((color) => (
                   <button
@@ -231,7 +232,7 @@ export function SectionDialog({
               >
                 {isDeleting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
                 <Trash2 className="h-4 w-4 mr-2" />
-                Eliminar
+                {t('delete')}
               </Button>
             )}
             <Button
@@ -239,11 +240,11 @@ export function SectionDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancelar
+              {t('cancel')}
             </Button>
             <Button type="submit" disabled={!name.trim() || isSubmitting || isDeleting}>
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {isEditMode ? "Guardar cambios" : "Crear sección"}
+              {t('save')}
             </Button>
           </DialogFooter>
         </form>

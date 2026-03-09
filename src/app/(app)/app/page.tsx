@@ -10,7 +10,7 @@ import { Plus, FolderPlus, AlertTriangle, Circle, Calendar } from "lucide-react"
 import { toast } from "sonner";
 import { arrayMove } from "@dnd-kit/sortable";
 import { format, parseISO } from "date-fns";
-import { es } from "date-fns/locale";
+import { es, enUS } from "date-fns/locale";
 import {
   WorkspaceCard,
   WorkspaceDialog,
@@ -20,6 +20,7 @@ import {
 import { DeleteDialog } from "@/components/ui/delete-dialog";
 import { cn } from "@/lib/utils";
 import type { Workspace, Task } from "@/lib/types";
+import { useTranslations, useLocale } from "next-intl";
 
 interface OverdueTask extends Task {
   workspaceName: string;
@@ -27,6 +28,16 @@ interface OverdueTask extends Task {
 }
 
 export default function AppHomePage() {
+  const t = useTranslations('app');
+  const tWorkspace = useTranslations('app.workspace');
+  const tTask = useTranslations('app.task');
+  const tOverdue = useTranslations('app.overdueTasks');
+  const tNoWorkspaces = useTranslations('app.noWorkspaces');
+  const tDeleteDialog = useTranslations('app.deleteDialog');
+  const tErrors = useTranslations('errors');
+  const locale = useLocale();
+  const dateLocale = locale === 'en' ? enUS : es;
+  
   const router = useRouter();
   const qc = useQueryClient();
   const { invalidateWorkspacesOverview } = useInvalidators();
@@ -51,10 +62,10 @@ export default function AppHomePage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ workspaceIds }),
     }).catch(() => {
-      toast.error("Error al guardar el orden");
+      toast.error(tErrors('reorderError'));
       void invalidateWorkspacesOverview();
     });
-  }, [qc, data, invalidateWorkspacesOverview]);
+  }, [qc, data, invalidateWorkspacesOverview, tErrors]);
 
   const handleMoveWorkspace = useCallback((workspace: Workspace, direction: "left" | "right") => {
     const current = qc.getQueryData<typeof data>(queryKeys.workspacesOverview);
@@ -66,7 +77,6 @@ export default function AppHomePage() {
     reorderWorkspaces(arrayMove(current.workspaces, idx, newIndex));
   }, [qc, data, reorderWorkspaces]);
 
-  // Verificar si es primera vez (desde Supabase)
   useEffect(() => {
     const checkOnboarding = async () => {
       try {
@@ -124,7 +134,6 @@ export default function AppHomePage() {
       
       if (!res.ok) throw new Error("Error al actualizar tarea");
       
-      // Optimistic update
       qc.setQueryData(queryKeys.workspacesOverview, (prev: typeof data) => {
         if (!prev) return prev;
         return {
@@ -137,9 +146,9 @@ export default function AppHomePage() {
         };
       });
       
-      toast.success("Tarea completada");
+      toast.success(tTask('completed'));
     } catch {
-      toast.error("Error al completar la tarea");
+      toast.error(tTask('completeError'));
     }
   };
 
@@ -175,7 +184,7 @@ export default function AppHomePage() {
           body: JSON.stringify(data),
         });
         if (!res.ok) throw new Error("Error al crear workspace");
-        toast.success("Workspace creado correctamente");
+        toast.success(tWorkspace('created'));
       } else if (editingWorkspace) {
         const res = await fetch(`/api/workspaces/${editingWorkspace.id}`, {
           method: "PATCH",
@@ -183,15 +192,15 @@ export default function AppHomePage() {
           body: JSON.stringify(data),
         });
         if (!res.ok) throw new Error("Error al actualizar workspace");
-        toast.success("Workspace actualizado correctamente");
+        toast.success(tWorkspace('updated'));
       }
       setDialogOpen(false);
       await invalidateWorkspacesOverview();
     } catch {
       toast.error(
         dialogMode === "create"
-          ? "Error al crear el workspace"
-          : "Error al actualizar el workspace"
+          ? tWorkspace('createError')
+          : tWorkspace('updateError')
       );
     }
   };
@@ -204,11 +213,11 @@ export default function AppHomePage() {
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Error al eliminar workspace");
-      toast.success("Workspace eliminado correctamente");
+      toast.success(tWorkspace('deleted'));
       setDeleteDialogOpen(false);
       void invalidateWorkspacesOverview();
     } catch {
-      toast.error("Error al eliminar el workspace");
+      toast.error(tWorkspace('deleteError'));
     } finally {
       setIsDeleting(false);
     }
@@ -216,19 +225,18 @@ export default function AppHomePage() {
 
   return (
     <div className="space-y-6">
-      {/* Onboarding carousel */}
       {showOnboarding && <OnboardingCarousel onComplete={handleOnboardingComplete} />}
       
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Workspaces</h1>
+          <h1 className="text-3xl font-bold tracking-tight">{t('title')}</h1>
           <p className="text-muted-foreground mt-1">
-            Organiza tus proyectos y genera tareas con IA
+            {t('subtitle')}
           </p>
         </div>
         <Button onClick={handleCreate} size="lg" className="gap-2 btn-accent-gradient text-white">
           <Plus className="h-5 w-5" />
-          Nuevo Workspace
+          {t('newWorkspace')}
         </Button>
       </div>
 
@@ -239,14 +247,13 @@ export default function AppHomePage() {
           <div className="rounded-full bg-muted p-6 mb-4">
             <FolderPlus className="h-12 w-12 text-muted-foreground" />
           </div>
-          <h2 className="text-xl font-semibold mb-2">No hay workspaces</h2>
+          <h2 className="text-xl font-semibold mb-2">{tNoWorkspaces('title')}</h2>
           <p className="text-muted-foreground mb-6 max-w-md">
-            Crea tu primer workspace para empezar a organizar tus tareas y
-            generar nuevas ideas con ayuda de la IA.
+            {tNoWorkspaces('description')}
           </p>
           <Button onClick={handleCreate} size="lg" className="gap-2 btn-accent-gradient text-white">
             <Plus className="h-5 w-5" />
-            Crear mi primer workspace
+            {t('createFirst')}
           </Button>
         </div>
       ) : (
@@ -266,12 +273,10 @@ export default function AppHomePage() {
         </div>
       )}
 
-      {/* Separador visual */}
       {!isLoading && workspaces.length > 0 && overdueTasks.length > 0 && (
         <div className="py-2" />
       )}
 
-      {/* Sección de tareas vencidas */}
       {!isLoading && overdueTasks.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center gap-3">
@@ -279,9 +284,9 @@ export default function AppHomePage() {
               <AlertTriangle className="h-5 w-5 text-red-500" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold">Tareas vencidas</h2>
+              <h2 className="text-xl font-semibold">{tOverdue('title')}</h2>
               <p className="text-sm text-muted-foreground">
-                {overdueTasks.length} {overdueTasks.length === 1 ? "tarea pendiente" : "tareas pendientes"} con fecha límite pasada
+                {tOverdue(overdueTasks.length === 1 ? 'count_one' : 'count_other', { count: overdueTasks.length })}
               </p>
             </div>
           </div>
@@ -327,7 +332,9 @@ export default function AppHomePage() {
                       <div className="flex items-center gap-1 mt-2 text-xs text-red-500">
                         <Calendar className="h-3 w-3" />
                         <span>
-                          Venció {format(parseISO(task.dueDate), "d 'de' MMMM", { locale: es })}
+                          {tOverdue('expired', { 
+                            date: format(parseISO(task.dueDate), locale === 'en' ? "MMMM d" : "d 'de' MMMM", { locale: dateLocale })
+                          })}
                         </span>
                       </div>
                     )}
@@ -345,7 +352,7 @@ export default function AppHomePage() {
                 className="gap-2"
               >
                 <Calendar className="h-4 w-4" />
-                Ver todas las tareas ({overdueTasks.length})
+                {tOverdue('viewAll', { count: overdueTasks.length })}
               </Button>
             </div>
           )}
@@ -375,16 +382,8 @@ export default function AppHomePage() {
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}
-        title="⚠️ ¿Eliminar workspace permanentemente?"
-        description={`Estás a punto de eliminar el workspace "${deletingWorkspace?.name}".
-
-Se eliminarán permanentemente:
-• Todas las tareas del workspace
-• Todas las secciones personalizadas
-• Todos los comentarios y subtareas
-• Todas las configuraciones e instrucciones
-
-⚠️ Esta acción no se puede deshacer.`}
+        title={tDeleteDialog('title')}
+        description={tDeleteDialog('description', { name: deletingWorkspace?.name || '' })}
       />
     </div>
   );

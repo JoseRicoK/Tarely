@@ -77,6 +77,7 @@ import { TaskAssignees } from "./TaskAssignees";
 import { SubtaskList } from "./SubtaskList";
 import { RecurrenceBadge } from "./RecurrenceSelector";
 import { TagSelector } from "./TagSelector";
+import { useTranslations } from "next-intl";
 
 interface TaskCardProps {
   task: Task;
@@ -104,13 +105,7 @@ function getImportanceColor(importance: number): string {
   return "bg-slate-500/10 text-slate-500 border-slate-500/20";
 }
 
-function getImportanceLabel(importance: number): string {
-  if (importance >= 9) return "Crítica";
-  if (importance >= 7) return "Alta";
-  if (importance >= 5) return "Media";
-  if (importance >= 3) return "Baja";
-  return "Muy baja";
-}
+// getImportanceLabel se movió al componente para usar traducciones
 
 // --------------------------------------------------------------------------
 // Module-level popup state — shared across ALL TaskCard instances on screen.
@@ -145,6 +140,7 @@ export function TaskCard({
   onTagsChange,
   onQuickDelete,
 }: TaskCardProps) {
+  const t = useTranslations('tasks');
   const router = useRouter();
   const [isGeneratingSubtasks, setIsGeneratingSubtasks] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -171,6 +167,13 @@ export function TaskCard({
   });
 
   const importanceColor = getImportanceColor(task.importance);
+  const getImportanceLabel = (importance: number): string => {
+    if (importance >= 9) return t('importance.critical');
+    if (importance >= 7) return t('importance.high');
+    if (importance >= 5) return t('importance.medium');
+    if (importance >= 3) return t('importance.low');
+    return t('importance.veryLow');
+  };
   const importanceLabel = getImportanceLabel(task.importance);
 
   // Navegar a la página de detalle de la tarea
@@ -205,10 +208,10 @@ export function TaskCard({
       const data = await res.json();
       if (data.subtasks) {
         onSubtasksChange(task.id, [...(task.subtasks || []), ...data.subtasks]);
-        toast.success(`${data.subtasks.length} subtareas generadas`);
+        toast.success(t('subtasksGenerated', { count: data.subtasks.length }));
       }
     } catch {
-      toast.error("Error al generar subtareas");
+      toast.error(t('generateSubtasksError'));
     } finally {
       setIsGeneratingSubtasks(false);
     }
@@ -269,7 +272,7 @@ export function TaskCard({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{task.completed ? "Marcar como pendiente" : "Completar tarea"}</p>
+              <p>{task.completed ? t('markAsPending') : t('completeTask')}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -292,7 +295,7 @@ export function TaskCard({
                   </DropdownMenuTrigger>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Mover a sección</p>
+                  <p>{t('moveToSection')}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -334,7 +337,7 @@ export function TaskCard({
           >
             <FileText className="h-3.5 w-3.5 md:h-4 md:w-4 text-purple-600 dark:text-purple-400 shrink-0" />
             <div className="flex-1 min-w-0">
-              <span className="text-[10px] md:text-xs font-semibold text-purple-700 dark:text-purple-300 block">Nota Vinculada</span>
+              <span className="text-[10px] md:text-xs font-semibold text-purple-700 dark:text-purple-300 block">{t('linkedNote')}</span>
             </div>
             <ExternalLink className="h-2.5 w-2.5 md:h-3 md:w-3 text-purple-600 dark:text-purple-400 shrink-0" />
           </div>
@@ -350,7 +353,7 @@ export function TaskCard({
                   <div className="h-2 w-2 rounded-full bg-blue-500 mt-1 md:mt-1.5 flex-shrink-0 animate-pulse" />
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p className="text-xs">Tarea recién creada</p>
+                  <p className="text-xs">{t('newTask')}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -389,7 +392,7 @@ export function TaskCard({
                   </Badge>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Importancia: {task.importance} de 10</p>
+                  <p>{t('importance.label')}: {task.importance} {t('importance.of')} 10</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
@@ -500,7 +503,7 @@ export function TaskCard({
         {task.completed && hasSubtasks && (
           <div className="mt-2 text-xs text-muted-foreground flex items-center gap-1">
             <Check className="h-3 w-3" />
-            {task.subtasks?.filter(s => s.completed).length}/{task.subtasks?.length} subtareas
+            {task.subtasks?.filter(s => s.completed).length}/{task.subtasks?.length} {t('subtasks')}
           </div>
         )}
       </div>
@@ -524,11 +527,11 @@ export function TaskCard({
                   }}
                 >
                   <RotateCcw className="h-4 w-4" />
-                  <span className="sr-only">Restaurar</span>
+                  <span className="sr-only">{t('restore')}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Restaurar tarea</p>
+                <p>{t('restoreTask')}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -551,11 +554,11 @@ export function TaskCard({
                   ) : (
                     <ListChecks className="h-4 w-4" />
                   )}
-                  <span className="sr-only">Generar subtareas</span>
+                  <span className="sr-only">{t('generateSubtasks')}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Generar subtareas con IA</p>
+                <p>{t('generateSubtasksWithAI')}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -573,11 +576,11 @@ export function TaskCard({
                   onClick={() => onQuickDelete(task)}
                 >
                   <Trash2 className="h-4 w-4" />
-                  <span className="sr-only">Eliminar</span>
+                  <span className="sr-only">{t('delete')}</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>Eliminar tarea</p>
+                <p>{t('deleteTask')}</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -594,7 +597,7 @@ export function TaskCard({
               onPointerDown={(e) => e.stopPropagation()}
             >
               <MoreVertical className="h-4 w-4" />
-              <span className="sr-only">Opciones</span>
+              <span className="sr-only">{t('options')}</span>
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
@@ -602,17 +605,17 @@ export function TaskCard({
               <>
                 <DropdownMenuItem onClick={() => onEdit(task)}>
                   <Pencil className="mr-2 h-4 w-4" />
-                  Editar
+                  {t('edit')}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => onGeneratePrompt(task)}>
                   <Wand2 className="mr-2 h-4 w-4" />
-                  Generar prompt IDE
+                  {t('generatePrompt')}
                 </DropdownMenuItem>
               </>
             )}
             <DropdownMenuItem onClick={handleNavigateToTask}>
               <ExternalLink className="mr-2 h-4 w-4" />
-              Ver detalles
+              {t('viewDetails')}
             </DropdownMenuItem>
             {/* Asignar - visible solo en móvil */}
             {!task.completed && onAssigneesChange && (
@@ -621,7 +624,7 @@ export function TaskCard({
                 className="md:hidden"
               >
                 <UserPlus className="mr-2 h-4 w-4" />
-                Asignar
+                {t('assign')}
               </DropdownMenuItem>
             )}
             {/* Fecha - visible solo en móvil */}
@@ -631,7 +634,7 @@ export function TaskCard({
                 className="md:hidden"
               >
                 <CalendarIcon className="mr-2 h-4 w-4" />
-                Fecha límite
+                {t('dueDate')}
               </DropdownMenuItem>
             )}
             {/* Etiquetas - visible solo en móvil */}
@@ -641,7 +644,7 @@ export function TaskCard({
                 className="md:hidden"
               >
                 <Tag className="mr-2 h-4 w-4" />
-                Etiquetas
+                {t('tags')}
               </DropdownMenuItem>
             )}
             {/* Generar subtareas - visible en dropdown en móvil */}
@@ -656,7 +659,7 @@ export function TaskCard({
                 ) : (
                   <ListChecks className="mr-2 h-4 w-4" />
                 )}
-                Generar subtareas
+                {t('generateSubtasks')}
               </DropdownMenuItem>
             )}
             {/* Completar/Restaurar - visible en dropdown en móvil */}
@@ -669,7 +672,7 @@ export function TaskCard({
               ) : (
                 <Check className="mr-2 h-4 w-4" />
               )}
-              {task.completed ? "Restaurar" : "Completar"}
+              {task.completed ? t('restore') : t('complete')}
             </DropdownMenuItem>
             {/* Submenú Mover a sección */}
             {sections.length > 0 && onMoveToSection && (
@@ -678,7 +681,7 @@ export function TaskCard({
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
                     <MoveRight className="mr-2 h-4 w-4" />
-                    Mover a
+                    {t('moveTo')}
                   </DropdownMenuSubTrigger>
                   <DropdownMenuSubContent>
                     {sections.map((section) => {
@@ -712,7 +715,7 @@ export function TaskCard({
               className="text-destructive focus:text-destructive"
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Eliminar
+              {t('delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

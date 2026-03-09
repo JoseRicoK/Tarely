@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/popover";
 import { Search, ArrowUpDown, SortAsc, SortDesc, Tag, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export type SortField = "importance" | "createdAt";
 export type SortOrder = "asc" | "desc";
@@ -66,14 +67,15 @@ export function TaskFilters({
   selectedTagIds = [],
   onSelectedTagsChange,
 }: TaskFiltersProps) {
+  const t = useTranslations('taskFilters');
   const sortLabel =
     sortField === "importance"
       ? sortOrder === "desc"
-        ? "Más importante primero"
-        : "Menos importante primero"
+        ? t("moreImportantFirst")
+        : t("lessImportantFirst")
       : sortOrder === "desc"
-      ? "Más reciente primero"
-      : "Más antiguo primero";
+      ? t("newestFirst")
+      : t("oldestFirst");
 
   const toggleTag = (tagId: string) => {
     if (!onSelectedTagsChange) return;
@@ -91,7 +93,7 @@ export function TaskFilters({
       <div className="relative flex-1">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Buscar tareas..."
+          placeholder={t('searchPlaceholder')}
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           className="pl-9 h-10 md:h-10 text-sm md:text-base bg-background/95 backdrop-blur-sm border-border/50"
@@ -111,7 +113,7 @@ export function TaskFilters({
             >
               <Tag className="h-4 w-4" />
               <span className="hidden md:inline">
-                {hasTagFilter ? `${selectedTagIds.length} etiqueta${selectedTagIds.length > 1 ? "s" : ""}` : "Etiquetas"}
+                {hasTagFilter ? t('tagsCount', { count: selectedTagIds.length }) : t('tags')}
               </span>
               {hasTagFilter && (
                 <span className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-ta text-[10px] text-white flex items-center justify-center font-medium md:hidden">
@@ -171,7 +173,7 @@ export function TaskFilters({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>Ordenar por</DropdownMenuLabel>
+          <DropdownMenuLabel>{t('sortBy')}</DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuRadioGroup
             value={`${sortField}-${sortOrder}`}
@@ -182,20 +184,20 @@ export function TaskFilters({
           >
             <DropdownMenuRadioItem value="importance-desc">
               <SortDesc className="mr-2 h-4 w-4" />
-              Más importante primero
+              {t('moreImportantFirst')}
             </DropdownMenuRadioItem>
             <DropdownMenuRadioItem value="importance-asc">
               <SortAsc className="mr-2 h-4 w-4" />
-              Menos importante primero
+              {t('lessImportantFirst')}
             </DropdownMenuRadioItem>
             <DropdownMenuSeparator />
             <DropdownMenuRadioItem value="createdAt-desc">
               <SortDesc className="mr-2 h-4 w-4" />
-              Más reciente primero
+              {t('newestFirst')}
             </DropdownMenuRadioItem>
             <DropdownMenuRadioItem value="createdAt-asc">
               <SortAsc className="mr-2 h-4 w-4" />
-              Más antiguo primero
+              {t('oldestFirst')}
             </DropdownMenuRadioItem>
           </DropdownMenuRadioGroup>
         </DropdownMenuContent>

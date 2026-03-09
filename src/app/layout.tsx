@@ -4,6 +4,9 @@ import "./globals.css";
 import { GoogleAnalytics } from "@/components/google-analytics";
 import { CookieBanner } from "@/components/cookie-banner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { NextIntlClientProvider } from 'next-intl';
+import { getMessages } from 'next-intl/server';
+import { getUserLocale } from '@/lib/locale';
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,19 +40,24 @@ export const metadata: Metadata = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getUserLocale();
+  const messages = await getMessages();
+
   return (
-    <html lang="es" className="dark" suppressHydrationWarning data-scroll-behavior="smooth">
+    <html lang={locale} className="dark" suppressHydrationWarning data-scroll-behavior="smooth">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen relative`}
       >
-        <ThemeProvider>
-          {children}
-        </ThemeProvider>
+        <NextIntlClientProvider messages={messages} locale={locale}>
+          <ThemeProvider>
+            {children}
+          </ThemeProvider>
+        </NextIntlClientProvider>
         <GoogleAnalytics />
         <CookieBanner />
       </body>

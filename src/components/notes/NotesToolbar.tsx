@@ -27,6 +27,7 @@ import {
   DropdownMenuSubTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { useTranslations } from "next-intl";
 
 interface NotesToolbarProps {
   note: Note;
@@ -57,6 +58,8 @@ export function NotesToolbar({
   onLinkTask,
   saving,
 }: NotesToolbarProps) {
+  const t = useTranslations('notes.toolbar');
+  
   return (
     <div className="flex items-center gap-2 px-3 sm:px-4 md:px-5 py-3 md:py-2.5 border-b border-border/30 bg-background/60 backdrop-blur-sm">
       {/* Breadcrumb - Hidden on mobile, visible on tablet+ */}
@@ -76,11 +79,11 @@ export function NotesToolbar({
         )}
         <span className="text-muted-foreground/30 select-none">/</span>
         <span className="truncate font-medium text-foreground/90">
-          {note.title || "Sin título"}
+          {note.title || t('untitled')}
         </span>
         {saving && (
           <span className="text-xs text-muted-foreground/50 animate-pulse ml-2 shrink-0">
-            Guardando...
+            {t('saving')}
           </span>
         )}
       </div>
@@ -89,7 +92,7 @@ export function NotesToolbar({
       <div className="sm:hidden flex-1 min-w-0">
         {saving && (
           <span className="text-xs text-muted-foreground/50 animate-pulse">
-            Guardando...
+            {t('saving')}
           </span>
         )}
       </div>
@@ -117,7 +120,7 @@ export function NotesToolbar({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{note.isPinned ? "Desanclar" : "Anclar"}</p>
+            <p>{note.isPinned ? t('unpin') : t('pin')}</p>
           </TooltipContent>
         </Tooltip>
 
@@ -137,7 +140,7 @@ export function NotesToolbar({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>{note.isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}</p>
+            <p>{note.isFavorite ? t('removeFromFavorites') : t('addToFavorites')}</p>
           </TooltipContent>
         </Tooltip>
 
@@ -149,7 +152,7 @@ export function NotesToolbar({
             onClick={onLinkTask}
           >
             <ListTodo className="h-3.5 w-3.5" />
-            <span className="text-sm font-semibold hidden sm:inline">Crear tarea</span>
+            <span className="text-sm font-semibold hidden sm:inline">{t('createTask')}</span>
           </Button>
         )}
 
@@ -223,7 +226,7 @@ export function NotesToolbar({
             </Button>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Imprimir nota</p>
+            <p>{t('printNote')}</p>
           </TooltipContent>
         </Tooltip>
 
@@ -238,7 +241,7 @@ export function NotesToolbar({
               </DropdownMenuTrigger>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Más opciones</p>
+              <p>{t('moreOptions')}</p>
             </TooltipContent>
           </Tooltip>
           <DropdownMenuContent align="end" className="w-56">
@@ -246,11 +249,11 @@ export function NotesToolbar({
             <div className="xs:hidden">
               <DropdownMenuItem onClick={onTogglePin} className="cursor-pointer min-h-[44px]">
                 <Pin className={cn("mr-2 h-4 w-4", note.isPinned && "fill-current")} />
-                {note.isPinned ? "Desanclar" : "Anclar"}
+                {note.isPinned ? t('unpin') : t('pin')}
               </DropdownMenuItem>
               <DropdownMenuItem onClick={onToggleFavorite} className="cursor-pointer min-h-[44px]">
                 <Star className={cn("mr-2 h-4 w-4", note.isFavorite && "fill-current")} />
-                {note.isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
+                {note.isFavorite ? t('removeFromFavorites') : t('addToFavorites')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
             </div>
@@ -259,11 +262,11 @@ export function NotesToolbar({
             <DropdownMenuSub>
               <DropdownMenuSubTrigger className="cursor-pointer min-h-[44px] md:min-h-[36px]">
                 <FolderInput className="mr-2 h-4 w-4" />
-                Mover a carpeta
+                {t('moveToFolder')}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent className="max-h-64 overflow-y-auto">
                 <DropdownMenuItem onClick={() => onMoveToFolder(null)} className="cursor-pointer min-h-[44px] md:min-h-[36px]">
-                  Sin carpeta
+                  {t('noFolder')}
                 </DropdownMenuItem>
                 {folders.map((folder) => (
                   <DropdownMenuItem
@@ -280,18 +283,18 @@ export function NotesToolbar({
             {onLinkTask && !note.taskId && (
               <DropdownMenuItem onClick={onLinkTask} className="cursor-pointer min-h-[44px] md:min-h-[36px]">
                 <ListTodo className="mr-2 h-4 w-4" />
-                Vincular a tarea
+                {t('linkToTask')}
               </DropdownMenuItem>
             )}
 
             <DropdownMenuItem onClick={onDuplicate} className="cursor-pointer min-h-[44px] md:min-h-[36px]">
               <Copy className="mr-2 h-4 w-4" />
-              Duplicar
+              {t('duplicate')}
             </DropdownMenuItem>
 
             <DropdownMenuItem onClick={onSaveAsTemplate} className="cursor-pointer min-h-[44px] md:min-h-[36px]">
               <Download className="mr-2 h-4 w-4" />
-              Guardar como plantilla
+              {t('saveAsTemplate')}
             </DropdownMenuItem>
 
             <DropdownMenuSeparator />
@@ -301,7 +304,7 @@ export function NotesToolbar({
               className="cursor-pointer text-destructive focus:text-destructive min-h-[44px] md:min-h-[36px]"
             >
               <Trash2 className="mr-2 h-4 w-4" />
-              Eliminar
+              {t('delete')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

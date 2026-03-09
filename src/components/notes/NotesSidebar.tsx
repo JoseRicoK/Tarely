@@ -44,6 +44,8 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+import { useTranslations } from "next-intl";
 import type { NoteFolder, Note, NoteTemplate, Workspace, WorkspaceTag } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -153,6 +155,7 @@ function FolderItem({
   onDragOverFolder: (folderId: string | null) => void;
   onDeleteNote?: (noteId: string) => void;
 }) {
+  const t = useTranslations('notes');
   const isSelected = selectedFolderId === folder.id;
   const allFolderNotes = notes.filter((n) => n.folderId === folder.id);
   const folderNotes = hideCompleted ? allFolderNotes.filter(n => !n.completed) : allFolderNotes;
@@ -212,23 +215,23 @@ function FolderItem({
           <DropdownMenuContent align="end" className="w-52">
             <DropdownMenuItem onClick={() => onCreateNote(folder.id)} className="gap-2">
               <FilePlus className="h-4 w-4" />
-              Nueva nota aquí
+              {t('newNoteHere')}
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onCreateFolder(folder.id)} className="gap-2">
               <FolderPlus className="h-4 w-4" />
-              Nueva subcarpeta
+              {t('newSubfolder')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => onRenameFolder(folder)} className="gap-2">
               <Pencil className="h-4 w-4" />
-              Renombrar
+              {t('rename')}
             </DropdownMenuItem>
             <DropdownMenuItem
               onClick={() => onDeleteFolder(folder)}
               className="gap-2 text-destructive focus:text-destructive"
             >
               <Trash2 className="h-4 w-4" />
-              Eliminar
+              {t('deleteFolder')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
@@ -327,6 +330,7 @@ export function NotesSidebar({
   onTagFilterChange,
   noteTagCounts = {},
 }: NotesSidebarProps) {
+  const t = useTranslations('notes');
   const [searchQuery, setSearchQuery] = useState("");
   const [tagsCollapsed, setTagsCollapsed] = useState(false);
   const [dragOverFolderId, setDragOverFolderId] = useState<string | null>(null);
@@ -485,7 +489,7 @@ export function NotesSidebar({
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50" />
           <Input
-            placeholder="Buscar notas..."
+            placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => handleSearch(e.target.value)}
             className="h-8 pl-8 text-sm bg-background/95 backdrop-blur-sm border-border/50 focus:border-border/60"
@@ -498,9 +502,9 @@ export function NotesSidebar({
           className="h-7 w-full justify-start gap-2 text-xs text-muted-foreground hover:text-foreground"
         >
           {hideCompleted ? (
-            <><EyeOff className="h-3.5 w-3.5" /> Mostrar completadas</>
+            <><EyeOff className="h-3.5 w-3.5" /> {t('showCompleted')}</>
           ) : (
-            <><Eye className="h-3.5 w-3.5" /> Ocultar completadas</>
+            <><Eye className="h-3.5 w-3.5" /> {t('hideCompleted')}</>
           )}
         </Button>
       </div>
@@ -515,7 +519,7 @@ export function NotesSidebar({
             className="flex-1 h-10 sm:h-9 gap-2 active:scale-95 transition-transform"
           >
             <FilePlus className="h-4 w-4" />
-            <span className="text-sm">Nueva nota</span>
+            <span className="text-sm">{t('newNote')}</span>
           </Button>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -529,7 +533,7 @@ export function NotesSidebar({
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Nueva carpeta</p>
+              <p>{t('newFolder')}</p>
             </TooltipContent>
           </Tooltip>
           <Tooltip>
@@ -587,7 +591,7 @@ export function NotesSidebar({
           {/* Folders */}
           <div className="mt-3 mb-1">
             <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em]">
-              Carpetas
+              {t('folders')}
             </div>
           </div>
           {folderTree.map((folder) => (
@@ -615,7 +619,7 @@ export function NotesSidebar({
           ))}
           {folderTree.length === 0 && (
             <div className="px-3 py-3 text-xs text-muted-foreground/40 text-center">
-              Sin carpetas todavía
+              {t('noFoldersYet')}
             </div>
           )}
 
@@ -640,7 +644,7 @@ export function NotesSidebar({
               }}
             >
               <div className="px-2 py-1 text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em]">
-                Sin carpeta
+                {t('noFolder')}
               </div>
               {rootNotes.map((note) => (
                 <div
@@ -666,12 +670,12 @@ export function NotesSidebar({
                   <span className={cn(
                     "truncate flex-1 min-w-0",
                     note.completed && "line-through opacity-70"
-                  )}>{note.title || "Sin título"}</span>
+                  )}>{note.title || t('untitled')}</span>
                   {note.isPinned && <Pin className="h-3 w-3 shrink-0 text-muted-foreground/40" />}
                   <button
                     onClick={(e) => { e.stopPropagation(); onDeleteNote?.(note.id); }}
                     className="shrink-0 opacity-0 group-hover:opacity-100 p-0.5 rounded text-muted-foreground/40 hover:text-destructive transition-all"
-                    title="Eliminar nota"
+                    title={t('deleteNote')}
                   >
                     <Trash2 className="h-3 w-3" />
                   </button>
@@ -693,7 +697,7 @@ export function NotesSidebar({
             >
               <Tag className="h-3.5 w-3.5 text-muted-foreground/50" />
               <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em] flex-1 text-left">
-                Etiquetas
+                {t('tags')}
               </span>
               <ChevronDown className={cn(
                 "h-3.5 w-3.5 text-muted-foreground/40 transition-transform",
@@ -746,19 +750,19 @@ export function NotesSidebar({
           <div className="flex items-center gap-2 px-2 py-1 mb-1">
             <Layout className="h-3.5 w-3.5 text-muted-foreground/50" />
             <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-[0.15em] flex-1">
-              Plantillas
+              {t('templates')}
             </span>
             <Tooltip>
               <TooltipTrigger asChild>
                 <button
                   className="p-0.5 rounded text-muted-foreground/40 hover:text-muted-foreground hover:bg-accent/40 transition-colors"
                   onClick={onOpenTemplates}
-                  title="Gestionar plantillas"
+                  title={t('manageTemplates')}
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </button>
               </TooltipTrigger>
-              <TooltipContent>Crear o usar plantilla</TooltipContent>
+              <TooltipContent>{t('createOrUseTemplate')}</TooltipContent>
             </Tooltip>
           </div>
 
@@ -779,7 +783,7 @@ export function NotesSidebar({
               onClick={onOpenTemplates}
             >
               <Plus className="h-3.5 w-3.5 shrink-0" />
-              <span>Crear plantilla</span>
+              <span>{t('createTemplate')}</span>
             </div>
           )}
 
@@ -788,7 +792,7 @@ export function NotesSidebar({
               className="w-full px-3 py-1.5 text-xs text-muted-foreground/50 hover:text-muted-foreground text-center rounded-lg hover:bg-accent/40 transition-colors mt-1"
               onClick={onOpenTemplates}
             >
-              Ver todas ({templates.length})
+              {t('viewAll', { count: templates.length })}
             </button>
           )}
         </div>

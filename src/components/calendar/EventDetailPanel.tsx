@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { Task, Workspace } from '@/lib/types';
+import { useTranslations } from 'next-intl';
 
 export interface SelectedCalendarEvent {
   type: 'task' | 'google';
@@ -44,6 +45,7 @@ export function EventDetailPanel({
   onTaskToggle,
   onTaskUpdate,
 }: EventDetailPanelProps) {
+  const t = useTranslations('calendar.eventDetail');
   const router = useRouter();
   const [toggling, setToggling] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -113,7 +115,7 @@ export function EventDetailPanel({
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              {event.type === 'task' ? 'Tarea' : 'Evento'}
+              {event.type === 'task' ? t('task') : t('event')}
             </span>
             <div className="flex items-center gap-1">
               {event.type === 'task' && onTaskUpdate && !isEditing && (
@@ -122,7 +124,7 @@ export function EventDetailPanel({
                   size="icon"
                   className="h-6 w-6 text-muted-foreground hover:text-foreground"
                   onClick={() => setIsEditing(true)}
-                  title="Editar tarea"
+                  title={t('edit')}
                 >
                   <Pencil className="h-3 w-3" />
                 </Button>
@@ -134,7 +136,7 @@ export function EventDetailPanel({
                     size="icon"
                     className="h-6 w-6 text-muted-foreground hover:text-foreground"
                     onClick={handleCancelEdit}
-                    title="Cancelar"
+                    title={t('cancel')}
                   >
                     <RotateCcw className="h-3 w-3" />
                   </Button>
@@ -144,7 +146,7 @@ export function EventDetailPanel({
                     className="h-6 w-6 text-emerald-500 hover:text-emerald-400"
                     onClick={handleSave}
                     disabled={saving}
-                    title="Guardar"
+                    title={t('save')}
                   >
                     <Check className="h-3.5 w-3.5" />
                   </Button>
@@ -222,7 +224,7 @@ export function EventDetailPanel({
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                        Importancia
+                        {t('importance')}
                       </span>
                       <span className={cn(
                         "text-[10px] font-bold px-1.5 py-0.5 rounded",
@@ -257,7 +259,7 @@ export function EventDetailPanel({
                         <>
                           <div className="flex items-center justify-between">
                             <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                              Importancia
+                              {t('importance')}
                             </span>
                             <span className={cn(
                               "text-[10px] font-bold px-1.5 py-0.5 rounded",
@@ -289,13 +291,13 @@ export function EventDetailPanel({
                 {isEditing ? (
                   <div className="space-y-1">
                     <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                      Descripción
+                      {t('description')}
                     </span>
                     <textarea
                       value={editDescription}
                       onChange={e => setEditDescription(e.target.value)}
                       rows={3}
-                      placeholder="Añadir descripción…"
+                      placeholder={t('descriptionPlaceholder')}
                       className="w-full bg-muted/30 border border-border/40 rounded px-2 py-1.5 text-xs outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 resize-none text-foreground placeholder:text-muted-foreground/50"
                     />
                   </div>
@@ -309,7 +311,7 @@ export function EventDetailPanel({
                 {!isEditing && event.task.subtasks && event.task.subtasks.length > 0 && (
                   <div className="space-y-1.5">
                     <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                      Subtareas ({event.task.subtasks.filter(s => s.completed).length}/{event.task.subtasks.length})
+                      {t('subtasks')} ({event.task.subtasks.filter(s => s.completed).length}/{event.task.subtasks.length})
                     </p>
                     {event.task.subtasks.map(sub => (
                       <div key={sub.id} className="flex items-center gap-2 text-xs">
@@ -328,7 +330,7 @@ export function EventDetailPanel({
                 {/* Overdue warning */}
                 {!isEditing && !event.task.completed && isPast(event.end) && (
                   <div className="text-[11px] text-red-400 bg-red-500/10 rounded-md px-3 py-2">
-                    Vencida {formatDistanceToNow(event.end, { locale: es, addSuffix: true })}
+                    {t('overdue')} {formatDistanceToNow(event.end, { locale: es, addSuffix: true })}
                   </div>
                 )}
 
@@ -338,10 +340,11 @@ export function EventDetailPanel({
                     className="w-full h-8 text-xs"
                     variant="outline"
                     size="sm"
-                    onClick={() => router.push(`/notes?noteId=${event.task!.noteId}`)}
+                    onClick={() => router.push(`/workspace/${event.workspace?.id}/task/${event.task?.id}`)}
+                    title={t('openInWorkspace')}
                   >
                     <FileText className="h-3.5 w-3.5 mr-2" />
-                    Ver nota vinculada
+                    {t('viewLinkedNote')}
                   </Button>
                 )}
 
@@ -349,10 +352,10 @@ export function EventDetailPanel({
                 {isEditing ? (
                   <div className="flex gap-2 pt-1">
                     <Button className="flex-1 h-8 text-xs" variant="outline" size="sm" onClick={handleCancelEdit}>
-                      Cancelar
+                      {t('cancel')}
                     </Button>
                     <Button className="flex-1 h-8 text-xs" size="sm" disabled={saving} onClick={handleSave}>
-                      {saving ? 'Guardando…' : 'Guardar'}
+                      {saving ? t('saving') : t('save')}
                     </Button>
                   </div>
                 ) : (
@@ -362,12 +365,12 @@ export function EventDetailPanel({
                     size="sm"
                     disabled={toggling}
                     onClick={handleToggle}
+                    title={event.task.completed ? t('restore') : t('complete')}
                   >
-                    {event.task.completed ? (
-                      <><Circle className="h-3.5 w-3.5 mr-2" />Marcar como pendiente</>
-                    ) : (
-                      <><CheckCircle2 className="h-3.5 w-3.5 mr-2" />Completar tarea</>
-                    )}
+                    {event.task.completed
+                      ? <><Circle className="h-3.5 w-3.5 mr-2" />{t('markAsPending')}</>
+                      : <><CheckCircle2 className="h-3.5 w-3.5 mr-2" />{t('completeTask')}</>
+                    }
                   </Button>
                 )}
               </>
@@ -397,7 +400,7 @@ export function EventDetailPanel({
                   <Button variant="outline" size="sm" className="w-full h-8 text-xs" asChild>
                     <a href={event.googleEvent.htmlLink} target="_blank" rel="noopener noreferrer">
                       <ExternalLink className="h-3.5 w-3.5 mr-2" />
-                      Abrir en Google Calendar
+                      {t('openInGoogleCalendar')}
                     </a>
                   </Button>
                 )}
@@ -410,13 +413,13 @@ export function EventDetailPanel({
           {/* Upcoming tasks panel */}
           <div className="px-4 py-3 border-b border-border/20">
             <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Próximas tareas
+              {t('upcomingTasks')}
             </span>
           </div>
           <div className="flex-1 overflow-y-auto">
             {upcomingTasks.length === 0 ? (
               <div className="p-4 text-xs text-muted-foreground/60 text-center mt-8">
-                No hay tareas con fecha próximas
+                {t('noUpcomingTasks')}
               </div>
             ) : (
               <div className="divide-y divide-border/10">
@@ -444,7 +447,7 @@ export function EventDetailPanel({
                               isOverdue ? "text-red-400" : "text-muted-foreground/60"
                             )}>
                               {isOverdue
-                                ? `Vencida ${formatDistanceToNow(due, { locale: es, addSuffix: true })}`
+                                ? `${t('overdue')} ${formatDistanceToNow(due, { locale: es, addSuffix: true })}`
                                 : format(due, "d MMM, h:mm a", { locale: es })
                               }
                             </p>

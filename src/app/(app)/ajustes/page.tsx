@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Loader2, LogOut, ArrowLeft, Check, Sun, Moon, Palette, FileText, Shield, Trash2, AlertTriangle, Link2, Info, CheckCircle2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +30,7 @@ import { lazy, Suspense } from "react";
 import { GoogleCalendarSettings } from "@/components/calendar/GoogleCalendarSettings";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 import { createClient } from "@/lib/supabase/client";
+import { LanguageSelector } from "@/components/settings/LanguageSelector";
 
 const FeedbackPanel = lazy(() => import("@/components/workspace").then(m => ({ default: m.FeedbackPanel })));
 
@@ -42,6 +44,7 @@ const ACCENT_COLORS: { value: AccentColor; label: string; color: string }[] = [
 ];
 
 function ThemeSettingsSection() {
+  const t = useTranslations('settings.appearance');
   const { theme, setTheme } = useTheme();
   const { accentColor, setAccentColor } = useAccentColor();
   const [saving, setSaving] = useState(false);
@@ -85,14 +88,13 @@ function ThemeSettingsSection() {
       <div className="relative bg-background/60 backdrop-blur-xl border border-border rounded-2xl p-6 shadow-xl">
         <div className="flex items-center gap-2 mb-1">
           <Palette className="h-5 w-5 text-ta-light" />
-          <h2 className="font-semibold">Apariencia</h2>
+          <h2 className="font-semibold">{t('title')}</h2>
           {saving && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground ml-auto" />}
         </div>
-        <p className="text-sm text-muted-foreground mb-5">Personaliza el aspecto de tu espacio de trabajo</p>
+        <p className="text-sm text-muted-foreground mb-5">{t('description')}</p>
 
-        {/* Modo claro / oscuro */}
         <div className="mb-5">
-          <Label className="text-sm font-medium mb-3 block">Modo</Label>
+          <Label className="text-sm font-medium mb-3 block">{t('mode')}</Label>
           {!mounted ? (
             <div className="grid grid-cols-2 gap-2">
               <div className="h-[52px] rounded-xl border border-border bg-foreground/5 animate-pulse" />
@@ -110,7 +112,7 @@ function ThemeSettingsSection() {
                 )}
               >
                 <Sun className="h-4 w-4" />
-                Claro
+                {t('light')}
               </button>
               <button
                 onClick={() => handleThemeChange("dark")}
@@ -122,18 +124,17 @@ function ThemeSettingsSection() {
                 )}
               >
                 <Moon className="h-4 w-4" />
-                Oscuro
+                {t('dark')}
               </button>
             </div>
-          )}        </div>
+          )}
+        </div>
 
         <Separator className="bg-border mb-5" />
 
-        {/* Color de acento */}
         <div>
-          <Label className="text-sm font-medium mb-3 block">Color de acento</Label>
+          <Label className="text-sm font-medium mb-3 block">{t('accentColor')}</Label>
           <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-            {/* Sin color (default) */}
             <button
               onClick={() => handleAccentChange("none")}
               className={cn(
@@ -146,10 +147,9 @@ function ThemeSettingsSection() {
               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-600 to-blue-600 flex items-center justify-center ring-2 ring-offset-2 ring-offset-background ring-transparent">
                 {accentColor === "none" && <Check className="h-4 w-4 text-white" />}
               </div>
-              <span className="text-[10px] text-muted-foreground">Por defecto</span>
+              <span className="text-[10px] text-muted-foreground">{t('default')}</span>
             </button>
 
-            {/* Color swatches */}
             {ACCENT_COLORS.map((c) => (
               <button
                 key={c.value}
@@ -178,6 +178,10 @@ function ThemeSettingsSection() {
 }
 
 export default function AjustesPage() {
+  const t = useTranslations('settings');
+  const tAccount = useTranslations('settings.account');
+  const tIntegrations = useTranslations('settings.integrations');
+  const tLegal = useTranslations('settings.legal');
   const router = useRouter();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -186,6 +190,7 @@ export default function AjustesPage() {
   const [hasGoogleLinked, setHasGoogleLinked] = useState(false);
   const [checkingProviders, setCheckingProviders] = useState(true);
   const [showGoogleDetails, setShowGoogleDetails] = useState(false);
+  const [userLocale, setUserLocale] = useState<string>("es");
 
   useEffect(() => {
     const checkGoogleProvider = async () => {
@@ -205,23 +210,36 @@ export default function AjustesPage() {
       }
     };
 
+    const fetchUserLocale = async () => {
+      try {
+        const res = await fetch("/api/auth/locale");
+        if (res.ok) {
+          const data = await res.json();
+          setUserLocale(data.locale || "es");
+        }
+      } catch (error) {
+        console.error("Error fetching locale:", error);
+      }
+    };
+
     void checkGoogleProvider();
+    void fetchUserLocale();
   }, []);
 
   const handleLogout = useCallback(async () => {
     setIsLoggingOut(true);
     try {
       const res = await fetch("/api/auth/logout", { method: "POST" });
-      if (!res.ok) throw new Error("Error al cerrar sesión");
-      toast.success("Sesión cerrada");
+      if (!res.ok) throw new Error("Error");
+      toast.success(tAccount('logout'));
       router.push("/login");
       router.refresh();
     } catch {
-      toast.error("Error al cerrar sesión");
+      toast.error("Error");
     } finally {
       setIsLoggingOut(false);
     }
-  }, [router]);
+  }, [router, tAccount]);
 
   const handleDeleteAccount = useCallback(async () => {
     if (deleteConfirmText !== "ELIMINAR") return;
@@ -232,7 +250,7 @@ export default function AjustesPage() {
         const data = await res.json();
         throw new Error(data.error || "Error al eliminar la cuenta");
       }
-      toast.success("Cuenta eliminada correctamente. ¡Hasta pronto!");
+      toast.success(tAccount('deleteAccountSuccess'));
       router.push("/login");
       router.refresh();
     } catch (error) {
@@ -242,11 +260,10 @@ export default function AjustesPage() {
       setShowDeleteDialog(false);
       setDeleteConfirmText("");
     }
-  }, [deleteConfirmText, router]);
+  }, [deleteConfirmText, router, tAccount]);
 
   return (
     <div className="min-h-[85vh] py-8 px-4 settings-accent">
-      {/* Fondo sutil */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 app-bg-gradient" />
         <div className="absolute top-0 right-0 w-96 h-96 app-bg-glow-1 rounded-full blur-[120px]" />
@@ -255,23 +272,20 @@ export default function AjustesPage() {
       </div>
 
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" className="hover:bg-foreground/5" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-accent-gradient">
-              Ajustes
+              {t('title')}
             </h1>
-            <p className="text-muted-foreground text-sm">Configura tu experiencia en Tarely</p>
+            <p className="text-muted-foreground text-sm">{t('subtitle')}</p>
           </div>
         </div>
 
-        {/* Apariencia */}
         <ThemeSettingsSection />
 
-        {/* Integraciones de Google */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
           <GoogleCalendarSettings />
 
@@ -281,7 +295,7 @@ export default function AjustesPage() {
               <div className="relative bg-background/60 backdrop-blur-xl border border-border rounded-2xl p-6 shadow-xl h-full flex flex-col">
                 <div className="flex items-center gap-2 mb-1">
                   <Link2 className="h-5 w-5 text-blue-500" />
-                  <h2 className="font-semibold">Cuenta de Google</h2>
+                  <h2 className="font-semibold">{tIntegrations('googleAccount.title')}</h2>
                   <button
                     onClick={() => setShowGoogleDetails(!showGoogleDetails)}
                     className="ml-auto text-muted-foreground hover:text-foreground transition-colors"
@@ -291,7 +305,7 @@ export default function AjustesPage() {
                   </button>
                 </div>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {hasGoogleLinked ? 'Vinculada' : 'Inicia sesión más rápido'}
+                  {hasGoogleLinked ? tIntegrations('googleAccount.linked') : tIntegrations('googleAccount.description')}
                 </p>
 
                 <div className="space-y-4 flex-1 flex flex-col">
@@ -300,14 +314,14 @@ export default function AjustesPage() {
                       <div className="flex items-center gap-2">
                         <Badge variant="default" className="bg-green-500 hover:bg-green-600">
                           <CheckCircle2 className="h-3 w-3 mr-1" />
-                          Vinculada
+                          {tIntegrations('googleAccount.linked')}
                         </Badge>
                       </div>
 
                       {showGoogleDetails && (
                         <div className="space-y-2 animate-in fade-in duration-200">
                           <p className="text-sm text-muted-foreground">
-                            Puedes usar Google Login para iniciar sesión en Tarely en cualquier momento.
+                            {tIntegrations('googleAccount.linkDescription')}
                           </p>
                         </div>
                       )}
@@ -317,7 +331,7 @@ export default function AjustesPage() {
                       {showGoogleDetails && (
                         <div className="space-y-2 animate-in fade-in duration-200">
                           <p className="text-sm text-muted-foreground">
-                            Vincula tu cuenta con Google para poder iniciar sesión más rápidamente.
+                            {tIntegrations('googleAccount.linkDescription')}
                           </p>
                         </div>
                       )}
@@ -337,7 +351,6 @@ export default function AjustesPage() {
           )}
         </div>
 
-        {/* Panel de sugerencias y errores */}
         <Suspense fallback={
           <Card className="bg-foreground/5 border-border">
             <CardContent className="flex items-center justify-center py-8">
@@ -348,40 +361,40 @@ export default function AjustesPage() {
           <FeedbackPanel />
         </Suspense>
 
-        {/* Legal links */}
+        <LanguageSelector initialLocale={userLocale} />
+
         <div className="relative bg-background/60 backdrop-blur-xl border border-border rounded-2xl p-6 shadow-xl">
           <div className="flex items-center gap-2 mb-1">
             <FileText className="h-5 w-5 text-ta-light" />
-            <h2 className="font-semibold">Legal</h2>
+            <h2 className="font-semibold">{tLegal('title')}</h2>
           </div>
-          <p className="text-sm text-muted-foreground mb-4">Documentos legales y privacidad</p>
+          <p className="text-sm text-muted-foreground mb-4">{tLegal('description')}</p>
           <div className="flex flex-col sm:flex-row gap-2">
             <Link
               href="/politica-de-privacidad"
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-muted-foreground rounded-xl border border-border bg-foreground/5 hover:bg-foreground/10 hover:text-foreground transition-all"
             >
               <Shield className="h-4 w-4" />
-              Política de Privacidad
+              {tLegal('privacyPolicy')}
             </Link>
             <Link
               href="/terminos-y-condiciones"
               className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm text-muted-foreground rounded-xl border border-border bg-foreground/5 hover:bg-foreground/10 hover:text-foreground transition-all"
             >
               <FileText className="h-4 w-4" />
-              Términos y Condiciones
+              {tLegal('termsAndConditions')}
             </Link>
           </div>
         </div>
 
-        {/* Card de cerrar sesión */}
         <div className="relative group">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600/30 to-orange-600/30 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-500" />
           <div className="relative bg-background/60 backdrop-blur-xl border border-red-500/20 rounded-2xl p-6 shadow-xl">
             <div className="flex items-center gap-2 mb-1">
               <LogOut className="h-5 w-5 text-red-400" />
-              <h2 className="font-semibold text-red-400">Cerrar Sesión</h2>
+              <h2 className="font-semibold text-red-400">{tAccount('logout')}</h2>
             </div>
-            <p className="text-sm text-muted-foreground mb-4">Cierra tu sesión en este dispositivo</p>
+            <p className="text-sm text-muted-foreground mb-4">{tAccount('logoutDescription')}</p>
 
             <Button
               variant="destructive"
@@ -392,35 +405,34 @@ export default function AjustesPage() {
               {isLoggingOut ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Cerrando sesión...
+                  {tAccount('loggingOut')}
                 </>
               ) : (
                 <>
                   <LogOut className="mr-2 h-4 w-4" />
-                  Cerrar Sesión
+                  {tAccount('logout')}
                 </>
               )}
             </Button>
           </div>
         </div>
 
-        {/* Zona de peligro - Eliminar cuenta */}
         <div className="relative group">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-red-700/40 to-red-900/40 rounded-2xl blur opacity-25 group-hover:opacity-40 transition duration-500" />
           <div className="relative bg-background/60 backdrop-blur-xl border border-red-600/30 rounded-2xl p-6 shadow-xl">
             <div className="flex items-center gap-2 mb-1">
               <AlertTriangle className="h-5 w-5 text-red-500" />
-              <h2 className="font-semibold text-red-500">Zona de peligro</h2>
+              <h2 className="font-semibold text-red-500">{tAccount('dangerZone')}</h2>
             </div>
-            <p className="text-sm text-muted-foreground mb-2">Acciones irreversibles sobre tu cuenta</p>
+            <p className="text-sm text-muted-foreground mb-2">{tAccount('dangerZoneDescription')}</p>
 
             <Separator className="bg-red-500/20 my-4" />
 
             <div className="space-y-3">
               <div>
-                <h3 className="text-sm font-medium text-red-400">Eliminar cuenta</h3>
+                <h3 className="text-sm font-medium text-red-400">{tAccount('deleteAccount')}</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Se eliminarán permanentemente todos tus datos: workspaces, tareas, comentarios, archivos adjuntos y cualquier información asociada a tu cuenta. Esta acción no se puede deshacer.
+                  {tAccount('deleteAccountDescription')}
                 </p>
               </div>
 
@@ -430,14 +442,13 @@ export default function AjustesPage() {
                 className="w-full h-11 bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 hover:to-red-800 shadow-lg shadow-red-900/30 transition-all hover:scale-[1.02] border border-red-600/50"
               >
                 <Trash2 className="mr-2 h-4 w-4" />
-                Eliminar mi cuenta
+                {tAccount('deleteMyAccount')}
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Dialog de confirmación para eliminar cuenta */}
       <AlertDialog open={showDeleteDialog} onOpenChange={(open) => {
         setShowDeleteDialog(open);
         if (!open) setDeleteConfirmText("");
@@ -446,24 +457,26 @@ export default function AjustesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2 text-red-500">
               <AlertTriangle className="h-5 w-5" />
-              Eliminar cuenta permanentemente
+              {tAccount('deleteAccountConfirm')}
             </AlertDialogTitle>
             <AlertDialogDescription asChild>
               <div className="space-y-3">
-                <p>Esta acción es <strong className="text-red-400">irreversible</strong>. Se eliminarán permanentemente:</p>
+                <p className="text-sm">
+                  {tAccount('deleteAccountWarning')}
+                </p>
                 <ul className="list-disc list-inside space-y-1 text-sm">
-                  <li>Todos tus workspaces y tareas</li>
-                  <li>Comentarios y archivos adjuntos</li>
-                  <li>Subtareas y actividad</li>
-                  <li>Membresías en workspaces compartidos</li>
-                  <li>Tu perfil y datos de cuenta</li>
+                  {(tAccount.raw('deleteAccountItems') as string[]).map((item: string, i: number) => (
+                    <li key={i}>{item}</li>
+                  ))}
                 </ul>
                 <div className="pt-2">
-                  <p className="text-sm font-medium mb-2">Escribe <strong className="text-red-400">ELIMINAR</strong> para confirmar:</p>
+                  <p className="text-sm font-medium mb-2">
+                    {tAccount('deleteAccountInput')}
+                  </p>
                   <Input
                     value={deleteConfirmText}
                     onChange={(e) => setDeleteConfirmText(e.target.value)}
-                    placeholder="Escribe ELIMINAR"
+                    placeholder={tAccount('deleteAccountInputPlaceholder')}
                     className="border-red-500/30 focus:border-red-500"
                     autoComplete="off"
                   />
@@ -472,7 +485,9 @@ export default function AjustesPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting} onClick={() => setDeleteConfirmText("")}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting} onClick={() => setDeleteConfirmText("")}>
+              {tAccount('cancel')}
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDeleteAccount}
               disabled={isDeleting || deleteConfirmText !== "ELIMINAR"}
@@ -481,12 +496,12 @@ export default function AjustesPage() {
               {isDeleting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Eliminando cuenta...
+                  {tAccount('deletingAccount')}
                 </>
               ) : (
                 <>
                   <Trash2 className="mr-2 h-4 w-4" />
-                  Eliminar cuenta definitivamente
+                  {tAccount('deleteAccountButton')}
                 </>
               )}
             </AlertDialogAction>

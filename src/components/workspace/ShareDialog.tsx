@@ -17,6 +17,7 @@ import { toast } from "sonner";
 import { Loader2, Search, UserPlus, Users, Crown, X, Check } from "lucide-react";
 import Image from "next/image";
 import { getAvatarUrl } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 interface User {
   id: string;
@@ -48,6 +49,7 @@ export function ShareDialog({
   workspaceId,
   workspaceName,
 }: ShareDialogProps) {
+  const t = useTranslations('workspaceShare');
   const [search, setSearch] = useState("");
   const [users, setUsers] = useState<User[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
@@ -66,7 +68,7 @@ export function ShareDialog({
           setMembers(data);
         }
       } catch {
-        toast.error("Error al cargar miembros");
+        toast.error(t('loadMembersError'));
       } finally {
         setIsLoadingMembers(false);
       }
@@ -89,7 +91,7 @@ export function ShareDialog({
           setUsers(data);
         }
       } catch {
-        toast.error("Error al buscar usuarios");
+        toast.error(t('searchUsersError'));
       } finally {
         setIsLoadingUsers(false);
       }
@@ -134,12 +136,12 @@ export function ShareDialog({
         throw new Error(data.error);
       }
 
-      toast.success("Invitación enviada");
+      toast.success(t('inviteSent'));
       setUsers(users.filter((u) => u.id !== userId));
       fetchMembers();
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Error al enviar invitación"
+        error instanceof Error ? error.message : t('inviteError')
       );
     } finally {
       setInvitingUserId(null);
@@ -158,10 +160,10 @@ export function ShareDialog({
         throw new Error("Error al eliminar miembro");
       }
 
-      toast.success("Miembro eliminado");
+      toast.success(t('memberRemoved'));
       fetchMembers();
     } catch {
-      toast.error("Error al eliminar miembro");
+      toast.error(t('removeError'));
     } finally {
       setRemovingMemberId(null);
     }
@@ -173,21 +175,21 @@ export function ShareDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-ta-light" />
-            Compartir &quot;{workspaceName}&quot;
+            {t('title')} &quot;{workspaceName}&quot;
           </DialogTitle>
           <DialogDescription>
-            Invita a otros usuarios a colaborar en este workspace
+            {t('description')}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-6">
           {/* Buscar usuarios */}
           <div className="space-y-3">
-            <Label className="text-sm font-medium">Invitar usuarios</Label>
+            <Label className="text-sm font-medium">{t('searchPlaceholder').split('...')[0]}</Label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por nombre o email..."
+                placeholder={t('searchPlaceholder')}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-10 bg-foreground/5 border-border"
@@ -203,7 +205,7 @@ export function ShareDialog({
                   </div>
                 ) : users.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-4">
-                    No se encontraron usuarios
+                    {t('noResults')}
                   </p>
                 ) : (
                   <ScrollArea className="max-h-40">
@@ -242,7 +244,7 @@ export function ShareDialog({
                           ) : (
                             <>
                               <UserPlus className="h-4 w-4 mr-1 text-white" />
-                              <span className="text-white font-medium">Invitar</span>
+                              <span className="text-white font-medium">{t('invite')}</span>
                             </>
                           )}
                         </Button>
@@ -257,7 +259,7 @@ export function ShareDialog({
           {/* Miembros actuales */}
           <div className="space-y-3">
             <Label className="text-sm font-medium">
-              Miembros ({members.length})
+              {t('members')} ({members.length})
             </Label>
             <div className="rounded-lg border border-border bg-foreground/5 overflow-hidden">
               {isLoadingMembers ? (
@@ -298,12 +300,12 @@ export function ShareDialog({
                       <div className="flex items-center gap-2">
                         {member.status === "pending" ? (
                           <Badge variant="outline" className="text-yellow-400 border-yellow-400/50">
-                            Pendiente
+                            {t('pending')}
                           </Badge>
                         ) : member.status === "accepted" ? (
                           <Badge variant="outline" className="text-green-400 border-green-400/50">
                             <Check className="h-3 w-3 mr-1" />
-                            Activo
+                            {t('accepted')}
                           </Badge>
                         ) : null}
                         {member.role !== "owner" && (

@@ -5,13 +5,15 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import type { Task, Workspace } from "@/lib/types";
 import { NotionCalendar } from "@/components/calendar/NotionCalendar";
+import { useTranslations } from "next-intl";
 
 interface CalendarTask extends Task {
   workspaceName: string;
   workspaceId: string;
 }
 
-export default function CalendarPage() {
+export default function CalendarioPage() {
+  const t = useTranslations('calendar');
   const [tasks, setTasks] = useState<CalendarTask[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,8 +47,8 @@ export default function CalendarPage() {
       }
       setTasks(allTasks);
     } catch (error) {
-      console.error("Error fetching calendar data:", error);
-      toast.error("Error al cargar el calendario");
+      console.error("Error loading calendar:", error);
+      toast.error(t('loadError'));
     } finally {
       setIsLoading(false);
     }

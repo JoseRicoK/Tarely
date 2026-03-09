@@ -1,0 +1,862 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "create": "Crear",
+    "search": "Buscar",
+    "close": "Cerrar",
+    "back": "Volver",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "yes": "Sí",
+    "no": "No",
+    "confirm": "Confirmar",
+    "error": "Error",
+    "success": "Éxito"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Tu segundo cerebro potenciado por IA",
+      "title": "Conecta tus ideas,",
+      "titleGradient": "ejecuta sin fricción",
+      "subtitle": "Notas, tareas y calendario en un solo ecosistema. La IA organiza tu caos, extrae las {animatedText} y planifica tu día automáticamente.",
+      "animatedWords": {
+        "emails": "emails",
+        "ideas": "ideas",
+        "notes": "notas",
+        "meetings": "reuniones",
+        "projects": "proyectos",
+        "tasks": "tareas inteligentes"
+      },
+      "ctaPrimary": "Empezar gratis",
+      "ctaSecondary": "Ver cómo funciona",
+      "noCreditCard": "Sin tarjeta de crédito · Gratis para siempre"
+    },
+    "nav": {
+      "howItWorks": "Cómo funciona",
+      "features": "Funcionalidades",
+      "testimonials": "Testimonios",
+      "changelog": "Changelog",
+      "login": "Iniciar sesión",
+      "signup": "Empezar gratis",
+      "menu": "Menú de navegación"
+    },
+    "stats": {
+      "users": "Usuarios activos",
+      "tasks": "Tareas organizadas",
+      "rating": "Valoración"
+    },
+    "demo": {
+      "placeholder": "Escribe tus notas aquí... Ej: Reunión de producto terminada. Hay que lanzar la nueva landing el próximo martes y avisar a marketing mañana a primera hora.",
+      "aiAssistant": "IA Asistente",
+      "registerTooltip": "¡Regístrate gratis para organizar tus ideas!",
+      "tasksDetected": "Tareas detectadas y sincronizadas con tu calendario"
+    },
+    "notesSection": {
+      "badge": "El concepto diferenciador",
+      "title": "Tu nota",
+      "titleHighlight": "ES",
+      "titleEnd": "tu tarea",
+      "description": "No añades tareas dentro de una nota. {bold} La nota entera se convierte en una tarea. {/bold} Cuando completas la tarea en tu Kanban, la nota se marca como completada automáticamente. Todo vive en el mismo Workspace."
+    },
+    "howItWorks": {
+      "title": "Cómo funciona",
+      "steps": [
+        {
+          "title": "Escribe y captura",
+          "description": "Vuelca tus ideas, reuniones o emails. Sin formato especial, sin sintaxis."
+        },
+        {
+          "title": "La IA organiza",
+          "description": "Extrae tareas, asigna prioridades y sugiere fechas límite automáticamente."
+        },
+        {
+          "title": "Ejecuta y completa",
+          "description": "Visualiza tus tareas en el calendario y Kanban. Todo sincronizado en tiempo real."
+        }
+      ]
+    },
+    "features": {
+      "title": "Todo lo que necesitas",
+      "subtitle": "En un solo lugar",
+      "items": [
+        {
+          "title": "Workspaces inteligentes",
+          "description": "Organiza proyectos completos. Cada workspace contiene notas que son tareas automáticamente."
+        },
+        {
+          "title": "Editor de notas potente",
+          "description": "Markdown, tablas, código, imágenes. Todo lo que necesitas para documentar tu trabajo."
+        },
+        {
+          "title": "Vista Kanban",
+          "description": "Visualiza y mueve tus tareas entre columnas. Arrastra y suelta para reorganizar."
+        },
+        {
+          "title": "Calendario integrado",
+          "description": "Sincroniza con Google Calendar. Todas tus tareas con fecha aparecen automáticamente."
+        },
+        {
+          "title": "IA que entiende contexto",
+          "description": "Extrae tareas, prioridades y fechas de tus notas. Sin esfuerzo manual."
+        },
+        {
+          "title": "Priorización automática",
+          "description": "La IA asigna importancia del 1 al 10 según urgencia y contexto."
+        }
+      ]
+    },
+    "testimonials": {
+      "title": "Lo que dicen nuestros usuarios",
+      "items": [
+        {
+          "quote": "Tarely cambió completamente mi forma de trabajar. Ya no pierdo tiempo copiando tareas manualmente entre apps.",
+          "author": "María González",
+          "role": "Product Manager"
+        },
+        {
+          "quote": "La vinculación automática entre notas y tareas es genial. Por fin un sistema que no me obliga a duplicar información.",
+          "author": "Carlos Ramírez",
+          "role": "Desarrollador"
+        },
+        {
+          "quote": "La IA realmente entiende mis prioridades. Me ahorra horas cada semana organizando mi lista de tareas.",
+          "author": "Ana Martínez",
+          "role": "Diseñadora UX"
+        }
+      ]
+    },
+    "cta": {
+      "title": "Empieza a organizarte hoy",
+      "subtitle": "Únete a miles de usuarios que ya están trabajando de forma más inteligente",
+      "button": "Crear cuenta gratis"
+    },
+    "footer": {
+      "product": "Producto",
+      "features": "Funcionalidades",
+      "pricing": "Precios",
+      "changelog": "Changelog",
+      "legal": "Legal",
+      "privacy": "Política de Privacidad",
+      "terms": "Términos y Condiciones",
+      "company": "Empresa",
+      "about": "Sobre nosotros",
+      "contact": "Contacto",
+      "rights": "Todos los derechos reservados"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Iniciar sesión",
+      "subtitle": "Bienvenido de vuelta",
+      "email": "Correo electrónico",
+      "password": "Contraseña",
+      "forgotPassword": "¿Olvidaste tu contraseña?",
+      "submit": "Iniciar sesión",
+      "noAccount": "¿No tienes cuenta?",
+      "signUp": "Regístrate aquí",
+      "orContinueWith": "O continúa con",
+      "errors": {
+        "invalidCredentials": "Credenciales inválidas",
+        "emailRequired": "El correo electrónico es requerido",
+        "passwordRequired": "La contraseña es requerida"
+      }
+    },
+    "register": {
+      "title": "Crear cuenta",
+      "subtitle": "Empieza gratis hoy",
+      "name": "Nombre completo",
+      "email": "Correo electrónico",
+      "password": "Contraseña",
+      "confirmPassword": "Confirmar contraseña",
+      "submit": "Crear cuenta",
+      "hasAccount": "¿Ya tienes cuenta?",
+      "logIn": "Inicia sesión aquí",
+      "orContinueWith": "O continúa con",
+      "terms": "Al registrarte, aceptas nuestros {termsLink} y {privacyLink}",
+      "termsLink": "Términos y Condiciones",
+      "privacyLink": "Política de Privacidad",
+      "errors": {
+        "nameRequired": "El nombre es requerido",
+        "emailRequired": "El correo electrónico es requerido",
+        "emailInvalid": "Correo electrónico inválido",
+        "passwordRequired": "La contraseña es requerida",
+        "passwordTooShort": "La contraseña debe tener al menos 8 caracteres",
+        "passwordsDontMatch": "Las contraseñas no coinciden",
+        "emailExists": "Este correo ya está registrado"
+      }
+    },
+    "forgotPassword": {
+      "title": "Recuperar contraseña",
+      "subtitle": "Te enviaremos un enlace para restablecer tu contraseña",
+      "email": "Correo electrónico",
+      "submit": "Enviar enlace",
+      "backToLogin": "Volver al inicio de sesión",
+      "success": "Revisa tu correo electrónico",
+      "successMessage": "Te hemos enviado un enlace para restablecer tu contraseña"
+    },
+    "resetPassword": {
+      "title": "Restablecer contraseña",
+      "subtitle": "Ingresa tu nueva contraseña",
+      "password": "Nueva contraseña",
+      "confirmPassword": "Confirmar nueva contraseña",
+      "submit": "Cambiar contraseña",
+      "success": "Contraseña cambiada",
+      "successMessage": "Tu contraseña ha sido actualizada correctamente"
+    },
+    "checkEmail": {
+      "title": "Revisa tu correo",
+      "subtitle": "Te hemos enviado un enlace de confirmación",
+      "message": "Haz clic en el enlace del correo para activar tu cuenta",
+      "backToLogin": "Volver al inicio de sesión"
+    }
+  },
+  "dashboard": {
+    "welcome": "Bienvenido",
+    "overview": "Vista general",
+    "recentTasks": "Tareas recientes",
+    "upcomingEvents": "Próximos eventos",
+    "myWorkspaces": "Mis workspaces",
+    "createWorkspace": "Crear workspace",
+    "noWorkspaces": "No tienes workspaces todavía",
+    "noWorkspacesDescription": "Crea tu primer workspace para empezar a organizar tus tareas"
+  },
+  "notes": {
+    "title": "Notas",
+    "newNote": "Nueva nota",
+    "editNote": "Editar nota",
+    "deleteNote": "Eliminar nota",
+    "searchNotes": "Buscar notas...",
+    "noNotes": "No hay notas",
+    "noNotesDescription": "Crea tu primera nota para empezar",
+    "aiAssistant": "IA Asistente",
+    "activeTask": "Tarea activa",
+    "linkedToTask": "Vinculada a tarea",
+    "notLinked": "No vinculada"
+  },
+  "settings": {
+    "title": "Ajustes",
+    "subtitle": "Configura tu experiencia en Tarely",
+    "appearance": {
+      "title": "Apariencia",
+      "description": "Personaliza el aspecto de tu espacio de trabajo",
+      "mode": "Modo",
+      "light": "Claro",
+      "dark": "Oscuro",
+      "accentColor": "Color de acento",
+      "default": "Por defecto"
+    },
+    "language": {
+      "title": "Idioma",
+      "description": "Selecciona tu idioma preferido",
+      "spanish": "Español",
+      "english": "English",
+      "changeLanguage": "Cambiar idioma",
+      "languageChanged": "Idioma cambiado correctamente"
+    },
+    "integrations": {
+      "googleCalendar": {
+        "title": "Google Calendar",
+        "description": "Sincroniza tus tareas con tu calendario",
+        "connected": "Conectado",
+        "disconnected": "Desconectado",
+        "connect": "Conectar",
+        "disconnect": "Desconectar"
+      },
+      "googleAccount": {
+        "title": "Cuenta de Google",
+        "description": "Inicia sesión más rápido",
+        "linked": "Vinculada",
+        "notLinked": "No vinculada",
+        "link": "Vincular cuenta",
+        "linkDescription": "Vincula tu cuenta con Google para poder iniciar sesión más rápidamente."
+      }
+    },
+    "feedback": {
+      "title": "Sugerencias y errores",
+      "description": "Ayúdanos a mejorar"
+    },
+    "legal": {
+      "title": "Legal",
+      "description": "Documentos legales y privacidad",
+      "privacyPolicy": "Política de Privacidad",
+      "termsAndConditions": "Términos y Condiciones"
+    },
+    "account": {
+      "title": "Cuenta",
+      "logout": "Cerrar Sesión",
+      "logoutDescription": "Cierra tu sesión en este dispositivo",
+      "loggingOut": "Cerrando sesión...",
+      "dangerZone": "Zona de peligro",
+      "dangerZoneDescription": "Acciones irreversibles sobre tu cuenta",
+      "deleteAccount": "Eliminar cuenta",
+      "deleteAccountDescription": "Se eliminarán permanentemente todos tus datos: workspaces, tareas, comentarios, archivos adjuntos y cualquier información asociada a tu cuenta. Esta acción no se puede deshacer.",
+      "deleteMyAccount": "Eliminar mi cuenta",
+      "deleteAccountConfirm": "Eliminar cuenta permanentemente",
+      "deleteAccountWarning": "Esta acción es irreversible. Se eliminarán permanentemente:",
+      "deleteAccountItems": [
+        "Todos tus workspaces y tareas",
+        "Comentarios y archivos adjuntos",
+        "Subtareas y actividad",
+        "Membresías en workspaces compartidos",
+        "Tu perfil y datos de cuenta"
+      ],
+      "deleteAccountInput": "Escribe ELIMINAR para confirmar:",
+      "deleteKeyword": "ELIMINAR",
+      "deleteAccountInputPlaceholder": "Escribe ELIMINAR",
+      "deletingAccount": "Eliminando cuenta...",
+      "deleteAccountSuccess": "Cuenta eliminada correctamente. ¡Hasta pronto!",
+      "cancel": "Cancelar",
+      "deleteAccountButton": "Eliminar cuenta definitivamente"
+    }
+  },
+  "profile": {
+    "title": "Mi Perfil",
+    "subtitle": "Gestiona tu información personal",
+    "info": {
+      "title": "Información del perfil",
+      "description": "Actualiza tu nombre y avatar",
+      "currentAvatar": "Avatar actual",
+      "changeAvatar": "Cambiar avatar",
+      "generateAnother": "Generar otro",
+      "uploadImage": "Subir imagen",
+      "uploading": "Subiendo...",
+      "avatarHelp": "Genera avatares aleatorios o sube tu propia imagen (JPG, PNG, WebP, máx 5MB)",
+      "name": "Nombre",
+      "namePlaceholder": "Tu nombre",
+      "saveChanges": "Guardar cambios",
+      "saving": "Guardando..."
+    },
+    "errors": {
+      "emptyName": "El nombre no puede estar vacío",
+      "saveError": "Error al guardar el perfil",
+      "uploadError": "Error al subir avatar",
+      "invalidImage": "Por favor selecciona una imagen",
+      "imageTooLarge": "La imagen no puede superar 5MB"
+    },
+    "success": {
+      "updated": "Perfil actualizado correctamente",
+      "avatarUploaded": "¡Avatar actualizado!"
+    }
+  },
+  "app": {
+    "title": "Workspaces",
+    "subtitle": "Organiza tus proyectos y genera tareas con IA",
+    "newWorkspace": "Nuevo Workspace",
+    "createFirst": "Crear mi primer workspace",
+    "noWorkspaces": {
+      "title": "No hay workspaces",
+      "description": "Crea tu primer workspace para empezar a organizar tus tareas y generar nuevas ideas con ayuda de la IA."
+    },
+    "overdueTasks": {
+      "title": "Tareas vencidas",
+      "count_one": "{count} tarea pendiente con fecha límite pasada",
+      "count_other": "{count} tareas pendientes con fecha límite pasada",
+      "expired": "Venció {date}",
+      "viewAll": "Ver todas las tareas ({count})"
+    },
+    "workspace": {
+      "created": "Workspace creado correctamente",
+      "updated": "Workspace actualizado correctamente",
+      "deleted": "Workspace eliminado correctamente",
+      "createError": "Error al crear el workspace",
+      "updateError": "Error al actualizar el workspace",
+      "deleteError": "Error al eliminar el workspace"
+    },
+    "task": {
+      "completed": "Tarea completada",
+      "completeError": "Error al completar la tarea"
+    },
+    "deleteDialog": {
+      "title": "⚠️ ¿Eliminar workspace permanentemente?",
+      "description": "Estás a punto de eliminar el workspace \"{name}\".\n\nSe eliminarán permanentemente:\n• Todas las tareas del workspace\n• Todas las secciones personalizadas\n• Todos los comentarios y subtareas\n• Todas las configuraciones e instrucciones\n\n⚠️ Esta acción no se puede deshacer."
+    }
+  },
+  "invitations": {
+    "title": "Invitaciones pendientes",
+    "description": "Workspaces a los que te han invitado a colaborar",
+    "noInvitations": "No tienes invitaciones pendientes",
+    "invitedBy": "Invitado por",
+    "accept": "Aceptar",
+    "reject": "Rechazar",
+    "accepted": "Invitación aceptada",
+    "rejected": "Invitación rechazada",
+    "loadError": "Error al cargar invitaciones",
+    "respondError": "Error al responder a la invitación"
+  },
+  "feedback": {
+    "title": "Sugerencias y Errores",
+    "description": "Ayúdanos a mejorar reportando errores o compartiendo tus ideas",
+    "typeLabel": "Tipo de feedback",
+    "suggestion": "Sugerencia",
+    "bug": "Error",
+    "suggestionLabel": "Tu sugerencia",
+    "bugLabel": "Describe el error",
+    "suggestionPlaceholder": "Me gustaría que la aplicación tuviera...",
+    "bugPlaceholder": "He encontrado un error cuando...",
+    "suggestionHelp": "Comparte tus ideas para mejorar la aplicación",
+    "bugHelp": "Describe qué sucedió y cómo reproducirlo",
+    "send": "Enviar",
+    "sending": "Enviando...",
+    "sendSuggestion": "Enviar sugerencia",
+    "sendReport": "Enviar reporte",
+    "emptyMessage": "Por favor, escribe un mensaje",
+    "tooLong": "El mensaje no puede exceder 1000 caracteres",
+    "suggestionSuccess": "¡Gracias por tu sugerencia! La revisaremos pronto.",
+    "bugSuccess": "¡Gracias por reportar el error! Lo investigaremos.",
+    "error": "Error al enviar feedback",
+    "infoMessage": "💡 Tu feedback nos ayuda a mejorar. Revisamos todos los mensajes y tu información de usuario se guarda automáticamente para poder contactarte si es necesario."
+  },
+  "googleCalendar": {
+    "title": "Google Calendar",
+    "connected": "Conectado",
+    "notConnected": "Sincroniza tareas con tu calendario",
+    "connect": "Conectar",
+    "disconnect": "Desconectar",
+    "connecting": "Conectando...",
+    "disconnecting": "Desconectando...",
+    "moreInfo": "Más información",
+    "connectedSince": "Conectado desde:",
+    "tokenValid": "Token válido hasta:",
+    "tokenExpired": "Token expirado",
+    "whatSynced": "¿Qué está sincronizado?",
+    "syncItem1": "Tareas con fecha y hora se crean automáticamente",
+    "syncItem2": "Bloques ocupados visibles para evitar conflictos",
+    "syncItem3": "Cambios se actualizan automáticamente",
+    "benefits": "Beneficios:",
+    "benefitItem1": "Visualiza tareas y eventos en un solo lugar",
+    "benefitItem2": "Detecta conflictos de horarios automáticamente",
+    "benefitItem3": "Sincronización bidireccional",
+    "benefitItem4": "Ve bloques ocupados sin compartir detalles",
+    "redirectMessage": "Serás redirigido a Google",
+    "disconnectSuccess": "Google Calendar desconectado correctamente",
+    "statusError": "Error al verificar conexión con Google Calendar",
+    "connectError": "Error al conectar con Google Calendar",
+    "disconnectError": "Error al desconectar Google Calendar"
+  },
+  "workspace": {
+    "backButton": "Volver",
+    "share": "Compartir",
+    "instructions": "Instrucciones",
+    "settings": "Ajustes",
+    "tasks": "Tareas",
+    "newTask": "Nueva tarea",
+    "new": "Nueva",
+    "list": "Lista",
+    "kanban": "Kanban",
+    "add": "Añadir",
+    "notFound": "Workspace no encontrado",
+    "loadError": "Error al cargar los datos",
+    "noTasksInSection": "No hay tareas en esta sección",
+    "noTasksDescription": "Genera tareas con IA o crea una manualmente para empezar.",
+    "noTasksHint": "Genera tareas con IA o crea una manualmente para empezar.",
+    "createManualTask": "Crear tarea manual",
+    "noTasksFound": "No se encontraron tareas que coincidan con \"{query}\"",
+    "deleteTaskTitle": "¿Eliminar tarea?",
+    "deleteTaskDescription": "Esta acción eliminará la tarea \"{title}\". Esta acción no se puede deshacer.",
+    "aiPlaceholder": "Crear tareas con IA",
+    "organizing": "Creando...",
+    "organize": "Organizar",
+    "speakTitle": "Hablar",
+    "stopRecording": "Detener grabación",
+    "micError": "No se pudo acceder al micrófono. Comprueba los permisos.",
+    "microphoneError": "No se pudo acceder al micrófono. Comprueba los permisos.",
+    "aiTextTooShort": "El texto debe tener al menos 10 caracteres",
+    "aiTextRequired": "Escribe algo para generar tareas",
+    "tasksGenerated": "{count} tareas generadas correctamente",
+    "taskCreateError": "Error al generar tareas",
+    "moveLeft": "Mover a la izquierda",
+    "moveRight": "Mover a la derecha",
+    "editSection": "Editar sección",
+    "deleteSection": "Eliminar sección",
+    "sectionOptions": "Opciones de sección",
+    "sectionCreated": "Sección creada",
+    "sectionCreateError": "Error al crear la sección",
+    "sectionUpdated": "Sección actualizada",
+    "sectionUpdateError": "Error al actualizar la sección",
+    "sectionDeleted": "Sección eliminada",
+    "sectionDeleteError": "Error al eliminar la sección",
+    "occurrenceCompleted": "¡Ocurrencia completada! Desaparecerá hasta la próxima fecha."
+  },
+  "workspaceInstructions": {
+    "title": "Instrucciones del Workspace",
+    "description": "Estas instrucciones se usarán como contexto para la IA al generar tareas. Incluye información sobre el stack, convenciones, prioridades del proyecto, etc.",
+    "placeholder": "Escribe aquí las instrucciones detalladas para la IA...",
+    "characters": "caracteres",
+    "cancel": "Cancelar",
+    "save": "Guardar"
+  },
+  "workspaceShare": {
+    "title": "Compartir workspace",
+    "description": "Invita a colaboradores a este workspace",
+    "searchPlaceholder": "Buscar por nombre o email...",
+    "members": "Miembros",
+    "owner": "Propietario",
+    "pending": "Pendiente",
+    "accepted": "Aceptado",
+    "invite": "Invitar",
+    "remove": "Eliminar",
+    "loadMembersError": "Error al cargar miembros",
+    "searchUsersError": "Error al buscar usuarios",
+    "inviteSent": "Invitación enviada",
+    "inviteError": "Error al enviar invitación",
+    "memberRemoved": "Miembro eliminado",
+    "removeError": "Error al eliminar miembro",
+    "noResults": "No se encontraron usuarios",
+    "noMembers": "No hay miembros aún",
+    "searchHint": "Escribe al menos 2 caracteres para buscar"
+  },
+  "workspaceSection": {
+    "create": "Crear sección",
+    "edit": "Editar sección",
+    "name": "Nombre",
+    "namePlaceholder": "Nombre de la sección",
+    "icon": "Icono",
+    "color": "Color",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar sección",
+    "cannotDeleteSystem": "No se pueden eliminar secciones del sistema",
+    "created": "Sección creada",
+    "updated": "Sección actualizada",
+    "deleted": "Sección eliminada",
+    "createError": "Error al crear la sección",
+    "updateError": "Error al actualizar la sección",
+    "deleteError": "Error al eliminar la sección",
+    "moveError": "Error al mover la tarea",
+    "reorderError": "Error al reordenar secciones"
+  },
+  "workspaceSettings": {
+    "title": "Ajustes del workspace",
+    "description": "Configura las opciones de tu workspace",
+    "recurrenceDescription": "Gestiona las tareas que se repiten automáticamente. Las tareas programadas aparecerán cuando llegue su fecha.",
+    "generalSettings": "Ajustes generales",
+    "name": "Nombre del workspace",
+    "workspaceDescription": "Descripción",
+    "descriptionPlaceholder": "Descripción del workspace (opcional)",
+    "color": "Color",
+    "deleteWorkspace": "Eliminar workspace",
+    "deleteWarning": "Esta acción es permanente y eliminará todas las tareas asociadas.",
+    "recurrentTasks": "Tareas recurrentes",
+    "noRecurrentTasks": "No hay tareas recurrentes",
+    "addRecurrenceHint": "Puedes añadir recurrencia a cualquier tarea desde su panel de edición o al crearla",
+    "activeNow": "Activas ahora",
+    "scheduled": "Programadas",
+    "removeRecurrence": "Quitar recurrencia",
+    "editRecurrence": "Editar recurrencia",
+    "modifyRecurrence": "Modificar recurrencia",
+    "cancel": "Cancelar",
+    "saveChanges": "Guardar cambios",
+    "delete": "Eliminar",
+    "saved": "Cambios guardados",
+    "saveError": "Error al guardar cambios"
+  },
+  "tasks": {
+    "linkedNote": "Nota Vinculada",
+    "newTask": "Tarea recién creada",
+    "markAsPending": "Marcar como pendiente",
+    "completeTask": "Completar tarea",
+    "moveToSection": "Mover a sección",
+    "restoreTask": "Restaurar tarea",
+    "generateSubtasks": "Generar subtareas",
+    "generateSubtasksWithAI": "Generar subtareas con IA",
+    "deleteTask": "Eliminar tarea",
+    "subtasks": "subtareas",
+    "restore": "Restaurar",
+    "delete": "Eliminar",
+    "options": "Opciones",
+    "edit": "Editar",
+    "generatePrompt": "Generar prompt IDE",
+    "viewDetails": "Ver detalles",
+    "assign": "Asignar",
+    "dueDate": "Fecha límite",
+    "tags": "Etiquetas",
+    "complete": "Completar",
+    "moveTo": "Mover a",
+    "subtasksGenerated": "{count} subtareas generadas",
+    "generateSubtasksError": "Error al generar subtareas",
+    "importance": {
+      "label": "Importancia",
+      "of": "de",
+      "critical": "Crítica",
+      "veryHigh": "Muy alta",
+      "high": "Alta",
+      "medium": "Media",
+      "low": "Baja",
+      "veryLow": "Muy baja"
+    },
+    "card": {
+      "viewDetails": "Ver detalles",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "generatePrompt": "Generar prompt",
+      "moveTo": "Mover a",
+      "assignTo": "Asignar a",
+      "setDueDate": "Fecha límite",
+      "setImportance": "Importancia",
+      "addSubtasks": "Añadir subtareas",
+      "generateSubtasks": "Generar con IA",
+      "generatingSubtasks": "Generando...",
+      "tags": "Etiquetas",
+      "completed": "Completada",
+      "restore": "Restaurar",
+      "overdueBy": "Vencida hace {time}",
+      "dueIn": "Vence en {time}",
+      "noDescription": "Sin descripción",
+      "subtasksProgress": "{completed} de {total}",
+      "recurrenceRemoved": "Recurrencia eliminada",
+      "recurrenceUpdated": "Recurrencia actualizada",
+      "recurrenceError": "Error al actualizar recurrencia",
+      "subtasksGenerated": "Subtareas generadas",
+      "subtasksError": "Error al generar subtareas"
+    },
+    "dialog": {
+      "createTitle": "Nueva tarea",
+      "editTitle": "Editar tarea",
+      "title": "Título",
+      "titlePlaceholder": "Título de la tarea",
+      "titleRequired": "El título es obligatorio",
+      "description": "Descripción",
+      "descriptionPlaceholder": "Descripción de la tarea (opcional)",
+      "importance": "Importancia",
+      "dueDate": "Fecha límite",
+      "recurrence": "Recurrencia",
+      "workspace": "Workspace",
+      "selectWorkspace": "Seleccionar workspace",
+      "cancel": "Cancelar",
+      "create": "Crear tarea",
+      "save": "Guardar cambios",
+      "created": "Tarea creada correctamente",
+      "updated": "Tarea actualizada correctamente",
+      "createError": "Error al crear la tarea",
+      "updateError": "Error al actualizar la tarea"
+    },
+    "filters": {
+      "search": "Buscar tareas...",
+      "sortBy": "Ordenar por",
+      "importance": "Importancia",
+      "createdAt": "Fecha de creación",
+      "asc": "Ascendente",
+      "desc": "Descendente",
+      "filterByTags": "Filtrar por etiquetas",
+      "allTags": "Todas las etiquetas",
+      "noTags": "Sin etiquetas"
+    },
+    "detail": {
+      "loading": "Cargando...",
+      "backToWorkspace": "Volver al workspace",
+      "delete": "Eliminar tarea",
+      "titlePlaceholder": "Título de la tarea",
+      "descriptionPlaceholder": "Añade una descripción...",
+      "noDescription": "Sin descripción",
+      "clickToEdit": "Haz clic para editar",
+      "importance": "Importancia",
+      "dueDate": "Fecha límite",
+      "recurrence": "Recurrencia",
+      "tags": "Etiquetas",
+      "assignees": "Asignados",
+      "subtasks": "Subtareas",
+      "comments": "Comentarios",
+      "attachments": "Archivos adjuntos",
+      "activity": "Actividad",
+      "titleUpdated": "Título actualizado",
+      "descriptionUpdated": "Descripción actualizada",
+      "dateUpdated": "Fecha actualizada",
+      "dateRemoved": "Fecha eliminada",
+      "recurrenceSet": "Recurrencia configurada",
+      "recurrenceRemoved": "Recurrencia eliminada",
+      "taskCompleted": "¡Tarea completada!",
+      "taskRestored": "Tarea restaurada",
+      "occurrenceCompleted": "¡Ocurrencia completada! Desaparecerá hasta la próxima fecha.",
+      "recurrenceEnded": "La recurrencia ha terminado.",
+      "taskDeleted": "Tarea eliminada",
+      "deleteConfirm": "¿Estás seguro de que deseas eliminar esta tarea? Esta acción no se puede deshacer.",
+      "deleteSuccess": "Tarea eliminada correctamente",
+      "deleteError": "Error al eliminar la tarea",
+      "openInNewTab": "Abrir en nueva pestaña",
+      "deleteTask": "Eliminar tarea",
+      "save": "Guardar",
+      "cancel": "Cancelar",
+      "updateError": "Error actualizando tarea",
+      "importanceLabels": {
+        "minimal": "Mínima",
+        "veryLow": "Muy baja",
+        "low": "Baja",
+        "normalLow": "Normal-baja",
+        "normal": "Normal",
+        "normalHigh": "Normal-alta",
+        "high": "Alta",
+        "veryHigh": "Muy alta",
+        "critical": "Crítica",
+        "urgent": "Urgente"
+      }
+    }
+  },
+  "aiAgent": {
+    "summarize": "Resumir",
+    "summarizeDesc": "Resumen conciso del contenido",
+    "extractTasks": "Extraer tareas",
+    "extractTasksDesc": "Detecta tareas accionables",
+    "improve": "Mejorar",
+    "improveDesc": "Mejora la redacción",
+    "expand": "Expandir",
+    "expandDesc": "Desarrolla con más detalle",
+    "checklist": "Checklist",
+    "checklistDesc": "Convierte en checklist",
+    "translate": "Traducir",
+    "translateDesc": "Traduce ES↔EN",
+    "noContent": "No hay contenido para procesar",
+    "contentAdded": "Contenido añadido con IA",
+    "error": "Error al procesar",
+    "processing": "Procesando..."
+  },
+  "calendar": {
+    "title": "Calendario",
+    "noUpcomingTasks": "No hay tareas próximas",
+    "upcomingTasks": "PRÓXIMAS TAREAS",
+    "taskCreated": "Tarea creada",
+    "taskCreateError": "Error al crear la tarea",
+    "taskUpdated": "Tarea actualizada",
+    "taskUpdateError": "Error al actualizar la tarea",
+    "eventUpdated": "Evento actualizado",
+    "eventUpdateError": "Error al actualizar el evento",
+    "today": "Hoy",
+    "week": "Semana",
+    "month": "Mes",
+    "search": "Buscar...",
+    "taskMoved": "Tarea movida a las {time}",
+    "taskMoveError": "Error al mover la tarea",
+    "viewLinkedNote": "Ver nota vinculada",
+    "openInGoogleCalendar": "Abrir en Google Calendar",
+    "markAsPending": "Marcar como pendiente",
+    "completeTask": "Completar tarea",
+    "dueDate": "Fecha",
+    "time": "Hora",
+    "location": "Ubicación",
+    "calendarName": "Calendario",
+    "importance": "Importancia",
+    "workspace": "Workspace",
+    "description": "Descripción",
+    "descriptionPlaceholder": "Añade una descripción...",
+    "subtasks": "Subtareas",
+    "noUpcoming": "No hay tareas próximas",
+    "overdue": "Vencida",
+    "tomorrow": "Mañana",
+    "weekView": {
+      "allDay": "Todo el día",
+      "hour": "h",
+      "newTask": "Nueva tarea"
+    },
+    "monthView": {
+      "more": "+{count} más"
+    }
+  },
+  "taskFilters": {
+    "searchPlaceholder": "Buscar tareas...",
+    "tags": "Etiquetas",
+    "tagsCount": "{count} etiqueta{count, plural, one {} other {s}}",
+    "sortBy": "Ordenar por",
+    "moreImportantFirst": "Más importante primero",
+    "lessImportantFirst": "Menos importante primero",
+    "newestFirst": "Más reciente primero",
+    "oldestFirst": "Más antiguo primero"
+  },
+  "nav": {
+    "tasks": "Tareas",
+    "notes": "Notas",
+    "calendar": "Calendario"
+  },
+  "notes": {
+    "selectWorkspace": "Selecciona un workspace",
+    "selectWorkspaceHint": "Elige un workspace del panel lateral para ver y crear notas",
+    "emptyTitle": "Tus notas empiezan aquí",
+    "emptyDescription": "Crea notas con todo el poder de un editor rico, organízalas en carpetas y conviértelas en tareas cuando lo necesites.",
+    "newNote": "Nueva nota",
+    "newFolder": "Nueva carpeta",
+    "fromTemplate": "Desde plantilla",
+    "searchPlaceholder": "Buscar notas...",
+    "showCompleted": "Mostrar completadas",
+    "hideCompleted": "Ocultar completadas",
+    "newNoteHere": "Nueva nota aquí",
+    "newSubfolder": "Nueva subcarpeta",
+    "rename": "Renombrar",
+    "delete": "Eliminar",
+    "deleteFolder": "Eliminar carpeta",
+    "deleteNote": "Eliminar nota",
+    "folders": "Carpetas",
+    "noFoldersYet": "Sin carpetas todavía",
+    "noFolder": "Sin carpeta",
+    "tags": "Etiquetas",
+    "templates": "Plantillas",
+    "manageTemplates": "Gestionar plantillas",
+    "createOrUseTemplate": "Crear o usar plantilla",
+    "createTemplate": "Crear plantilla",
+    "viewAll": "Ver todas ({count})",
+    "untitled": "Sin título",
+    "dialogs": {
+      "deleteFolderTitle": "Eliminar carpeta",
+      "deleteFolderDescription": "¿Estás seguro de que quieres eliminar esta carpeta? Las notas dentro se moverán a 'Sin carpeta'.",
+      "deleteNoteTitle": "Eliminar nota",
+      "deleteNoteDescription": "¿Estás seguro de que quieres eliminar esta nota? Esta acción no se puede deshacer."
+    },
+    "tagSelector": {
+      "addTag": "Añadir etiqueta",
+      "assignedTags": "Etiquetas asignadas",
+      "add": "Añadir",
+      "tags": "Etiquetas",
+      "deleteFromWorkspace": "Eliminar del workspace",
+      "noTagsInWorkspace": "No hay etiquetas en este workspace",
+      "createNewTag": "Crear nueva etiqueta",
+      "newTag": "Nueva etiqueta",
+      "tagNamePlaceholder": "Nombre de la etiqueta",
+      "color": "Color",
+      "back": "Volver",
+      "loadError": "Error al cargar etiquetas",
+      "tagCreated": "Etiqueta creada",
+      "createError": "Error al crear etiqueta"
+    },
+    "toolbar": {
+      "untitled": "Sin título",
+      "pin": "Anclar",
+      "unpin": "Desanclar",
+      "addToFavorites": "Añadir a favoritos",
+      "removeFromFavorites": "Quitar de favoritos",
+      "moveToFolder": "Mover a carpeta",
+      "linkToTask": "Vincular a tarea",
+      "duplicate": "Duplicar",
+      "saveAsTemplate": "Guardar como plantilla",
+      "delete": "Eliminar",
+      "printNote": "Imprimir nota",
+      "saving": "Guardando...",
+      "createTask": "Crear tarea",
+      "noFolder": "Sin carpeta",
+      "moreOptions": "Más opciones"
+    },
+    "folderDialog": {
+      "createTitle": "Nueva carpeta",
+      "editTitle": "Editar carpeta",
+      "createDescription": "Crea una nueva carpeta para organizar tus notas",
+      "editDescription": "Modifica el nombre y color de la carpeta",
+      "name": "Nombre",
+      "namePlaceholder": "Nombre de la carpeta",
+      "color": "Color",
+      "cancel": "Cancelar",
+      "save": "Guardar",
+      "create": "Crear",
+      "saving": "Guardando..."
+    }
+  },
+  "errors": {
+    "generic": "Ha ocurrido un error",
+    "notFound": "No encontrado",
+    "unauthorized": "No autorizado",
+    "forbidden": "Prohibido",
+    "serverError": "Error del servidor",
+    "networkError": "Error de red",
+    "tryAgain": "Intentar de nuevo",
+    "reorderError": "Error al guardar el orden"
+  }
+}

@@ -19,6 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Editor } from "@tiptap/react";
+import { useTranslations } from "next-intl";
 
 interface AIAgentPanelProps {
   noteId: string;
@@ -28,46 +29,23 @@ interface AIAgentPanelProps {
 
 type AIAction = "summarize" | "extract_tasks" | "improve" | "expand" | "checklist" | "translate";
 
-const ACTION_LABELS: Record<AIAction, { label: string; icon: any; description: string }> = {
-  summarize: {
-    label: "Resumir",
-    icon: FileText,
-    description: "Resumen conciso del contenido",
-  },
-  extract_tasks: {
-    label: "Extraer tareas",
-    icon: ListChecks,
-    description: "Detecta tareas accionables",
-  },
-  improve: {
-    label: "Mejorar",
-    icon: Wand2,
-    description: "Mejora la redacción",
-  },
-  expand: {
-    label: "Expandir",
-    icon: Expand,
-    description: "Desarrolla con más detalle",
-  },
-  checklist: {
-    label: "Checklist",
-    icon: ListChecks,
-    description: "Convierte en checklist",
-  },
-  translate: {
-    label: "Traducir",
-    icon: Languages,
-    description: "Traduce ES↔EN",
-  },
+const ACTION_ICONS: Record<AIAction, any> = {
+  summarize: FileText,
+  extract_tasks: ListChecks,
+  improve: Wand2,
+  expand: Expand,
+  checklist: ListChecks,
+  translate: Languages,
 };
 
 export function AIAgentPanel({ noteId, editor, noteContent }: AIAgentPanelProps) {
+  const t = useTranslations('aiAgent');
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
 
   const handleAction = async (action: AIAction) => {
     if (!editor || !noteContent.trim()) {
-      toast.error("No hay contenido para procesar");
+      toast.error(t('noContent'));
       return;
     }
 
@@ -91,23 +69,46 @@ export function AIAgentPanel({ noteId, editor, noteContent }: AIAgentPanelProps)
       if (data.type === "modification" && data.result) {
         // Si es JSON TipTap, insertarlo directamente
         editor.chain().focus('end').insertContent(data.result).run();
-        toast.success("Contenido añadido con IA");
+        toast.success(t('contentAdded'));
       } else if (data.type === "text" && data.result) {
         // Si es texto plano, envolverlo en un párrafo
         editor.chain().focus('end').insertContent({
           type: 'paragraph',
           content: [{ type: 'text', text: data.result }]
         }).run();
-        toast.success("Contenido añadido");
+        toast.success(t('contentAdded'));
       }
     } catch (error) {
       console.error("Error al procesar con IA:", error);
-      toast.error("Error al procesar la acción");
+      toast.error(t('error'));
     } finally {
       setIsLoading(false);
     }
   };
 
+  const getActionLabel = (action: AIAction) => {
+    const labels: Record<AIAction, string> = {
+      summarize: t('summarize'),
+      extract_tasks: t('extractTasks'),
+      improve: t('improve'),
+      expand: t('expand'),
+      checklist: t('checklist'),
+      translate: t('translate'),
+    };
+    return labels[action];
+  };
+
+  const getActionDesc = (action: AIAction) => {
+    const descs: Record<AIAction, string> = {
+      summarize: t('summarizeDesc'),
+      extract_tasks: t('extractTasksDesc'),
+      improve: t('improveDesc'),
+      expand: t('expandDesc'),
+      checklist: t('checklistDesc'),
+      translate: t('translateDesc'),
+    };
+    return descs[action];
+  };
 
   return (
     <>
@@ -122,12 +123,12 @@ export function AIAgentPanel({ noteId, editor, noteContent }: AIAgentPanelProps)
             {isLoading ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Procesando...</span>
+                <span className="text-sm">{t('processing')}</span>
               </>
             ) : (
               <>
                 <Sparkles className="h-4 w-4" />
-                <span className="text-sm">Acciones Tari</span>
+                <span className="text-sm">IA</span>
               </>
             )}
           </Button>
@@ -136,11 +137,14 @@ export function AIAgentPanel({ noteId, editor, noteContent }: AIAgentPanelProps)
           <div className="px-3 py-2 border-b">
             <p className="text-sm font-semibold flex items-center gap-2">
               <Sparkles className="h-4 w-4" />
-              Acciones Tari
+              IA
             </p>
           </div>
-          {(Object.entries(ACTION_LABELS) as [AIAction, typeof ACTION_LABELS[AIAction]][]).map(
-            ([action, { label, icon: Icon, description }]) => (
+          {(Object.keys(ACTION_ICONS) as AIAction[]).map((action) => {
+            const Icon = ACTION_ICONS[action];
+            const label = getActionLabel(action);
+            const description = getActionDesc(action);
+            return (
               <button
                 key={action}
                 onClick={() => {
@@ -163,8 +167,8 @@ export function AIAgentPanel({ noteId, editor, noteContent }: AIAgentPanelProps)
                   </div>
                 </div>
               </button>
-            )
-          )}
+            );
+          })}
         </DropdownMenuContent>
       </DropdownMenu>
     </>

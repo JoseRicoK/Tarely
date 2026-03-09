@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { handleLocale } from './middleware-i18n';
 
 export async function middleware(request: NextRequest) {
   // Validar que las variables de entorno existan (acepta ambos nombres)
@@ -92,7 +93,10 @@ export async function middleware(request: NextRequest) {
     supabaseResponse.headers.set('X-Robots-Tag', 'noindex, nofollow');
   }
 
-  return supabaseResponse;
+  // Manejar locale del usuario
+  const responseWithLocale = await handleLocale(request, supabaseResponse);
+
+  return responseWithLocale;
 }
 
 export const config = {

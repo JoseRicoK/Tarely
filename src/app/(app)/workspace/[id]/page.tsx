@@ -91,6 +91,7 @@ import {
 import type { Workspace, Task, TaskAssignee, WorkspaceSection, Subtask } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { calculateNextOccurrence } from "@/lib/recurrence";
+import { useTranslations } from "next-intl";
 
 // Map of icon names to components
 const iconMap: Record<string, LucideIcon> = {
@@ -136,6 +137,7 @@ function getIconComponent(iconName: string): LucideIcon {
 }
 
 export default function WorkspacePage() {
+  const t = useTranslations('workspace');
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -425,9 +427,9 @@ export default function WorkspacePage() {
       
       const newSection = await res.json();
       setSections((prev) => [...prev, newSection]);
-      toast.success("Sección creada");
+      toast.success(t('sectionCreated'));
     } catch {
-      toast.error("Error al crear la sección");
+      toast.error(t('sectionCreateError'));
     }
   }, [workspaceId]);
 
@@ -455,9 +457,9 @@ export default function WorkspacePage() {
         prev.map((s) => (s.id === updatedSection.id ? updatedSection : s))
       );
       setEditingSection(null);
-      toast.success("Sección actualizada");
+      toast.success(t('sectionUpdated'));
     } catch {
-      toast.error("Error al actualizar la sección");
+      toast.error(t('sectionUpdateError'));
     }
   }, [editingSection]);
 
@@ -477,9 +479,9 @@ export default function WorkspacePage() {
         setActiveSectionId(remaining[0]?.id || null);
       }
       setEditingSection(null);
-      toast.success("Sección eliminada");
+      toast.success(t('sectionDeleted'));
     } catch {
-      toast.error("Error al eliminar la sección");
+      toast.error(t('sectionDeleteError'));
     }
   }, [sections, activeSectionId]);
 
@@ -658,7 +660,7 @@ export default function WorkspacePage() {
       recorder.start();
       setIsRecording(true);
     } catch {
-      toast.error("No se pudo acceder al micrófono. Comprueba los permisos.");
+      toast.error(t('microphoneError'));
     }
   }, [isRecording]);
 
@@ -698,7 +700,7 @@ export default function WorkspacePage() {
 
           if (!res.ok) throw new Error("Error al actualizar tarea recurrente");
 
-          toast.success("¡Ocurrencia completada! Desaparecerá hasta la próxima fecha.");
+          toast.success(t('occurrenceCompleted'));
           refetchTasks();
           return;
         } else {
@@ -993,7 +995,7 @@ export default function WorkspacePage() {
                 className="h-9 w-9 md:h-10 md:w-auto md:px-4"
               >
                 <Share2 className="h-4 w-4 md:h-4.5 md:w-4.5" />
-                <span className="hidden md:inline ml-1.5">Compartir</span>
+                <span className="hidden md:inline ml-1.5">{t('share')}</span>
               </Button>
               <Button
                 variant="outline"
@@ -1002,7 +1004,7 @@ export default function WorkspacePage() {
                 className="h-9 w-9 md:h-10 md:w-auto md:px-4"
               >
                 <FileText className="h-4 w-4 md:h-4.5 md:w-4.5" />
-                <span className="hidden md:inline ml-1.5">Instrucciones</span>
+                <span className="hidden md:inline ml-1.5">{t('instructions')}</span>
               </Button>
               <Button
                 variant="outline"
@@ -1023,7 +1025,7 @@ export default function WorkspacePage() {
         <div className="flex items-center justify-between gap-2 md:gap-4">
           <div className="flex items-center gap-2">
             <ListTodo className="h-4 w-4 md:h-5 md:w-5" />
-            <h2 className="font-semibold text-sm md:text-base">Tareas</h2>
+            <h2 className="font-semibold text-sm md:text-base">{t('tasks')}</h2>
           </div>
           <div className="flex items-center gap-3 md:gap-3.5">
             {/* View mode toggle - animated pill (slightly smaller) */}
@@ -1043,7 +1045,7 @@ export default function WorkspacePage() {
                 )}
               >
                 <List className="h-3.5 w-3.5 shrink-0" />
-                <span className="hidden sm:inline">Lista</span>
+                <span className="hidden sm:inline">{t('list')}</span>
               </button>
               <button
                 onClick={() => startTransition(() => setViewMode("kanban"))}
@@ -1053,13 +1055,13 @@ export default function WorkspacePage() {
                 )}
               >
                 <LayoutGrid className="h-4 w-4 shrink-0" />
-                <span className="hidden sm:inline">Kanban</span>
+                <span className="hidden sm:inline">{t('kanban')}</span>
               </button>
             </div>
             <Button onClick={handleCreateTask} size="sm" className="gap-1.5 h-9 md:h-10 px-3 md:px-4 text-sm md:text-base btn-accent-gradient text-white font-semibold">
               <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">Nueva tarea</span>
-              <span className="sm:hidden">Nueva</span>
+              <span className="hidden sm:inline">{t('newTask')}</span>
+              <span className="sm:hidden">{t('new')}</span>
             </Button>
           </div>
         </div>
@@ -1100,7 +1102,7 @@ export default function WorkspacePage() {
                           onClick={(e) => e.stopPropagation()}
                         >
                           <MoreHorizontal className="h-3.5 w-3.5" />
-                          <span className="sr-only">Opciones de sección</span>
+                          <span className="sr-only">{t('sectionOptions')}</span>
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -1109,19 +1111,19 @@ export default function WorkspacePage() {
                           disabled={sections.indexOf(section) === 0}
                         >
                           <ChevronLeft className="h-4 w-4 mr-2" />
-                          Mover a la izquierda
+                          {t('moveLeft')}
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={() => handleMoveSectionInList(section, "right")}
                           disabled={sections.indexOf(section) === sections.length - 1}
                         >
                           <ChevronRight className="h-4 w-4 mr-2" />
-                          Mover a la derecha
+                          {t('moveRight')}
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleEditSection(section)}>
                           <Pencil className="h-4 w-4 mr-2" />
-                          Editar sección
+                          {t('editSection')}
                         </DropdownMenuItem>
                         {!section.isSystem && (
                           <DropdownMenuItem
@@ -1129,7 +1131,7 @@ export default function WorkspacePage() {
                             className="text-destructive focus:text-destructive"
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
-                            Eliminar sección
+                            {t('deleteSection')}
                           </DropdownMenuItem>
                         )}
                       </DropdownMenuContent>
@@ -1148,7 +1150,7 @@ export default function WorkspacePage() {
                 className="gap-1.5 h-9 px-3 border border-dashed hover:border-ta/50 hover:text-ta-light"
               >
                 <Plus className="h-4 w-4" />
-                <span className="hidden sm:inline">Añadir</span>
+                <span className="hidden sm:inline">{t('add')}</span>
               </Button>
             </div>
             <ScrollBar orientation="horizontal" />
@@ -1207,19 +1209,19 @@ export default function WorkspacePage() {
             {!searchQuery && activeSectionId ? (
               <>
                 <ListTodo className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="font-medium mb-2">No hay tareas en esta sección</h3>
+                <h3 className="font-medium mb-2">{t('noTasksInSection')}</h3>
                 <p className="text-sm text-muted-foreground mb-4 max-w-sm">
-                  Genera tareas con IA o crea una manualmente para empezar.
+                  {t('noTasksHint')}
                 </p>
                 <Button onClick={handleCreateTask} variant="outline" className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Crear tarea manual
+                  {t('createManualTask')}
                 </Button>
               </>
             ) : (
               <>
                 <p className="text-muted-foreground">
-                  No se encontraron tareas que coincidan con &quot;{searchQuery}&quot;
+                  {t('noTasksFound', { query: searchQuery })}
                 </p>
               </>
             )}
@@ -1289,8 +1291,8 @@ export default function WorkspacePage() {
         onOpenChange={setDeleteDialogOpen}
         onConfirm={handleConfirmDelete}
         isLoading={isDeleting}
-        title="¿Eliminar tarea?"
-        description={`Esta acción eliminará la tarea "${deletingTask?.title?.substring(0, 50)}${(deletingTask?.title?.length || 0) > 50 ? '...' : ''}". Esta acción no se puede deshacer.`}
+        title={t('deleteTaskTitle')}
+        description={t('deleteTaskDescription', { title: deletingTask?.title?.substring(0, 50) + ((deletingTask?.title?.length || 0) > 50 ? '...' : '') })}
       />
 
       {promptDialogOpen && (
@@ -1354,7 +1356,7 @@ export default function WorkspacePage() {
               {/* Contenedor del Input - Sin bordes, solo fondo translúcido y blur shadow */}
               <div className="relative rounded-2xl bg-background/60 backdrop-blur-md border border-black/10 dark:border-white/10 shadow-[0_15px_40px_rgba(0,0,0,0.5)] dark:shadow-[0_15px_40px_rgba(0,0,0,0.5)]">
                 <Textarea
-                  placeholder="Crear tareas con IA"
+                  placeholder={t('aiPlaceholder')}
                   value={aiText}
                   onChange={(e) => setAiText(e.target.value)}
                   onKeyDown={handleKeyDown}
@@ -1369,7 +1371,7 @@ export default function WorkspacePage() {
                   type="button"
                   onClick={handleToggleRecording}
                   disabled={isGenerating || isTranscribing}
-                  title={isRecording ? "Detener grabación" : "Hablar"}
+                  title={isRecording ? t('stopRecording') : t('speakTitle')}
                   className={`absolute right-[100px] md:right-[122px] top-1/2 -translate-y-1/2 flex items-center justify-center h-[40px] w-[40px] rounded-full transition-all disabled:opacity-40 ${
                     isRecording
                       ? "bg-red-500/20 text-red-500 hover:bg-red-500/30 animate-pulse"
@@ -1397,12 +1399,12 @@ export default function WorkspacePage() {
                   {isGenerating ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-xs md:text-sm font-medium">Creando...</span>
+                      <span className="text-xs md:text-sm font-medium">{t('organizing')}</span>
                     </>
                   ) : (
                     <>
                       <Sparkles className="h-4 w-4" />
-                      <span className="text-xs md:text-sm font-medium">Organizar</span>
+                      <span className="text-xs md:text-sm font-medium">{t('organize')}</span>
                     </>
                   )}
                 </Button>

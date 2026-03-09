@@ -73,6 +73,7 @@ import { useUser } from "@/components/auth/UserContext";
 import type { Task, Workspace, WorkspaceSection, Subtask, TaskAssignee, TaskTag, RecurrenceRule } from "@/lib/types";
 import { cn, getAvatarUrl } from "@/lib/utils";
 import { getRecurrenceLabel, calculateNextOccurrence } from "@/lib/recurrence";
+import { useTranslations } from "next-intl";
 
 // Colores de importancia
 const importanceConfig: Record<number, { bg: string; text: string; border: string; label: string }> = {
@@ -97,6 +98,7 @@ function getImportanceBarColor(importance: number): string {
 }
 
 export default function TaskDetailPage() {
+  const t = useTranslations('taskDetail');
   const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -534,12 +536,12 @@ export default function TaskDetailPage() {
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => window.open(window.location.href, "_blank")}>
                     <ExternalLink className="h-4 w-4 mr-2" />
-                    Abrir en nueva pestaña
+                    {t('openInNewTab')}
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleDelete} className="text-destructive">
                     <Trash2 className="h-4 w-4 mr-2" />
-                    Eliminar tarea
+                    {t('deleteTask')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -580,7 +582,7 @@ export default function TaskDetailPage() {
                   <div className="flex gap-2">
                     <Button size="sm" onClick={saveTitle} disabled={isSaving}>
                       {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                      <span className="ml-1">Guardar</span>
+                      <span className="ml-1">{t('save')}</span>
                     </Button>
                     <Button
                       size="sm"
@@ -591,7 +593,7 @@ export default function TaskDetailPage() {
                       }}
                     >
                       <X className="h-4 w-4" />
-                      <span className="ml-1">Cancelar</span>
+                      <span className="ml-1">{t('cancel')}</span>
                     </Button>
                   </div>
                 </div>
@@ -645,7 +647,7 @@ export default function TaskDetailPage() {
                   <div className="flex gap-2">
                     <Button size="sm" onClick={saveDescription} disabled={isSaving}>
                       {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
-                      <span className="ml-1">Guardar</span>
+                      <span className="ml-1">{t('save')}</span>
                     </Button>
                     <Button
                       size="sm"
@@ -656,7 +658,7 @@ export default function TaskDetailPage() {
                       }}
                     >
                       <X className="h-4 w-4" />
-                      <span className="ml-1">Cancelar</span>
+                      <span className="ml-1">{t('cancel')}</span>
                     </Button>
                   </div>
                 </div>

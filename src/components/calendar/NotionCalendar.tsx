@@ -33,6 +33,7 @@ import type { SelectedCalendarEvent } from './EventDetailPanel';
 import type { Task, Workspace } from '@/lib/types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useTranslations } from 'next-intl';
 
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 
@@ -59,6 +60,7 @@ export function NotionCalendar({
   selectedWorkspace,
   onTaskClick,
 }: NotionCalendarProps) {
+  const t = useTranslations('calendar');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState<'week' | 'month'>('week');
   const [googleEvents, setGoogleEvents] = useState<any[]>([]);
@@ -106,10 +108,10 @@ export function NotionCalendar({
       const newTask = await res.json();
       setTasks(prev => [...prev, newTask]);
       setIsTaskDialogOpen(false);
-      toast.success("Tarea creada");
+      toast.success(t('taskCreated'));
     } catch (error) {
       console.error("Error creating task:", error);
-      toast.error("Error al crear la tarea");
+      toast.error(t('taskCreateError'));
     }
   };
 
@@ -306,10 +308,10 @@ export function NotionCalendar({
         body: JSON.stringify({ dueDate: newDate.toISOString() }),
       });
       if (!res.ok) throw new Error('Failed to move task');
-      toast.success(`Tarea movida a las ${newDate.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })}`);
+      toast.success(t('taskMoved', { time: newDate.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' }) }));
     } catch (error) {
       console.error('Error moving task:', error);
-      toast.error('Error al mover la tarea');
+      toast.error(t('taskMoveError'));
       // Revert on failure
       setTasks(initialTasks);
     }
@@ -453,7 +455,7 @@ export function NotionCalendar({
               onClick={handleToday}
               className="h-6 text-[11px] px-2 ml-1"
             >
-              Hoy
+              {t('today')}
             </Button>
           </div>
 
@@ -465,7 +467,7 @@ export function NotionCalendar({
                 onClick={() => setViewMode('week')}
                 className="h-6 text-[11px] px-2.5"
               >
-                Semana
+                {t('week')}
               </Button>
               <Button
                 variant={viewMode === 'month' ? 'secondary' : 'ghost'}
@@ -473,14 +475,14 @@ export function NotionCalendar({
                 onClick={() => setViewMode('month')}
                 className="h-6 text-[11px] px-2.5"
               >
-                Mes
+                {t('month')}
               </Button>
             </div>
 
             <div className="relative hidden sm:block">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/60" />
               <Input
-                placeholder="Buscar..."
+                placeholder={t('search')}
                 className="pl-8 h-7 w-36 md:w-48 bg-muted/30 text-xs border-border/30"
               />
             </div>

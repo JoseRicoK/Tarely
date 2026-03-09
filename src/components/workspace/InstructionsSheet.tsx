@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useState, useEffect } from "react";
 import { Loader2, Save } from "lucide-react";
 import type { Workspace } from "@/lib/types";
+import { useTranslations } from "next-intl";
 
 interface InstructionsSheetProps {
   open: boolean;
@@ -28,6 +29,7 @@ export function InstructionsSheet({
   workspace,
   onSave,
 }: InstructionsSheetProps) {
+  const t = useTranslations('workspaceInstructions');
   const [instructions, setInstructions] = useState(workspace.instructions);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -63,18 +65,16 @@ export function InstructionsSheet({
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-xl flex flex-col h-full p-6">
         <SheetHeader className="flex-shrink-0">
-          <SheetTitle>Instrucciones del Workspace</SheetTitle>
+          <SheetTitle>{t('title')}</SheetTitle>
           <SheetDescription>
-            Estas instrucciones se usarán como contexto para la IA al generar
-            tareas. Incluye información sobre el stack, convenciones,
-            prioridades del proyecto, etc.
+            {t('description')}
           </SheetDescription>
         </SheetHeader>
         <div className="mt-6 flex-1 flex flex-col min-h-0 overflow-hidden">
           <Textarea
             value={instructions}
             onChange={handleInstructionsChange}
-            placeholder="Escribe aquí las instrucciones detalladas para la IA..."
+            placeholder={t('placeholder')}
             className="flex-1 min-h-0 resize-none overflow-y-auto"
             maxLength={MAX_INSTRUCTIONS_LENGTH}
           />
@@ -82,7 +82,7 @@ export function InstructionsSheet({
             <span className={isNearLimit ? "text-orange-500 font-medium" : ""}>
               {instructions.length}
             </span>
-            <span className="text-muted-foreground/60"> / {MAX_INSTRUCTIONS_LENGTH} caracteres</span>
+            <span className="text-muted-foreground/60"> / {MAX_INSTRUCTIONS_LENGTH} {t('characters')}</span>
           </div>
         </div>
         <div className="flex-shrink-0 pt-4 pb-4 flex justify-end gap-3 border-t mt-4">
@@ -94,7 +94,7 @@ export function InstructionsSheet({
             }}
             disabled={isSaving}
           >
-            Cancelar
+            {t('cancel')}
           </Button>
           <Button onClick={handleSave} disabled={isSaving || !hasChanges}>
             {isSaving ? (
@@ -102,7 +102,7 @@ export function InstructionsSheet({
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            Guardar
+            {t('save')}
           </Button>
         </div>
       </SheetContent>

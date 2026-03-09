@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -29,6 +30,7 @@ const FOLDER_COLORS = [
 ];
 
 export function FolderDialog({ open, onOpenChange, onSave, folder, isLoading }: FolderDialogProps) {
+  const t = useTranslations('notes.folderDialog');
   const [name, setName] = useState(folder?.name || "");
   const [color, setColor] = useState(folder?.color || "#6366f1");
 
@@ -41,25 +43,25 @@ export function FolderDialog({ open, onOpenChange, onSave, folder, isLoading }: 
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{folder ? "Editar carpeta" : "Nueva carpeta"}</DialogTitle>
+          <DialogTitle>{folder ? t('editTitle') : t('createTitle')}</DialogTitle>
           <DialogDescription>
-            {folder ? "Modifica el nombre y color de la carpeta" : "Crea una nueva carpeta para organizar tus notas"}
+            {folder ? t('editDescription') : t('createDescription')}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label htmlFor="folder-name">Nombre</Label>
+            <Label htmlFor="folder-name">{t('name')}</Label>
             <Input
               id="folder-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Nombre de la carpeta"
+              placeholder={t('namePlaceholder')}
               onKeyDown={(e) => e.key === "Enter" && handleSave()}
               autoFocus
             />
           </div>
           <div className="space-y-2">
-            <Label>Color</Label>
+            <Label>{t('color')}</Label>
             <div className="flex gap-2 flex-wrap">
               {FOLDER_COLORS.map(c => (
                 <button
@@ -78,10 +80,10 @@ export function FolderDialog({ open, onOpenChange, onSave, folder, isLoading }: 
         </div>
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)}>
-            Cancelar
+            {t('cancel')}
           </Button>
           <Button onClick={handleSave} disabled={!name.trim() || isLoading}>
-            {isLoading ? "Guardando..." : folder ? "Guardar" : "Crear"}
+            {isLoading ? t('saving') : folder ? t('save') : t('create')}
           </Button>
         </DialogFooter>
       </DialogContent>

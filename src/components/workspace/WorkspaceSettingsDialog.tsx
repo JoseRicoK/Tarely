@@ -34,12 +34,9 @@ import { cn } from "@/lib/utils";
 import type { Task, RecurrenceRule } from "@/lib/types";
 import { getRecurrenceLabel } from "@/lib/recurrence";
 import { RecurrenceSelector } from "@/components/tasks/RecurrenceSelector";
+import { useTranslations } from "next-intl";
 
 type SettingsSection = "recurrence";
-
-const SETTINGS_SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode }[] = [
-  { id: "recurrence", label: "Tareas recurrentes", icon: <Repeat className="h-4 w-4" /> },
-];
 
 interface WorkspaceSettingsDialogProps {
   open: boolean;
@@ -57,7 +54,12 @@ export function WorkspaceSettingsDialog({
   onRemoveRecurrence,
   onUpdateRecurrence,
 }: WorkspaceSettingsDialogProps) {
+  const t = useTranslations('workspaceSettings');
   const [activeSection, setActiveSection] = useState<SettingsSection>("recurrence");
+  
+  const SETTINGS_SECTIONS: { id: SettingsSection; label: string; icon: React.ReactNode }[] = [
+    { id: "recurrence", label: t('recurrentTasks'), icon: <Repeat className="h-4 w-4" /> },
+  ];
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -71,10 +73,10 @@ export function WorkspaceSettingsDialog({
             <DialogHeader className="gap-0 text-left pl-0 md:pl-6">
               <DialogTitle className="flex items-center gap-2 text-base md:text-lg pl-0 md:pl-2">
                 <Settings className="h-5 w-5 md:h-6 md:w-6 text-muted-foreground" />
-                Ajustes del workspace
+                {t('title')}
               </DialogTitle>
               <DialogDescription className="text-xs mt-1">
-                Configura las opciones de tu workspace
+                {t('description')}
               </DialogDescription>
             </DialogHeader>
           </div>
@@ -158,6 +160,7 @@ function RecurrenceSettingsSection({
   onRemoveRecurrence: (taskId: string) => Promise<void> | void;
   onUpdateRecurrence: (taskId: string, rule: RecurrenceRule | null) => Promise<void> | void;
 }) {
+  const t = useTranslations('workspaceSettings');
   const recurringTasks = tasks.filter((t) => !!t.recurrence);
 
   const now = new Date();
@@ -177,11 +180,10 @@ function RecurrenceSettingsSection({
         <div>
           <h3 className="text-base font-semibold flex items-center gap-2">
             <Repeat className="h-4 w-4 text-violet-500" />
-            Tareas recurrentes
+            {t('recurrentTasks')}
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Gestiona las tareas que se repiten automáticamente. Las tareas programadas
-            aparecerán cuando llegue su fecha.
+            {t('recurrenceDescription')}
           </p>
         </div>
 
@@ -193,10 +195,10 @@ function RecurrenceSettingsSection({
               <Repeat className="h-8 w-8 text-violet-500/40" />
             </div>
             <p className="text-muted-foreground text-sm font-medium">
-              No hay tareas recurrentes
+              {t('noRecurrentTasks')}
             </p>
             <p className="text-muted-foreground/60 text-xs mt-1 max-w-xs">
-              Puedes añadir recurrencia a cualquier tarea desde su panel de edición o al crearla
+              {t('addRecurrenceHint')}
             </p>
           </div>
         ) : (
@@ -207,7 +209,7 @@ function RecurrenceSettingsSection({
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-green-500" />
                   <h4 className="text-sm font-medium">
-                    Activas ahora
+                    {t('activeNow')}
                   </h4>
                   <span className="text-xs text-muted-foreground">({activeTasks.length})</span>
                 </div>
@@ -235,7 +237,7 @@ function RecurrenceSettingsSection({
                 <div className="flex items-center gap-2">
                   <div className="h-2 w-2 rounded-full bg-violet-500" />
                   <h4 className="text-sm font-medium">
-                    Programadas
+                    {t('scheduled')}
                   </h4>
                   <span className="text-xs text-muted-foreground">({scheduledTasks.length})</span>
                 </div>
@@ -278,6 +280,7 @@ function RecurringTaskSettingsItem({
   onRemoveRecurrence: (taskId: string) => Promise<void> | void;
   onUpdateRecurrence: (taskId: string, rule: RecurrenceRule | null) => Promise<void> | void;
 }) {
+  const t = useTranslations('workspaceSettings');
   const [isRemoving, setIsRemoving] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -362,7 +365,7 @@ function RecurringTaskSettingsItem({
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Editar recurrencia</TooltipContent>
+              <TooltipContent>{t('editRecurrence')}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
 
@@ -383,7 +386,7 @@ function RecurringTaskSettingsItem({
                   )}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Quitar recurrencia</TooltipContent>
+              <TooltipContent>{t('removeRecurrence')}</TooltipContent>
             </Tooltip>
           </TooltipProvider>
         </div>
@@ -394,7 +397,7 @@ function RecurringTaskSettingsItem({
         <div className="px-3 pb-3 pt-0">
           <Separator className="mb-3" />
           <div className="space-y-2">
-            <p className="text-xs text-muted-foreground">Modificar recurrencia:</p>
+            <p className="text-xs text-muted-foreground">{t('modifyRecurrence')}:</p>
             <RecurrenceSelector
               value={task.recurrence || null}
               onChange={handleRecurrenceChange}

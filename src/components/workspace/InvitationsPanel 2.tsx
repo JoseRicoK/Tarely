@@ -8,7 +8,6 @@ import { toast } from "sonner";
 import { Loader2, Mail, Check, X, FolderOpen } from "lucide-react";
 import Image from "next/image";
 import { getAvatarUrl } from "@/lib/utils";
-import { useTranslations } from "next-intl";
 
 interface Invitation {
   id: string;
@@ -24,7 +23,6 @@ interface Invitation {
 }
 
 export function InvitationsPanel() {
-  const t = useTranslations('invitations');
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [respondingId, setRespondingId] = useState<string | null>(null);
@@ -41,7 +39,7 @@ export function InvitationsPanel() {
         setInvitations(data);
       }
     } catch {
-      toast.error(t('loadError'));
+      toast.error("Error al cargar invitaciones");
     } finally {
       setIsLoading(false);
     }
@@ -60,10 +58,10 @@ export function InvitationsPanel() {
         throw new Error("Error al responder");
       }
 
-      toast.success(accept ? t('accepted') : t('rejected'));
+      toast.success(accept ? "Invitación aceptada" : "Invitación rechazada");
       setInvitations(invitations.filter((i) => i.id !== invitationId));
     } catch {
-      toast.error(t('respondError'));
+      toast.error("Error al responder a la invitación");
     } finally {
       setRespondingId(null);
     }
@@ -93,13 +91,13 @@ export function InvitationsPanel() {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <Mail className="h-5 w-5 text-ta-light" />
-          {t('title')}
+          Invitaciones pendientes
           {invitations.length > 0 && (
             <Badge className="bg-ta ml-2">{invitations.length}</Badge>
           )}
         </CardTitle>
         <CardDescription>
-          {t('description')}
+          Workspaces a los que te han invitado a colaborar
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -107,7 +105,7 @@ export function InvitationsPanel() {
           <div className="text-center py-6">
             <Mail className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
             <p className="text-sm text-muted-foreground">
-              {t('noInvitations')}
+              No tienes invitaciones pendientes
             </p>
           </div>
         ) : (
@@ -118,6 +116,7 @@ export function InvitationsPanel() {
                 className="flex items-center justify-between p-4 rounded-lg bg-foreground/5 border border-border hover:bg-foreground/10 transition-colors"
               >
                 <div className="flex items-center gap-4">
+                  {/* Workspace icon */}
                   <div
                     className="w-12 h-12 rounded-lg flex items-center justify-center"
                     style={{ backgroundColor: invitation.workspaceColor + "30" }}
@@ -131,7 +130,7 @@ export function InvitationsPanel() {
                   <div>
                     <p className="font-medium">{invitation.workspaceName}</p>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <span>{t('invitedBy')}</span>
+                      <span>Invitado por</span>
                       <div className="flex items-center gap-1">
                         <div className="relative w-4 h-4 rounded-full overflow-hidden">
                           <Image
@@ -165,7 +164,7 @@ export function InvitationsPanel() {
                     ) : (
                       <>
                         <X className="h-4 w-4 mr-1" />
-                        {t('reject')}
+                        Rechazar
                       </>
                     )}
                   </Button>
@@ -180,7 +179,7 @@ export function InvitationsPanel() {
                     ) : (
                       <>
                         <Check className="h-4 w-4 mr-1" />
-                        {t('accept')}
+                        Aceptar
                       </>
                     )}
                   </Button>

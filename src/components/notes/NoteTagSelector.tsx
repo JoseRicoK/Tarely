@@ -20,6 +20,7 @@ import { toast } from "sonner";
 import { Loader2, Tag, Plus, X, Check, ArrowLeft, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TaskTag, WorkspaceTag } from "@/lib/types";
+import { useTranslations } from "next-intl";
 
 // Cache de etiquetas por workspace para evitar peticiones repetidas
 const tagsCache = new Map<string, WorkspaceTag[]>();
@@ -51,6 +52,7 @@ export function NoteTagSelector({
   tags,
   onTagsChange,
 }: NoteTagSelectorProps) {
+  const t = useTranslations('notes.tagSelector');
   const [open, setOpen] = useState(false);
   const [workspaceTags, setWorkspaceTags] = useState<WorkspaceTag[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -72,7 +74,7 @@ export function NoteTagSelector({
         setWorkspaceTags(data);
       }
     } catch {
-      toast.error("Error al cargar etiquetas");
+      toast.error(t('loadError'));
     } finally {
       setIsLoading(false);
     }
@@ -175,7 +177,7 @@ export function NoteTagSelector({
               className="text-xs gap-1.5 border-dashed cursor-pointer hover:bg-muted text-muted-foreground/60 hover:text-muted-foreground transition-colors"
             >
               <Tag className="h-3 w-3" />
-              Añadir etiqueta
+              {t('addTag')}
             </Badge>
           )}
         </div>
@@ -197,7 +199,7 @@ export function NoteTagSelector({
             {tags.length > 0 && (
               <>
                 <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
-                  Etiquetas asignadas
+                  {t('assignedTags')}
                 </div>
                 <ScrollArea className="max-h-32">
                   {tags.map(tag => (
@@ -233,7 +235,7 @@ export function NoteTagSelector({
             ) : availableTags.length > 0 ? (
               <>
                 <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
-                  {tags.length > 0 ? "Añadir" : "Etiquetas"}
+                  {tags.length > 0 ? t('add') : t('tags')}
                 </div>
                 <ScrollArea className="max-h-40">
                   {availableTags.map(tag => (
@@ -254,7 +256,7 @@ export function NoteTagSelector({
                           <TooltipTrigger asChild>
                             <button
                               onClick={() => handleDeleteWorkspaceTag(tag.id)}
-                              title="Eliminar del workspace"
+                              title={t('deleteFromWorkspace')}
                               className="pr-3 text-muted-foreground/50 hover:text-red-400 transition-colors opacity-0 group-hover/tag-item:opacity-100"
                             >
                               <Trash2 className="h-3 w-3" />
@@ -271,7 +273,7 @@ export function NoteTagSelector({
               </>
             ) : tags.length === 0 ? (
               <div className="px-3 py-3 text-center">
-                <p className="text-xs text-muted-foreground mb-1">No hay etiquetas en este workspace</p>
+                <p className="text-xs text-muted-foreground mb-1">{t('noTagsInWorkspace')}</p>
               </div>
             ) : null}
 
@@ -282,7 +284,7 @@ export function NoteTagSelector({
                 className="w-full flex items-center gap-2 px-3 py-2 hover:bg-foreground/5 transition-colors text-left text-sm text-muted-foreground hover:text-foreground"
               >
                 <Plus className="h-4 w-4" />
-                Crear nueva etiqueta
+                {t('createNewTag')}
               </button>
             </div>
           </div>
@@ -301,6 +303,7 @@ interface CreateTagFormProps {
 }
 
 function CreateTagForm({ workspaceId, onCreated, onCancel }: CreateTagFormProps) {
+  const t = useTranslations('notes.tagSelector');
   const [name, setName] = useState("");
   const [color, setColor] = useState(TAG_COLORS[9]);
   const [isCreating, setIsCreating] = useState(false);
@@ -322,9 +325,9 @@ function CreateTagForm({ workspaceId, onCreated, onCancel }: CreateTagFormProps)
       if (!res.ok) throw new Error((await res.json()).error);
       const newTag = await res.json();
       onCreated(newTag);
-      toast.success("Etiqueta creada");
+      toast.success(t('tagCreated'));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Error al crear etiqueta");
+      toast.error(e instanceof Error ? e.message : t('createError'));
     } finally {
       setIsCreating(false);
     }
@@ -333,17 +336,17 @@ function CreateTagForm({ workspaceId, onCreated, onCancel }: CreateTagFormProps)
   return (
     <div className="p-3 space-y-3">
       <div className="flex items-center gap-2">
-        <button onClick={onCancel} title="Volver" className="text-muted-foreground hover:text-foreground transition-colors">
+        <button onClick={onCancel} title={t('back')} className="text-muted-foreground hover:text-foreground transition-colors">
           <ArrowLeft className="h-4 w-4" />
         </button>
-        <span className="text-sm font-medium">Nueva etiqueta</span>
+        <span className="text-sm font-medium">{t('newTag')}</span>
       </div>
 
       <Input
         ref={inputRef}
         value={name}
         onChange={e => setName(e.target.value)}
-        placeholder="Nombre de la etiqueta"
+        placeholder={t('tagNamePlaceholder')}
         className="h-8 text-sm"
         maxLength={50}
         onKeyDown={e => {
@@ -365,7 +368,7 @@ function CreateTagForm({ workspaceId, onCreated, onCancel }: CreateTagFormProps)
       )}
 
       <div>
-        <span className="text-xs text-muted-foreground mb-1.5 block">Color</span>
+        <span className="text-xs text-muted-foreground mb-1.5 block">{t('color')}</span>
         <div className="grid grid-cols-6 gap-1.5">
           {TAG_COLORS.map(c => (
             <button

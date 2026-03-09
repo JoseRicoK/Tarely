@@ -12,10 +12,15 @@ import { Loader2, User, ArrowLeft, Sparkles, Upload, Shuffle } from "lucide-reac
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { getAvatarUrl, getDiceBearUrl, generateRandomAvatarSeed } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 const InvitationsPanel = lazy(() => import("@/components/workspace").then(m => ({ default: m.InvitationsPanel })));
 
 export default function PerfilPage() {
+  const t = useTranslations('profile');
+  const tInfo = useTranslations('profile.info');
+  const tErrors = useTranslations('profile.errors');
+  const tSuccess = useTranslations('profile.success');
   const router = useRouter();
 
   const qc = useQueryClient();
@@ -28,7 +33,6 @@ export default function PerfilPage() {
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [customAvatarPreview, setCustomAvatarPreview] = useState<string | null>(null);
 
-  // Sync form state from profile on first load
   useEffect(() => {
     if (profile && !initializedRef.current) {
       setName(profile.name);
@@ -39,7 +43,7 @@ export default function PerfilPage() {
 
   const handleSave = useCallback(async () => {
     if (!name.trim()) {
-      toast.error("El nombre no puede estar vacío");
+      toast.error(tErrors('emptyName'));
       return;
     }
 
@@ -54,41 +58,36 @@ export default function PerfilPage() {
 
       if (!res.ok) throw new Error("Error al guardar");
 
-      toast.success("Perfil actualizado correctamente");
+      toast.success(tSuccess('updated'));
       void qc.invalidateQueries({ queryKey: queryKeys.profile });
-      // Refrescar el perfil en el header
       window.dispatchEvent(new Event('profile-updated'));
     } catch {
-      toast.error("Error al guardar el perfil");
+      toast.error(tErrors('saveError'));
     } finally {
       setIsSaving(false);
     }
-  }, [name, selectedAvatar, qc]);
+  }, [name, selectedAvatar, qc, tErrors, tSuccess]);
 
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validar tipo
     if (!file.type.startsWith('image/')) {
-      toast.error("Por favor selecciona una imagen");
+      toast.error(tErrors('invalidImage'));
       return;
     }
 
-    // Validar tamaño (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("La imagen no puede superar 5MB");
+      toast.error(tErrors('imageTooLarge'));
       return;
     }
 
-    // Mostrar preview
     const reader = new FileReader();
     reader.onloadend = () => {
       setCustomAvatarPreview(reader.result as string);
     };
     reader.readAsDataURL(file);
 
-    // Subir imagen
     setIsUploadingAvatar(true);
     try {
       const formData = new FormData();
@@ -106,27 +105,24 @@ export default function PerfilPage() {
 
       const data = await res.json();
       setSelectedAvatar(data.avatar);
-      toast.success('¡Avatar actualizado!');
+      toast.success(tSuccess('avatarUploaded'));
       
-      // Refrescar perfil para obtener nueva versión
       void qc.invalidateQueries({ queryKey: queryKeys.profile });
       window.dispatchEvent(new Event('profile-updated'));
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Error al subir avatar');
+      toast.error(error instanceof Error ? error.message : tErrors('uploadError'));
       setCustomAvatarPreview(null);
     } finally {
       setIsUploadingAvatar(false);
     }
-  }, [qc]);
+  }, [qc, tErrors, tSuccess]);
 
-  // Generar un nuevo avatar aleatorio de DiceBear
   const handleShuffleAvatar = useCallback(() => {
     const newSeed = generateRandomAvatarSeed();
     setSelectedAvatar(newSeed);
     setCustomAvatarPreview(null);
   }, []);
 
-  // URL del avatar para preview
   const avatarPreviewUrl = useMemo(() => {
     if (customAvatarPreview) return customAvatarPreview;
     if (!selectedAvatar || !selectedAvatar.includes('/')) {
@@ -136,7 +132,6 @@ export default function PerfilPage() {
     return getAvatarUrl(selectedAvatar, profile?.id || "", profile?.avatar_version);
   }, [customAvatarPreview, selectedAvatar, profile]);
 
-  // Memoizar si hay cambios sin guardar
   const hasChanges = useMemo(() => {
     if (!profile) return false;
     return name !== profile.name || selectedAvatar !== profile.avatar;
@@ -152,7 +147,6 @@ export default function PerfilPage() {
 
   return (
     <div className="min-h-[85vh] py-8 px-4 settings-accent">
-      {/* Fondo sutil */}
       <div className="fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 app-bg-gradient" />
         <div className="absolute top-0 right-0 w-96 h-96 app-bg-glow-1 rounded-full blur-[120px]" />
@@ -161,31 +155,28 @@ export default function PerfilPage() {
       </div>
 
       <div className="max-w-2xl mx-auto space-y-6">
-        {/* Header */}
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" className="hover:bg-foreground/5" onClick={() => router.back()}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-accent-gradient">
-              Mi Perfil
+              {t('title')}
             </h1>
-            <p className="text-muted-foreground text-sm">Gestiona tu información personal</p>
+            <p className="text-muted-foreground text-sm">{t('subtitle')}</p>
           </div>
         </div>
 
-        {/* Card de perfil */}
         <div className="relative group">
           <div className="absolute -inset-0.5 bg-gradient-to-r from-ta via-ta-secondary to-ta rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-500" />
           <div className="relative bg-background/60 backdrop-blur-xl border border-border rounded-2xl p-6 shadow-xl">
             <div className="flex items-center gap-2 mb-1">
               <User className="h-5 w-5 text-ta-light" />
-              <h2 className="font-semibold">Información del perfil</h2>
+              <h2 className="font-semibold">{tInfo('title')}</h2>
             </div>
-            <p className="text-sm text-muted-foreground mb-6">Actualiza tu nombre y avatar</p>
+            <p className="text-sm text-muted-foreground mb-6">{tInfo('description')}</p>
 
             <div className="space-y-6">
-              {/* Avatar actual */}
               <div className="flex items-center gap-4">
                 <div className="relative">
                   <div className="absolute -inset-1 bg-gradient-to-r from-ta to-ta-secondary rounded-full blur-sm opacity-50" />
@@ -193,7 +184,7 @@ export default function PerfilPage() {
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={avatarPreviewUrl}
-                      alt="Avatar actual"
+                      alt={tInfo('currentAvatar')}
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -204,11 +195,9 @@ export default function PerfilPage() {
                 </div>
               </div>
 
-              {/* Cambiar avatar */}
               <div className="space-y-3">
-                <Label className="text-sm font-medium">Cambiar avatar</Label>
+                <Label className="text-sm font-medium">{tInfo('changeAvatar')}</Label>
                 
-                {/* Botones: Generar otro / Subir imagen */}
                 <div className="flex gap-2">
                   <Button
                     type="button"
@@ -217,7 +206,7 @@ export default function PerfilPage() {
                     className="flex-1 bg-foreground/5 border-border hover:bg-foreground/10 hover:border-ta/50"
                   >
                     <Shuffle className="mr-2 h-4 w-4" />
-                    Generar otro
+                    {tInfo('generateAnother')}
                   </Button>
                   
                   <input
@@ -226,7 +215,7 @@ export default function PerfilPage() {
                     accept="image/jpeg,image/png,image/webp"
                     onChange={handleFileChange}
                     className="hidden"
-                    aria-label="Subir avatar personalizado"
+                    aria-label={tInfo('uploadImage')}
                   />
                   <Button
                     type="button"
@@ -238,32 +227,31 @@ export default function PerfilPage() {
                     {isUploadingAvatar ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Subiendo...
+                        {tInfo('uploading')}
                       </>
                     ) : (
                       <>
                         <Upload className="mr-2 h-4 w-4" />
-                        Subir imagen
+                        {tInfo('uploadImage')}
                       </>
                     )}
                   </Button>
                 </div>
                 
                 <p className="text-xs text-muted-foreground">
-                  Genera avatares aleatorios o sube tu propia imagen (JPG, PNG, WebP, máx 5MB)
+                  {tInfo('avatarHelp')}
                 </p>
               </div>
 
               <Separator className="bg-border" />
 
-              {/* Nombre */}
               <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium">Nombre</Label>
+                <Label htmlFor="name" className="text-sm font-medium">{tInfo('name')}</Label>
                 <Input
                   id="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="Tu nombre"
+                  placeholder={tInfo('namePlaceholder')}
                   className="h-11 bg-foreground/5 border-border focus:border-ta/50"
                 />
               </div>
@@ -276,12 +264,12 @@ export default function PerfilPage() {
                 {isSaving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Guardando...
+                    {tInfo('saving')}
                   </>
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    Guardar cambios
+                    {tInfo('saveChanges')}
                   </>
                 )}
               </Button>
@@ -289,7 +277,6 @@ export default function PerfilPage() {
           </div>
         </div>
 
-        {/* Panel de invitaciones */}
         <Suspense fallback={
           <Card className="bg-foreground/5 border-border">
             <CardContent className="flex items-center justify-center py-8">
