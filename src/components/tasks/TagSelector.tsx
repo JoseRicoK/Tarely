@@ -353,104 +353,108 @@ function TagPopoverContent({
   }
 
   return (
-    <div className="py-2">
-      {/* Tags asignados */}
-      {tags.length > 0 && (
-        <>
-          <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
-            Etiquetas asignadas
-          </div>
-          <ScrollArea className="max-h-32">
-            {tags.map(tag => (
-              <div
-                key={tag.tagId}
-                className="flex items-center justify-between px-3 py-1.5 hover:bg-foreground/5"
-              >
-                <div className="flex items-center gap-2">
-                  <div
-                    className="h-3 w-3 rounded-full shrink-0"
-                    style={{ backgroundColor: tag.color }}
-                  />
-                  <span className="text-sm">{tag.name}</span>
-                </div>
-                <button
-                  onClick={() => onRemove(tag.tagId)}
-                  disabled={removingTagId === tag.tagId}
-                  className="text-muted-foreground hover:text-red-400 transition-colors"
-                >
-                  {removingTagId === tag.tagId ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <X className="h-3.5 w-3.5" />
-                  )}
-                </button>
+    <div className="max-h-[400px] flex flex-col">
+      <ScrollArea className="flex-1">
+        <div className="py-2">
+          {/* Tags asignados */}
+          {tags.length > 0 && (
+            <>
+              <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                Etiquetas asignadas
               </div>
-            ))}
-          </ScrollArea>
-          <div className="border-t border-foreground/10 my-1" />
-        </>
-      )}
-
-      {/* Tags disponibles */}
-      {isLoading ? (
-        <div className="flex items-center justify-center py-4">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </div>
-      ) : availableTags.length > 0 ? (
-        <>
-          <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
-            {tags.length > 0 ? "Añadir" : "Etiquetas"}
-          </div>
-          <ScrollArea className="max-h-40">
-            {availableTags.map(tag => (
-              <div
-                key={tag.id}
-                className="flex items-center gap-2 group/tag-item"
-              >
-                <button
-                  onClick={() => onAssign(tag.id)}
-                  disabled={assigningTagId === tag.id}
-                  className="flex-1 flex items-center gap-2 px-3 py-1.5 hover:bg-foreground/5 transition-colors text-left"
-                >
+              <div className="max-h-32 overflow-y-scroll [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent">
+                {tags.map(tag => (
                   <div
-                    className="h-3 w-3 rounded-full shrink-0"
-                    style={{ backgroundColor: tag.color }}
-                  />
-                  <span className="text-sm flex-1">{tag.name}</span>
-                  {assigningTagId === tag.id ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                  ) : (
-                    <Plus className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover/tag-item:opacity-100 transition-opacity" />
-                  )}
-                </button>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        onClick={() => onDeleteTag(tag.id)}
-                        title="Eliminar etiqueta del workspace"
-                        className="pr-3 text-muted-foreground/50 hover:text-red-400 transition-colors opacity-0 group-hover/tag-item:opacity-100"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p className="text-xs">Eliminar etiqueta del workspace</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                    key={tag.tagId}
+                    className="flex items-center justify-between px-3 py-1.5 hover:bg-foreground/5"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="h-3 w-3 rounded-full shrink-0"
+                        style={{ backgroundColor: tag.color }}
+                      />
+                      <span className="text-sm">{tag.name}</span>
+                    </div>
+                    <button
+                      onClick={() => onRemove(tag.tagId)}
+                      disabled={removingTagId === tag.tagId}
+                      className="text-muted-foreground hover:text-red-400 transition-colors"
+                    >
+                      {removingTagId === tag.tagId ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : (
+                        <X className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
+                ))}
               </div>
-            ))}
-          </ScrollArea>
-        </>
-      ) : tags.length === 0 ? (
-        <div className="px-3 py-3 text-center">
-          <p className="text-xs text-muted-foreground mb-2">No hay etiquetas</p>
-        </div>
-      ) : null}
+              <div className="border-t border-foreground/10 my-1" />
+            </>
+          )}
 
-      {/* Botón crear nueva etiqueta */}
-      <div className="border-t border-foreground/10 mt-1 pt-1">
+          {/* Tags disponibles */}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : availableTags.length > 0 ? (
+            <>
+              <div className="px-3 py-1.5 text-xs font-medium text-muted-foreground">
+                {tags.length > 0 ? "Añadir" : "Etiquetas"}
+              </div>
+              <div className="max-h-40 overflow-y-scroll [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:border-2 [&::-webkit-scrollbar-thumb]:border-transparent">
+                {availableTags.map(tag => (
+                  <div
+                    key={tag.id}
+                    className="flex items-center gap-2 group/tag-item"
+                  >
+                    <button
+                      onClick={() => onAssign(tag.id)}
+                      disabled={assigningTagId === tag.id}
+                      className="flex-1 flex items-center gap-2 px-3 py-1.5 hover:bg-foreground/5 transition-colors text-left"
+                    >
+                      <div
+                        className="h-3 w-3 rounded-full shrink-0"
+                        style={{ backgroundColor: tag.color }}
+                      />
+                      <span className="text-sm flex-1">{tag.name}</span>
+                      {assigningTagId === tag.id ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                      ) : (
+                        <Plus className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover/tag-item:opacity-100 transition-opacity" />
+                      )}
+                    </button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <button
+                            onClick={() => onDeleteTag(tag.id)}
+                            title="Eliminar etiqueta del workspace"
+                            className="pr-3 text-muted-foreground/50 hover:text-red-400 transition-colors opacity-0 group-hover/tag-item:opacity-100"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-xs">Eliminar etiqueta del workspace</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : tags.length === 0 ? (
+            <div className="px-3 py-3 text-center">
+              <p className="text-xs text-muted-foreground mb-2">No hay etiquetas</p>
+            </div>
+          ) : null}
+        </div>
+      </ScrollArea>
+
+      {/* Botón crear nueva etiqueta - siempre visible en la parte inferior */}
+      <div className="border-t border-foreground/10 shrink-0">
         <button
           onClick={onShowCreate}
           className="w-full flex items-center gap-2 px-3 py-2 hover:bg-foreground/5 transition-colors text-left text-sm text-muted-foreground hover:text-foreground"
